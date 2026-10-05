@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { localeSchema, spreadSchema, readingSchema, type TarotEngine } from './engine';
-import type { TarotView, Locale } from './shared';
+import { nextAction, type TarotView, type Locale } from './shared';
 import { readingPrompts } from './prompts';
 
 export const flowSchema = z.object({
@@ -8,6 +8,8 @@ export const flowSchema = z.object({
   stage: z.enum(['intro','input','picking','reveal','ready','result']),
   view: z.enum(['table','result']), question: z.string(), spread: z.string().optional(),
   readingId: z.string().optional(), sessionToken: z.string().optional(),
+  flowId: z.string().uuid().optional(),
+  nextAction: z.enum(['choose_spread','pick_cards','reveal_cards','request_interpretation','read_result']),
   revealed: z.array(z.number()), cardCount: z.number(),
   cards: readingSchema.shape.cards, canInterpret: z.boolean(),
   interpretation: z.string().optional(), cardFaceStyle: z.enum(["original","redraw","dreamy"]).optional(),
@@ -17,7 +19,8 @@ export function publicState(view: TarotView) {
   return {
     locale: view.locale, spreads: view.spreads, stage: view.stage, view: view.view,
     question: view.reading?.question ?? view.question ?? '', spread: view.reading?.spread.id ?? view.spread,
-    readingId: view.reading?.id, sessionToken: view.sessionToken, revealed: view.revealed,
+    readingId: view.reading?.id, sessionToken: view.sessionToken, flowId: view.flowId, revealed: view.revealed,
+    nextAction: nextAction(view),
     cardCount: view.reading?.cards.length ?? 0,
     cards: view.reading?.cards.filter(card => view.revealed.includes(card.position)) ?? [],
     canInterpret: !!view.reading && view.revealed.length === view.reading.cards.length,
@@ -30,7 +33,7 @@ export function viewResult(view: TarotView) {
   return {
     structuredContent: state,
     // Only the app receives the complete draw. Never copy this into model context.
-    _meta: { tarot: view },
+    _meta: { tarot: view, ...(view.flowId ? {'openai/widgetSessionId': view.flowId} : {}) },
     content: [{type:'text' as const, text: view.view === 'result'
       ? view.resultIntent === 'interpret'
         ? 'The brief initial interpretation is now in the shared result card. Next use followUpPrompt to give deeper analysis in the ordinary assistant response OUTSIDE the app. Do not repeat the brief paragraph, call show_tarot_result again with the deeper text, replace the result card, or redraw.'
@@ -43,6 +46,6 @@ export function viewResult(view: TarotView) {
 export function restoreView(engine: TarotEngine, sessionToken: string, locale?: Locale): TarotView {
   const session = engine.openSession(sessionToken);
   const payload = engine.restore(session.readingToken, locale);
-  return {...payload, sessionToken, revealed: session.revealed,
+  return {...payload, sessionToken, flowId: session.flowId ?? payload.reading!.id, revealed: session.revealed,
     stage: session.revealed.length === payload.reading!.cards.length ? 'ready' : 'reveal', view:'table'};
 }

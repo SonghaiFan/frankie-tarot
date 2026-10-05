@@ -39,6 +39,8 @@ export interface TarotPayload {
 }
 
 export interface TarotView extends TarotPayload {
+  /** Stable interaction slot within a chat; separate from an individual draw. */
+  flowId?: string;
   sessionToken?: string;
   stage: "intro" | "input" | "picking" | "reveal" | "ready" | "result";
   question?: string;
@@ -48,4 +50,10 @@ export interface TarotView extends TarotPayload {
   resultIntent?: 'interpret' | 'save';
   view: "table" | "result";
   cardFaceStyle?: "original" | "redraw" | "dreamy";
+}
+export function nextAction(view: TarotView) {
+  if (view.view === 'result') return 'read_result' as const;
+  if (!view.reading) return 'choose_spread' as const;
+  if (view.revealed.length === view.reading.cards.length) return 'request_interpretation' as const;
+  return view.stage === 'picking' ? 'pick_cards' as const : 'reveal_cards' as const;
 }

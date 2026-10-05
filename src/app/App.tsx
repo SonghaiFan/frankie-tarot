@@ -177,10 +177,11 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     setRevealedCardIds(new Set(initialReading.revealedCardIds ?? []));
     setSelectedCardId(null);
     setReadingText(initialReading.interpretation ?? "");
+    if (initialReading.cardFaceStyle) setCardFaceStyle(initialReading.cardFaceStyle);
     setIsThinking(false);
     setHostError("");
     setGameState(initialReading.stage === 'picking' ? GameState.PICKING : GameState.READING);
-  }, [initialReading?.id, initialReading?.revealedCardIds?.join(','), initialReading?.interpretation]);
+  }, [initialReading?.id, initialReading?.revealedCardIds?.join(','), initialReading?.interpretation, initialReading?.cardFaceStyle]);
 
   useEffect(() => {
     if (!initialSetup) return;

@@ -1,4 +1,4 @@
-import type { PickedCard, SpreadType, Locale } from '@/features/tarot/types';
+import type { PickedCard, SpreadType, Locale, CardFaceStyle } from '@/features/tarot/types';
 export interface HostedReading {
   id: string;
   question: string;
@@ -7,6 +7,7 @@ export interface HostedReading {
   stage?: "picking" | "reveal" | "ready" | "result";
   revealedCardIds?: number[];
   interpretation?: string;
+  cardFaceStyle?: CardFaceStyle;
 }
 export interface TarotHost {
   expand?(): Promise<void>;

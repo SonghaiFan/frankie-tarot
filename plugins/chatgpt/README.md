@@ -12,6 +12,22 @@ This is a host adapter inside the original Frank Tarot repository, not a second 
 
 The ChatGPT host supplies interpretation in the current conversation. The original question, shuffle, manual selection, reveal, card library, three artwork styles, audio and language controls remain the original components. Provider API keys are never included in the widget. The table and result open inline by default. The table reserves 640 pixels of inline height for the original viewport-based app; its fullscreen button requests the host's expanded presentation. Returning to the table from a result stays inline. ChatGPT owns its tab controls and chat/composer visibility; the plugin does not manipulate the host interface. Browser storage is best-effort because sandboxed hosts may disallow it.
 
+## One active interaction in ChatGPT
+
+The first `open_tarot` creates a `flowId`. All table and result tools share one resource URI, and every response carries `openai/widgetSessionId=flowId`, following the official Apps SDK Cards Against AI example. The host can route subsequent tool results into that existing iframe; `ontoolresult` switches the original app to its result composition or back to the table. A new question in the same conversation reuses `flowId` but creates a new draw only after the user starts it. Independent first launches get different IDs. The authenticated session envelope preserves `flowId` across flips and result calls, including serverless cold starts.
+
+| User action | Tool / stage | Presentation |
+| --- | --- | --- |
+| Mention the app with a question | `open_tarot(question, flowId?)` / input | Existing original table, question filled |
+| Start shuffle and select | `draw_tarot_cards(flowId)` / picking | Same window; model cannot see hidden cards |
+| Flip cards | `reveal_tarot_cards(sessionToken)` / reveal or ready | Same table; interpretation still requires an explicit request |
+| Request interpretation | `show_tarot_result(intent="interpret")` / result | Same window becomes the brief shared result card |
+| Save result | Direct `show_tarot_result(intent="save")` | Same window becomes the saved result; chat only acknowledges |
+| Ask deeper | User message with the shared follow-up prompt | Ordinary chat, result unchanged |
+| Return to table or ask a new question | `open_tarot(sessionToken)` or `open_tarot(question, flowId)` | Same interaction slot |
+
+`nextAction` makes the next human step explicit in tool output. Widget reuse is host behavior and must be verified in the target ChatGPT client. Already-posted older widgets cannot be deleted by this server. A client that ignores widget session binding may still show multiple historical widgets.
+
 ## Local testing
 
 ```sh
@@ -55,6 +71,6 @@ A successful Vercel deploy does not prove that a ChatGPT development app has ref
 
 The public website and ChatGPT widget use the same Vercel project, canonical deck data, and card-art files. Card images load from same-origin `/assets/` URLs, so the widget needs no separately hosted asset site or pinned GitHub release. Verify anonymous card-image responses and the real ChatGPT iframe after deployment.
 
-“Save result / 保存结果” exports a PNG on the website. In ChatGPT it opens the shared `ReadingCard` result page and explicitly asks the conversation to return that same result via `show_tarot_result`. Saving preserves the current draw, artwork style and any existing interpretation; it never asks for a new interpretation. The component used for image export is also the result composition in the plugin, with interactive controls outside it. The optional reflection field has been removed; “Interpret with ChatGPT” remains a separate action after all cards are revealed.
+“Save result / 保存结果” exports a PNG on the website. In ChatGPT it calls `show_tarot_result` directly and replaces the current interaction with the shared `ReadingCard` result page. Chat acknowledges the saved result without publishing a duplicate widget. Saving preserves the current draw, artwork style and any existing interpretation; it never asks for a new interpretation. The component used for image export is also the result composition in the plugin, with interactive controls outside it. The optional reflection field has been removed; “Interpret with ChatGPT” remains a separate action after all cards are revealed.
 
 The initial interpretation uses the website's `buildTarotReadingPrompt`: one cohesive paragraph, 120–180 Chinese characters or 130–180 English words. Fully revealed app/tool context supplies this exact prompt. `show_tarot_result(intent="interpret")` accepts only a brief paragraph and returns the website's `buildTarotFollowUpPrompt` so ChatGPT continues with deeper analysis in ordinary chat outside the result card. The “Ask Deeper / 深入问问” button sends that same copied website prompt into the current conversation. Detailed follow-ups preserve the brief result. `intent="save"` (the default) preserves existing text and never requests deeper analysis; prompts containing the complete spread are withheld until every card is revealed.

@@ -75,8 +75,8 @@ const RitualCard: React.FC<RitualCardProps> = ({
   const prefersReducedMotion = useReducedMotion();
   const isEnglish = i18n.language === "en";
   const artworkRef = React.useRef<HTMLDivElement>(null);
-  const [isImageLoaded, setIsImageLoaded] = React.useState(false);
-  const [hasImageError, setHasImageError] = React.useState(false);
+  const [loadedImageUrl, setLoadedImageUrl] = React.useState<string>();
+  const [failedImageUrl, setFailedImageUrl] = React.useState<string>();
   const [detailFaceMode, setDetailFaceMode] = React.useState<"redraw" | "original" | "diff">(
     cardFaceStyle === "original" ? "original" : "redraw"
   );
@@ -112,9 +112,15 @@ const RitualCard: React.FC<RitualCardProps> = ({
 
   const isCurrentFaceOriginal = cardFaceStyle === "original";
 
-  React.useEffect(() => {
-    setIsImageLoaded(false);
-    setHasImageError(false);
+  // Cache hits can finish before passive effects run. Track the URL instead of
+  // resetting a loaded flag after onLoad, and check already-complete DOM images.
+  const isImageLoaded = loadedImageUrl === activeCardImageUrl;
+  const hasImageError = failedImageUrl === activeCardImageUrl;
+  const imageRef = React.useCallback((image: HTMLImageElement | null) => {
+    if (image?.complete) {
+      if (image.naturalWidth > 0) setLoadedImageUrl(activeCardImageUrl);
+      else setFailedImageUrl(activeCardImageUrl);
+    }
   }, [activeCardImageUrl]);
 
   const updateSplitFromPointer = React.useCallback((clientX: number) => {
@@ -684,15 +690,14 @@ const RitualCard: React.FC<RitualCardProps> = ({
                 </div>
               ) : (
                 <motion.img
+                  key={activeCardImageUrl}
+                  ref={imageRef}
                   src={activeCardImageUrl}
                   alt={card.nameEn}
-                  loading="lazy"
+                  loading={isRevealed ? "eager" : "lazy"}
                   decoding="async"
-                  onLoad={() => setIsImageLoaded(true)}
-                  onError={() => {
-                    setIsImageLoaded(true);
-                    setHasImageError(true);
-                  }}
+                  onLoad={() => setLoadedImageUrl(activeCardImageUrl)}
+                  onError={() => setFailedImageUrl(activeCardImageUrl)}
                   className={`absolute object-cover transition-[filter,opacity] duration-500 ${
                     isCurrentFaceOriginal
                       ? ORIGINAL_CARD_INSET_CLASS

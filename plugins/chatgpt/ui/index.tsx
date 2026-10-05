@@ -8,7 +8,7 @@ import i18n from '@/i18n/config';
 import { FULL_DECK } from '@/features/tarot/constants/cards';
 import type { HostedReading, TarotHost } from '@/host/tarotHost';
 import type { SpreadType } from '@/features/tarot/types';
-import type { TarotView } from '../shared';
+import { nextAction, type TarotView } from '../shared';
 import { readingPrompts } from '../prompts';
 import '@/app/index.css';
 
@@ -26,7 +26,7 @@ function originalReading(value: TarotView): HostedReading {
   const reading=value.reading;
   if(!reading) throw new Error('Missing reading');
   return {id:reading.id,question:reading.question,spread:reading.spread.id as SpreadType,
-    stage:value.stage === 'picking' ? 'picking' : 'reveal', interpretation:value.interpretation,
+    stage:value.stage === 'picking' ? 'picking' : 'reveal', interpretation:value.interpretation, cardFaceStyle:value.cardFaceStyle,
     revealedCardIds:reading.cards.filter(card=>value.revealed.includes(card.position)).map(card=>card.id),
     cards:reading.cards.map(card=>{
       const original=FULL_DECK.find(item=>item.id===card.id);
@@ -39,7 +39,8 @@ async function syncContext() {
   const reading=current.reading;
   // Hidden draw and legacy readingToken stay inside the app, never in model context.
   await bridge.updateModelContext({structuredContent:{
-    sessionToken:current.sessionToken, readingId:reading?.id,
+    sessionToken:current.sessionToken, readingId:reading?.id, flowId:current.flowId,
+    nextAction:nextAction(current),
     requestedAction,
     stage:current.stage === "ready" || current.stage === "reveal" ? current.stage
       : uiState?.stage === "READING" ? (current.revealed.length === (reading?.cards.length ?? -1) ? "ready" : "reveal")
@@ -79,7 +80,7 @@ const host:Omit<TarotHost,'saveResult'>={
   async draw(question,spread,locale){
     await syncQueue.catch(()=>{});
     requestedAction=undefined;
-    current=payload(await bridge.callServerTool({name:'draw_tarot_cards',arguments:{question,spread,locale}}));
+    current=payload(await bridge.callServerTool({name:'draw_tarot_cards',arguments:{question,spread,locale,flowId:current?.flowId}}));
     uiState=undefined;
     void syncContext().catch(()=>{});
     return originalReading(current);
@@ -87,7 +88,7 @@ const host:Omit<TarotHost,'saveResult'>={
   async reportState(state){
     uiState=state;
     // Returning to input clears the old draw from subsequent model context.
-    if(state.stage==='INPUT' && current?.reading) {requestedAction=undefined;current={locale:current.locale,spreads:current.spreads,question:state.question,spread:state.spread ?? 'THREE',revealed:[],stage:'input',view:'table'};}
+    if(state.stage==='INPUT' && current?.reading) {requestedAction=undefined;current={locale:current.locale,spreads:current.spreads,flowId:current.flowId,question:state.question,spread:state.spread ?? 'THREE',revealed:[],stage:'input',view:'table'};}
     syncQueue=syncQueue.catch(()=>{}).then(syncReveals);
     await syncQueue;
   },
@@ -123,15 +124,14 @@ function PluginRoot(){
         intent:'save',
         cardFaceStyle:uiState?.cardFaceStyle ?? current.cardFaceStyle,
       }}));
-      // App tool calls render locally; an explicit message asks the host to also
-      // publish the same result in the conversation, without a new interpretation.
-      current=saved; uiState=undefined;
+      // Save updates this conversation's existing interaction slot directly.
+      // The model acknowledges it; it must not publish another result widget.
+      receive(saved);
       requestedAction='save';
       await syncContext();
       await send(locale==='zh-CN'
-        ? '保存这次结果。请用 show_tarot_result 将当前牌阵、画风和已有解读作为结果卡返回聊天。仅保存，不新增解读，不重新抽牌；如果没有已有解读，请省略 interpretation。'
-        : 'Save this result. Call show_tarot_result to post the current draw, artwork style, and existing interpretation as a result card in chat. Save only; do not add an interpretation or redraw. Omit interpretation if none exists.');
-      receive(saved);
+        ? '我点击了保存结果，结果卡已在当前交互窗口保存。请简短确认即可，不再调用工具或创建另一份结果，不新增解读，不重新抽牌。'
+        : 'I clicked Save result. The result card is already saved in the current interaction window. Briefly acknowledge it without calling a tool, creating another result, adding interpretation, or redrawing.');
     },
   }),[]);
   useEffect(()=>{

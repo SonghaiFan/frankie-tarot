@@ -130,6 +130,47 @@ test("Chinese brief readings follow the website prompt and keep deeper text outs
   assert.equal(long.isError,true);
 });
 
+test("one interaction session survives setup, draw, reveal, result and a new question", async () => {
+  const call = async (name: string, args: Record<string, unknown>) =>
+    CallToolResultSchema.parse(await client.callTool({name, arguments:args}));
+  const opened = await call('open_tarot',{question:'First question',spread:'SINGLE'});
+  const flowId = (opened.structuredContent as any).flowId;
+  assert.match(flowId,/^[0-9a-f-]{36}$/);
+  assert.equal(opened._meta?.['openai/widgetSessionId'],flowId);
+  assert.equal((opened.structuredContent as any).nextAction,'choose_spread');
+  const draw = await call('draw_tarot_cards',{question:'First question',spread:'SINGLE',flowId});
+  assert.equal((draw.structuredContent as any).nextAction,'pick_cards');
+  const revealed = await call('reveal_tarot_cards',{sessionToken:(draw.structuredContent as any).sessionToken,positions:[1]});
+  assert.equal((revealed.structuredContent as any).nextAction,'request_interpretation');
+  const token = (revealed.structuredContent as any).sessionToken;
+  const result = await call('show_tarot_result',{sessionToken:token,intent:'save'});
+  assert.equal((result.structuredContent as any).nextAction,'read_result');
+  const restored = await call('open_tarot',{sessionToken:token});
+  const newQuestion = await call('open_tarot',{question:'Second question',flowId});
+  for (const response of [draw,revealed,result,restored,newQuestion]) {
+    assert.equal((response.structuredContent as any).flowId,flowId);
+    assert.equal(response._meta?.['openai/widgetSessionId'],flowId);
+    assert.equal((response._meta?.ui as any).resourceUri,UI_URI);
+  }
+  assert.equal((newQuestion.structuredContent as any).readingId,undefined,'new question clears the old draw without changing the interaction slot');
+  const anotherChat = await call('open_tarot',{});
+  assert.notEqual((anotherChat.structuredContent as any).flowId,flowId,'independent launches must not share a slot');
+  const {tools} = await client.listTools();
+  const bound = tools.filter(t=>t.name!=='list_tarot_spreads');
+  assert.ok(bound.every(t=>(t._meta?.ui as any).resourceUri===UI_URI),'table and result must use the same resource for host reuse');
+  assert.equal((await call('open_tarot',{flowId:'not-a-session'})).isError,true);
+});
+
+test("legacy sealed sessions restore without inventing cards and acquire a stable interaction slot", async () => {
+  const draw = engine.draw({spread:'SINGLE'});
+  const legacy = engine.sealSession({readingToken:draw.readingToken!,revealed:[]});
+  const restored = await client.callTool({name:'open_tarot',arguments:{sessionToken:legacy}});
+  assert.equal((restored.structuredContent as any).flowId,draw.reading!.id);
+  assert.equal(restored._meta?.['openai/widgetSessionId'],draw.reading!.id);
+  assert.deepEqual((restored.structuredContent as any).cards,[]);
+  assert.equal((restored._meta as any).tarot.reading.id,draw.reading!.id);
+});
+
 test("protocol input validation rejects unknown spread and attempted custom cards", async () => {
   for (const input of [{ spread: "AUTO" }, { locale: "fr" }, { reversedProbability: 2 }, { customCards: [{ id: 0 }] }]) {
     const result = await client.callTool({ name: "draw_tarot_cards", arguments: input });
