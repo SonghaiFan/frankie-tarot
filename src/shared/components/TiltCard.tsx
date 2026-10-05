@@ -127,7 +127,7 @@ const stillness = () =>
 
 /* BUTTERFLY was Bencho's own pictures, which is not licensed
    to travel. Point this at yours. */
-const BUTTERFLY: string = `${import.meta.env.BASE_URL}images/cards_dreamy/maj00.png`;
+const BUTTERFLY: string = `${import.meta.env.BASE_URL}images/cards_dreamy/maj00.webp`;
 
 /* ══ Tilt ═════════════════════════════════════════════════
    A picture card that gives under the pointer.
