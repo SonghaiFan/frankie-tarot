@@ -38,3 +38,7 @@ The existing Site is bound by the root `.openai/hosting.json`. Keep its project 
 For Sites publication, `node scripts/site/export.mjs <existing-sites-checkout>` produces a generated deployment mirror of this repository and its build output. Edit only this repository; never edit the generated mirror. The Sites source helper then saves/pushes/packages that exact generated snapshot. It is hosting transport, not a second maintained project. The previous standalone Sites UI is replaced.
 
 After deployment, verify the MCP tools and the embedded UI separately: an HTTP or tool result alone does not prove the ChatGPT UI rendered correctly.
+
+## Refresh the installed ChatGPT app after publication
+
+A successful Site deploy does not prove that an installed development app has refreshed its cached tool metadata. In ChatGPT, open Frank Tarot → Manage → Refresh tools, wait for completion, then reopen `open_tarot`. Verify the original dark starfield UI in ChatGPT itself, not only the website or local preview. Keep the same app and plugin; do not create another one.
