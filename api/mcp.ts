@@ -1,2 +1,2 @@
-// Built from the shared TypeScript implementation for native Node ESM.
-export { default } from "../plugins/chatgpt/dist/vercel-handler.mjs";
+// A named fetch export opts into Vercel Web Request/Response handlers.
+export { default as fetch } from "../plugins/chatgpt/dist/vercel-handler.mjs";
