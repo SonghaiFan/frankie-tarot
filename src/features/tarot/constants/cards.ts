@@ -7,6 +7,7 @@ const baseUrl =
     ? import.meta.env.BASE_URL
     : "/";
 const LOCAL_CDN = `${baseUrl}images/cards/`;
+const LOCAL_DREAMY_CDN = `${baseUrl}images/cards_dreamy/`;
 const LOCAL_ORIGINAL_CDN = `${baseUrl}images/cards_rws_original/`;
 const cardImageMap = cardImagesManifest as Record<string, string>;
 
@@ -86,7 +87,12 @@ export const getCardImageUrl = (
   }
   // Strip any existing file extension (e.g. "maj00.jpg" or "maj00.png" -> "maj00")
   const key = imageOrKey.replace(/\.[^/.]+$/, "");
-  const baseCdn = style === "original" ? LOCAL_ORIGINAL_CDN : LOCAL_CDN;
+  let baseCdn = LOCAL_CDN;
+  if (style === "original") {
+    baseCdn = LOCAL_ORIGINAL_CDN;
+  } else if (style === "dreamy") {
+    baseCdn = LOCAL_DREAMY_CDN;
+  }
   return `${baseCdn}${key}.webp`;
 };
 

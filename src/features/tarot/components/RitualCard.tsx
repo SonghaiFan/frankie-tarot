@@ -77,7 +77,9 @@ const RitualCard: React.FC<RitualCardProps> = ({
   const artworkRef = React.useRef<HTMLDivElement>(null);
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
   const [hasImageError, setHasImageError] = React.useState(false);
-  const [detailFaceMode, setDetailFaceMode] = React.useState<"redraw" | "original" | "diff">(cardFaceStyle);
+  const [detailFaceMode, setDetailFaceMode] = React.useState<"redraw" | "original" | "diff">(
+    cardFaceStyle === "original" ? "original" : "redraw"
+  );
   const [splitPos, setSplitPos] = React.useState(cardFaceStyle === "original" ? 100 : 0);
   const [isAnimatingSlide, setIsAnimatingSlide] = React.useState(false);
   const isDraggingSplit = React.useRef(false);

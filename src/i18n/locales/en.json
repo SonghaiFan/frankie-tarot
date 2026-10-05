@@ -72,9 +72,13 @@
   "deck": {
     "title": "Tarot Deck Library",
     "cardFaces": {
-      "title": "Choose card artwork style",
+      "title": "Individual Card Face Style",
       "subtitle": "Choose the artwork edition displayed across the deck and rituals.",
       "selected": "Selected",
+      "dreamy": {
+        "name": "Dreamy Aura",
+        "description": "Luminous psychedelic digital airbrush with glowing faceless silhouettes"
+      },
       "redraw": {
         "name": "Full-Bleed Restored",
         "description": "700×1200 borderless redraw with enhanced clarity and full bleed"
@@ -82,6 +86,33 @@
       "original": {
         "name": "1909 Vintage Archive",
         "description": "Authentic 1909 historical scan with original borders and lettering"
+      }
+    },
+    "packs": {
+      "title": "Curated Card Packs",
+      "subtitle": "Cohesive themes pairing card face artwork with matched card backs.",
+      "selected": "Active Pack",
+      "customMix": "Custom Combination",
+      "customizePrompt": "Customize card faces & backs individually",
+      "hideCustomize": "Hide individual customization",
+      "cardFace": "Front Face",
+      "cardBack": "Card Back",
+      "tags": {
+        "new": "NEW",
+        "default": "MODERN",
+        "classic": "CLASSIC"
+      },
+      "dreamy": {
+        "name": "Dreamy Aura Pack",
+        "description": "Luminous airbrush silhouettes with soft radiant glow, paired with the Star Field back."
+      },
+      "redraw": {
+        "name": "Modern Arcana Pack",
+        "description": "700×1200 borderless restored artwork, paired with the Woven Lines back."
+      },
+      "original": {
+        "name": "1909 Historic Pack",
+        "description": "Historic antique 1909 RWS archive scans, paired with classic Folk Tiles back."
       }
     },
     "cardBacks": {

@@ -58,7 +58,7 @@ export interface AudioMessage {
   buffer?: AudioBuffer; // Cached buffer
 }
 
-export type CardFaceStyle = "redraw" | "original";
+export type CardFaceStyle = "redraw" | "dreamy" | "original" | (string & {});
 
 export interface TarotReadingResponse {
   text: string;

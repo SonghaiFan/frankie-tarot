@@ -72,9 +72,13 @@
   "deck": {
     "title": "塔罗牌库",
     "cardFaces": {
-      "title": "选择牌面风格",
+      "title": "单项选择牌面风格",
       "subtitle": "选择在牌库与仪式各环节中展示的牌面艺术版本。",
       "selected": "已选",
+      "dreamy": {
+        "name": "迷幻极光（Dreamy）",
+        "description": "现代数字气刷与发光剪影，高饱和橙蓝柔光全出血"
+      },
       "redraw": {
         "name": "超清无边重绘版",
         "description": "700×1200 满版全出血，去除黑边与标题，现代高精还原"
@@ -82,6 +86,33 @@
       "original": {
         "name": "1909 经典馆藏原版",
         "description": "百年维基高精扫描，保留初版真实纸纹、外框与手写题字"
+      }
+    },
+    "packs": {
+      "title": "主题卡包",
+      "subtitle": "卡面风格与牌背纹样的精选组合，切换整套塔罗牌的视觉意境。",
+      "selected": "当前卡包",
+      "customMix": "自定义混合搭配",
+      "customizePrompt": "自定义单独调整卡面与牌背",
+      "hideCustomize": "收起单独调整",
+      "cardFace": "正面卡面",
+      "cardBack": "背面牌背",
+      "tags": {
+        "new": "NEW",
+        "default": "MODERN",
+        "classic": "CLASSIC"
+      },
+      "dreamy": {
+        "name": "迷幻极光 (Dreamy Aura)",
+        "description": "全套数字气刷抽象剪影与发光晕染，搭配浩瀚星夜牌背。"
+      },
+      "redraw": {
+        "name": "现代重绘 (Modern Arcana)",
+        "description": "700×1200 高清满版无边重绘，搭配经典交织格纹牌背。"
+      },
+      "original": {
+        "name": "百年馆藏 (1909 Historic)",
+        "description": "1909 年初版韦特手绘古董馆藏扫描，搭配典雅黑白民艺花砖。"
       }
     },
     "cardBacks": {

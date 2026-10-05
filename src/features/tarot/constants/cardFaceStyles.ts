@@ -9,15 +9,21 @@ export interface CardFaceStyleOption {
 
 export const CARD_FACE_STYLES: CardFaceStyleOption[] = [
   {
+    id: "dreamy",
+    nameKey: "deck.cardFaces.dreamy.name",
+    descriptionKey: "deck.cardFaces.dreamy.description",
+    previewImage: "maj00.png",
+  },
+  {
     id: "redraw",
     nameKey: "deck.cardFaces.redraw.name",
-    descriptionKey: "deck.cardFaces.redraw.desc",
+    descriptionKey: "deck.cardFaces.redraw.description",
     previewImage: "maj00.png",
   },
   {
     id: "original",
     nameKey: "deck.cardFaces.original.name",
-    descriptionKey: "deck.cardFaces.original.desc",
+    descriptionKey: "deck.cardFaces.original.description",
     previewImage: "maj00.png",
   },
 ];

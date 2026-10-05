@@ -42,6 +42,11 @@ import { useResponsive } from "@/shared/hooks/useResponsive";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/i18n/types";
 import { CardBackId, DEFAULT_CARD_BACK_ID } from "@/features/tarot/constants/cardBacks";
+import {
+  CardPack,
+  DEFAULT_CARD_PACK_ID,
+  findPackByCombination,
+} from "@/features/tarot/constants/cardPacks";
 
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -107,15 +112,45 @@ const App: React.FC = () => {
       savedCardBack === "thorn-bloom" ||
       savedCardBack === "sacred-geometry"
       ? savedCardBack
-      : DEFAULT_CARD_BACK_ID;
+      : "eclipse-nocturne";
   });
 
   const [cardFaceStyle, setCardFaceStyle] = useState<CardFaceStyle>(() => {
     const saved = window.localStorage.getItem("f-tarot-card-face-style");
-    return saved === "original" || saved === "redraw"
+    return saved === "original" || saved === "redraw" || saved === "dreamy"
       ? saved
-      : DEFAULT_CARD_FACE_STYLE;
+      : "dreamy";
   });
+
+  const [cardPackId, setCardPackId] = useState<string>(() => {
+    const saved = window.localStorage.getItem("f-tarot-card-pack");
+    return saved || DEFAULT_CARD_PACK_ID;
+  });
+
+  const handleSelectPack = (pack: CardPack) => {
+    setCardPackId(pack.id);
+    setCardFaceStyle(pack.cardFaceStyle);
+    setCardBackId(pack.cardBackId);
+    window.localStorage.setItem("f-tarot-card-pack", pack.id);
+    window.localStorage.setItem("f-tarot-card-face-style", pack.cardFaceStyle);
+    window.localStorage.setItem("f-tarot-card-back", pack.cardBackId);
+  };
+
+  const handleCardFaceStyleChange = (style: CardFaceStyle) => {
+    setCardFaceStyle(style);
+    const matched = findPackByCombination(style, cardBackId);
+    const newPackId = matched ? matched.id : "custom";
+    setCardPackId(newPackId);
+    window.localStorage.setItem("f-tarot-card-pack", newPackId);
+  };
+
+  const handleCardBackChange = (back: CardBackId) => {
+    setCardBackId(back);
+    const matched = findPackByCombination(cardFaceStyle, back);
+    const newPackId = matched ? matched.id : "custom";
+    setCardPackId(newPackId);
+    window.localStorage.setItem("f-tarot-card-pack", newPackId);
+  };
 
   // --- Refs ---
   const readingPromiseRef = useRef<Promise<string> | null>(null);
@@ -396,9 +431,11 @@ const App: React.FC = () => {
             isTablet={isTablet}
             onCardFocus={setSelectedCardId}
             cardBackId={cardBackId}
-            onCardBackChange={setCardBackId}
+            onCardBackChange={handleCardBackChange}
             cardFaceStyle={cardFaceStyle}
-            onCardFaceStyleChange={setCardFaceStyle}
+            onCardFaceStyleChange={handleCardFaceStyleChange}
+            cardPackId={cardPackId}
+            onSelectPack={handleSelectPack}
           />
         );
       case GameState.INPUT:
