@@ -4,11 +4,13 @@ import { CardBackId, getCardBackImageUrl } from "@/features/tarot/constants/card
 interface CardBackSurfaceProps {
   cardBackId: CardBackId;
   className?: string;
+  patternOpacity?: string;
 }
 
 const CardBackSurface: React.FC<CardBackSurfaceProps> = ({
   cardBackId,
   className = "",
+  patternOpacity = "opacity-25",
 }) => (
   <div
     aria-hidden="true"
@@ -18,9 +20,9 @@ const CardBackSurface: React.FC<CardBackSurfaceProps> = ({
       src={getCardBackImageUrl(cardBackId)}
       alt=""
       draggable={false}
-      className="absolute inset-0 h-full w-full object-cover"
+      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${patternOpacity}`}
     />
-    <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/[0.05] via-transparent to-black/20" />
+    <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/[0.05] via-transparent to-black/30" />
   </div>
 );
 
