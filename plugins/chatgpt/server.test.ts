@@ -87,6 +87,13 @@ test("HTTP stages conceal cards, preserve identities and gate result until every
   assert.deepEqual((result.structuredContent as any).cards,privateDraw.reading.cards);
   assert.equal((result.structuredContent as any).view,"result");
   assert.equal((result.structuredContent as any).interpretation,"Reflection, not prediction.");
+  const saved=await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,cardFaceStyle:"original"}});
+  assert.equal(saved.isError,undefined);
+  assert.equal((saved.structuredContent as any).interpretation,undefined,'saving cards alone must not synthesize an interpretation');
+  assert.deepEqual((saved.structuredContent as any).cards,privateDraw.reading.cards);
+  assert.equal((saved._meta as any).tarot.cardFaceStyle,"original");
+  assert.equal((saved.structuredContent as any).cardFaceStyle,"original");
+  assert.match((saved.content as any)[0].text,/Do not add an interpretation unless explicitly requested/);
   assert.equal((await client.callTool({name:"show_tarot_result",arguments:{sessionToken:state.sessionToken}})).isError,true,'old concealed snapshot must not become interpretable');
   const {tools}=await client.listTools();
   const uri=(tools.find(t=>t.name==='show_tarot_result')!._meta!.ui as any).resourceUri;

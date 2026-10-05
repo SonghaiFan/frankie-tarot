@@ -54,3 +54,5 @@ A successful Vercel deploy does not prove that a ChatGPT development app has ref
 ## Public website and shared assets
 
 The public website and ChatGPT widget use the same Vercel project, canonical deck data, and card-art files. Card images load from same-origin `/assets/` URLs, so the widget needs no separately hosted asset site or pinned GitHub release. Verify anonymous card-image responses and the real ChatGPT iframe after deployment.
+
+“Save result / 保存结果” exports a PNG on the website. In ChatGPT it opens the shared `ReadingCard` result page and explicitly asks the conversation to return that same result via `show_tarot_result`. Saving preserves the current draw, artwork style and any existing interpretation; it never asks for a new interpretation. The component used for image export is also the result composition in the plugin, with interactive controls outside it. The optional reflection field has been removed; “Interpret with ChatGPT” remains a separate action after all cards are revealed.

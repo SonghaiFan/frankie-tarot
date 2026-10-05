@@ -19,7 +19,7 @@ export function publicState(view: TarotView) {
     cardCount: view.reading?.cards.length ?? 0,
     cards: view.reading?.cards.filter(card => view.revealed.includes(card.position)) ?? [],
     canInterpret: !!view.reading && view.revealed.length === view.reading.cards.length,
-    interpretation: view.interpretation,
+    interpretation: view.interpretation, cardFaceStyle: view.cardFaceStyle,
   };
 }
 export function viewResult(view: TarotView) {
@@ -28,7 +28,9 @@ export function viewResult(view: TarotView) {
     structuredContent: state,
     // Only the app receives the complete draw. Never copy this into model context.
     _meta: { tarot: view },
-    content: [{type:'text' as const, text: state.canInterpret
+    content: [{type:'text' as const, text: view.view === 'result'
+      ? `Saved this existing reading as a result card. Preserve its cards, artwork and any provided interpretation. Do not add an interpretation unless explicitly requested.`
+      : state.canInterpret
       ? `All ${state.cardCount} cards are revealed. Keep this reading and its positions unchanged. Interpret only when requested; use show_tarot_result for the inline result.`
       : `Stage: ${state.stage}. ${state.revealed.length}/${state.cardCount} cards revealed. Do not interpret, name hidden cards, or infer a reading. Guide the user to select/reveal in the table. A question alone opens setup; it is not permission to skip the ritual.`}],
   };

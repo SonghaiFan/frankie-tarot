@@ -450,7 +450,7 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     }
   };
 
-  const downloadReading = printTheReading(
+  const saveResult = host ? () => host.saveResult(locale, readingText) : printTheReading(
     question,
     spread!,
     pickedCards,
@@ -538,9 +538,10 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
             readingAudioBuffer={readingAudioBuffer}
             isAudioPlaying={isAudioPlaying}
             onReplayAudio={replayAudio}
-            onDownload={downloadReading}
+            onSaveResult={saveResult}
+            savesToChat={!!host}
             onReset={resetRitual}
-            onInterpret={host ? (reflection) => host.interpret(locale, reflection) : undefined}
+            onInterpret={host ? () => host.interpret(locale) : undefined}
           />
         );
       default:

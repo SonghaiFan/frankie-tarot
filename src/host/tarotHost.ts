@@ -11,6 +11,7 @@ export interface HostedReading {
 export interface TarotHost {
   expand?(): Promise<void>;
   draw(question: string, spread: SpreadType, locale: Locale): Promise<HostedReading>;
-  interpret(locale: Locale, reflection?: string): Promise<void>;
+  interpret(locale: Locale): Promise<void>;
+  saveResult(locale: Locale, readingText: string): Promise<void>;
   reportState?(state: {stage: string; question: string; spread: SpreadType | null; revealedCardIds: number[]; pickedCount: number; cardFaceStyle: string}): Promise<void>;
 }

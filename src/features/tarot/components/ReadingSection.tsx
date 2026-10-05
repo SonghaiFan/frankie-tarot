@@ -19,9 +19,10 @@ interface ReadingSectionProps {
   readingAudioBuffer: AudioBuffer | null;
   isAudioPlaying: boolean;
   onReplayAudio: () => void;
-  onDownload: () => void;
+  onSaveResult: () => Promise<void>;
+  savesToChat?: boolean;
   onReset: () => void;
-  onInterpret?: (reflection?: string) => Promise<void>;
+  onInterpret?: () => Promise<void>;
 }
 
 const ReadingSection: React.FC<ReadingSectionProps> = ({
@@ -36,7 +37,8 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   readingAudioBuffer,
   isAudioPlaying,
   onReplayAudio,
-  onDownload,
+  onSaveResult,
+  savesToChat = false,
   onReset,
   onInterpret,
 }) => {
@@ -44,7 +46,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   const locale = i18n.language as Locale;
   const displayedCards = pickedCards;
 
-  const [reflection, setReflection] = useState("");
+  const [isSavingResult, setIsSavingResult] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -53,7 +55,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
     if (onInterpret) {
       if (isSending || isCopied) return;
       setIsSending(true); setSendError("");
-      try { await onInterpret(reflection); setIsCopied(true); }
+      try { await onInterpret(); setIsCopied(true); }
       catch { setSendError(locale === "zh-CN" ? "发送失败，请重试。你的牌阵已保留。" : "Could not send. Your cards are preserved; please retry."); }
       finally { setIsSending(false); }
       return;
@@ -77,6 +79,14 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   };
 
   const allCardsRevealed = revealedCardIds.size === pickedCards.length;
+
+  const handleSaveResult = async () => {
+    if (isSavingResult) return;
+    setIsSavingResult(true); setSendError("");
+    try { await onSaveResult(); }
+    catch { setSendError(locale === "zh-CN" ? "保存失败，请重试。你的牌阵已保留。" : "Could not save. Your cards are preserved; please retry."); }
+    finally { setIsSavingResult(false); }
+  };
 
   const renderThinkingPhrase = () => {
     const phrases = t("reading.thinkingPhrases", { returnObjects: true }) as string[];
@@ -181,10 +191,6 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 </p>
               </div>
 
-              {onInterpret && <label className="w-full max-w-xl mb-6 text-sm text-neutral-400">
-                {locale === 'zh-CN' ? '这些牌让你想到什么？（选填）' : 'What do these cards bring to mind? (optional)'}
-                <textarea value={reflection} onChange={e=>setReflection(e.target.value)} maxLength={2000} rows={2} className="mt-2 w-full border border-white/20 bg-black/50 p-3 text-neutral-200" />
-              </label>}
               {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
               <div className="shrink-0 flex flex-col items-center w-full">
                 <div className="flex items-center justify-center gap-4 mb-8">
@@ -210,12 +216,13 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 2.2 }}
-                    onClick={onDownload}
+                    onClick={handleSaveResult}
+                    disabled={isSavingResult || isSending}
                     className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-neutral-600 hover:text-white transition-colors group px-4 py-2 border border-neutral-800 hover:border-white/20"
-                    title={t("reading.saveTitle")}
+                    title={t(savesToChat ? "reading.saveToChatTitle" : "reading.saveTitle")}
                   >
                     <Download size={14} />
-                    {t("reading.save")}
+                    {t(isSavingResult ? "reading.saving" : "reading.save")}
                   </motion.button>
 
                   <motion.button

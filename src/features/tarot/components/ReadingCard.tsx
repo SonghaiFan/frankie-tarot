@@ -8,9 +8,8 @@ export interface ReadingCardProps {
   question: string; spread: SpreadType; pickedCards: PickedCard[];
   readingText: string; locale: Locale; cardFaceStyle?: CardFaceStyle;
   onCardClick?: (position: number) => void;
-  children?: React.ReactNode;
 }
-export default function ReadingCard({question,spread,pickedCards,readingText,locale,cardFaceStyle='dreamy',onCardClick,children}:ReadingCardProps) {
+export default function ReadingCard({question,spread,pickedCards,readingText,locale,cardFaceStyle='dreamy',onCardClick}:ReadingCardProps) {
   const config = getLocalizedSpread(spread,locale);
   const zh = locale === 'zh-CN';
   return <article aria-label={zh ? '塔罗结果' : 'Tarot reading'} style={{background:'#101110',color:'#e5e5e5',padding:'28px clamp(18px, 4vw, 44px)',fontFamily:'Georgia, "Noto Serif SC", serif',boxSizing:'border-box',width:'100%',border:'1px solid #30312e',borderRadius:16}}>
@@ -30,7 +29,6 @@ export default function ReadingCard({question,spread,pickedCards,readingText,loc
       </div>)}
     </div>
     {readingText && <p style={{fontSize:15,lineHeight:1.9,whiteSpace:'pre-wrap',overflowWrap:'anywhere',borderTop:'1px solid #333',paddingTop:20}}>{readingText}</p>}
-    {children}
     <footer style={{marginTop:24,fontSize:10,letterSpacing:2,color:'#999'}}>{zh?'留一点时间，给自己 · 供自我探索':'A moment for yourself · For reflection'}</footer>
   </article>;
 }
