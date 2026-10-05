@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "frankie-tarot",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Draw and explore a bilingual tarot deck with an interactive card table and reflective conversation.",
   "author": {
     "name": "Songhai Fan"
@@ -24,7 +24,9 @@
         "defaultPrompt": [
           "Open F.Tarot so I can choose a spread and draw my cards.",
           "打开 F.Tarot，我想选一个牌阵，自己抽牌。"
-        ]
+        ],
+        "logo": "./assets/tarot-icon.svg",
+        "composerIcon": "./assets/tarot-icon.svg"
       }
     }
   }

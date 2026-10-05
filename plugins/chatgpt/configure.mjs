@@ -23,6 +23,8 @@ await writeFile(join(target, "mcp.json"), JSON.stringify({
 }, null, 2) + "\n");
 if (appId) await writeFile(join(target, ".app.json"), JSON.stringify({ apps: { "frankie-tarot": { id: appId } } }, null, 2) + "\n");
 else await rm(join(target, ".app.json"), { force: true });
+await mkdir(join(target, "assets"), { recursive: true });
+await copyFile(join(directory, "assets/tarot-icon.svg"), join(target, "assets/tarot-icon.svg"));
 await copyFile(join(directory, "README.md"), join(target, "README.md"));
 console.log(`Generated the plugin package in ${target}`);
 if (!appId) console.log("No registered ChatGPT app ID supplied. Register the endpoint in developer mode, then rerun with --app-id.");
