@@ -45,28 +45,53 @@ after(async () => {
 
 test("MCP discovery exposes the data tools, empty-argument launcher and both entrypoints", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((tool) => tool.name).sort(), ["draw_tarot_cards", "list_tarot_spreads", "open_tarot"]);
+  assert.deepEqual(tools.map((tool) => tool.name).sort(), ["draw_tarot_cards", "list_tarot_spreads", "open_tarot", "reveal_tarot_cards", "show_tarot_result"]);
   for (const tool of tools) { assert.ok(tool.inputSchema); assert.ok(tool.outputSchema); assert.equal(tool.annotations?.readOnlyHint, true); }
   const launcher = tools.find((tool) => tool.name === "open_tarot")!;
   assert.equal((launcher._meta?.ui as any).resourceUri, UI_URI);
   assert.deepEqual((launcher._meta?.["openai/ui"] as any).entrypoints, [{ type: "global" }, { type: "thread" }]);
-  assert.ok(!tools.find((tool) => tool.name === "draw_tarot_cards")?._meta?.ui);
+  assert.equal((tools.find((tool) => tool.name === "draw_tarot_cards")?._meta?.ui as any).resourceUri, UI_URI);
   const result = await client.callTool({ name: "open_tarot", arguments: {} });
   const payload = payloadSchema.parse(result.structuredContent);
   assert.equal(payload.spreads.length, 11);
   assert.equal(payload.reading, undefined);
 });
 
-test("real HTTP draw → render preserves all cards and replay token", async () => {
-  const drawn = CallToolResultSchema.parse(await client.callTool({ name: "draw_tarot_cards", arguments: {
-    question: "What should I reflect on this week?", spread: "THREE", locale: "en", reversedProbability: 1,
-  } }));
-  assert.notEqual(drawn.isError, true);
-  const payload = payloadSchema.parse(drawn.structuredContent);
-  assert.equal(payload.reading!.cards.length, 3);
-  assert.ok(payload.reading!.cards.every((card) => card.isReversed));
-  const rendered = await client.callTool({ name: "open_tarot", arguments: { readingToken: payload.readingToken } });
-  assert.deepEqual(payloadSchema.parse(rendered.structuredContent), payload);
+test("HTTP stages conceal cards, preserve identities and gate result until every flip", async () => {
+  const setup = await client.callTool({name:"open_tarot",arguments:{question:"This week?",spread:"THREE"}});
+  assert.equal((setup.structuredContent as any).stage,"input");
+  assert.equal((setup.structuredContent as any).question,"This week?");
+  assert.deepEqual((setup.structuredContent as any).cards,[]);
+  const drawn = CallToolResultSchema.parse(await client.callTool({name:"draw_tarot_cards",arguments:{question:"This week?",spread:"THREE",locale:"en",reversedProbability:1}}));
+  const state = drawn.structuredContent as any;
+  const privateDraw = (drawn._meta as any).tarot;
+  assert.equal(state.stage,"picking"); assert.equal(state.canInterpret,false);
+  assert.deepEqual(state.cards,[]); assert.equal(state.readingToken,undefined);
+  assert.ok(privateDraw.reading.cards.every((c:any)=>c.isReversed));
+  assert.ok(!JSON.stringify([state,drawn.content]).includes(privateDraw.reading.cards[0].name));
+  let token=state.sessionToken;
+  const early = await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,interpretation:"Premature interpretation"}});
+  assert.equal(early.isError,true);
+  const partial = await client.callTool({name:"reveal_tarot_cards",arguments:{sessionToken:token,positions:[2]}});
+  token=(partial.structuredContent as any).sessionToken;
+  assert.deepEqual((partial.structuredContent as any).cards.map((c:any)=>c.position),[2]);
+  assert.equal((partial.structuredContent as any).canInterpret,false);
+  const restored=await client.callTool({name:"open_tarot",arguments:{sessionToken:token}});
+  assert.deepEqual((restored.structuredContent as any).revealed,[2]);
+  assert.equal(((restored._meta as any).tarot.reading.id),privateDraw.reading.id);
+  assert.equal((await client.callTool({name:"reveal_tarot_cards",arguments:{sessionToken:token,positions:[4]}})).isError,true);
+  const ready=await client.callTool({name:"reveal_tarot_cards",arguments:{sessionToken:token,positions:[1,3]}});
+  token=(ready.structuredContent as any).sessionToken;
+  assert.equal((ready.structuredContent as any).canInterpret,true);
+  const result=await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,interpretation:"Reflection, not prediction."}});
+  assert.deepEqual((result.structuredContent as any).cards,privateDraw.reading.cards);
+  assert.equal((result.structuredContent as any).view,"result");
+  assert.equal((result.structuredContent as any).interpretation,"Reflection, not prediction.");
+  assert.equal((await client.callTool({name:"show_tarot_result",arguments:{sessionToken:state.sessionToken}})).isError,true,'old concealed snapshot must not become interpretable');
+  const {tools}=await client.listTools();
+  const uri=(tools.find(t=>t.name==='show_tarot_result')!._meta!.ui as any).resourceUri;
+  const resource=(await client.readResource({uri})).contents[0];
+  assert.equal((resource._meta?.['openai/ui'] as any).preferredDisplayMode,'inline');
 });
 
 test("protocol input validation rejects unknown spread and attempted custom cards", async () => {

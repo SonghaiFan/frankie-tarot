@@ -21,7 +21,7 @@ interface ReadingSectionProps {
   onReplayAudio: () => void;
   onDownload: () => void;
   onReset: () => void;
-  onInterpret?: () => Promise<void>;
+  onInterpret?: (reflection?: string) => Promise<void>;
 }
 
 const ReadingSection: React.FC<ReadingSectionProps> = ({
@@ -44,6 +44,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   const locale = i18n.language as Locale;
   const displayedCards = pickedCards;
 
+  const [reflection, setReflection] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -52,7 +53,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
     if (onInterpret) {
       if (isSending || isCopied) return;
       setIsSending(true); setSendError("");
-      try { await onInterpret(); setIsCopied(true); }
+      try { await onInterpret(reflection); setIsCopied(true); }
       catch { setSendError(locale === "zh-CN" ? "发送失败，请重试。你的牌阵已保留。" : "Could not send. Your cards are preserved; please retry."); }
       finally { setIsSending(false); }
       return;
@@ -180,6 +181,10 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 </p>
               </div>
 
+              {onInterpret && <label className="w-full max-w-xl mb-6 text-sm text-neutral-400">
+                {locale === 'zh-CN' ? '这些牌让你想到什么？（选填）' : 'What do these cards bring to mind? (optional)'}
+                <textarea value={reflection} onChange={e=>setReflection(e.target.value)} maxLength={2000} rows={2} className="mt-2 w-full border border-white/20 bg-black/50 p-3 text-neutral-200" />
+              </label>}
               {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
               <div className="shrink-0 flex flex-col items-center w-full">
                 <div className="flex items-center justify-center gap-4 mb-8">

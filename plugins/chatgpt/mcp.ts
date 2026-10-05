@@ -3,28 +3,17 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { OpenAIUiToolMetadata } from "@openai/mcp-extensions/server";
 import { z } from "zod";
-import { drawInputSchema, localeSchema, payloadSchema, spreadSchema, type TarotEngine } from "./engine";
-import type { TarotPayload } from "./shared";
+import { drawInputSchema, localeSchema, SPREAD_IDS, spreadSchema, type TarotEngine } from "./engine";
+import { flowSchema, restoreView, viewResult } from "./flow";
+import type { TarotView } from "./shared";
 
 /** Content-addressed resources prevent hosts from reusing an older UI after deploy. */
 export function getUiUri(html: string) {
   return `ui://frankie-tarot/app-${createHash("sha256").update(html).digest("hex").slice(0,20)}.html`;
 }
-export const VERSION = "0.2.1";
+export const VERSION = "0.3.0";
 const noauth = { securitySchemes: [{ type: "noauth" }] };
 const annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
-
-function result(payload: TarotPayload) {
-  const reading = payload.reading;
-  const text = reading
-    ? [
-      `F.Tarot reading ${reading.id}; ${reading.spread.name}.`,
-      ...reading.cards.map((card) => `${card.position}. ${card.positionLabel}: ${card.name} (${card.isReversed ? "reversed" : "upright"}).`),
-      "These exact cards are the authoritative draw. Preserve their identities, positions and orientations in follow-ups. Let the user inspect the cards first; provide interpretation when requested. Use the supplied meanings as reference for reflective exploration.",
-    ].join("\n")
-    : "F.Tarot is ready. The user can choose a spread, draw, and reveal the cards in the table. No cards have been drawn yet.";
-  return { structuredContent: payload as unknown as Record<string, unknown>, content: [{ type: "text" as const, text }] };
-}
 
 export function createMcpServer(options: {
   engine: TarotEngine;
@@ -33,8 +22,9 @@ export function createMcpServer(options: {
   uiDomain?: string;
 }) {
   const uiUri = getUiUri(options.widgetHtml);
+  const resultUri = uiUri.replace("/app-", "/result-");
   const server = new McpServer({ name: "frankie-tarot", version: VERSION }, {
-    instructions: "F.Tarot is an interactive bilingual tarot deck for reflection. Use list_tarot_spreads to inspect real spreads. Use draw_tarot_cards only for an explicit new draw, then open_tarot with the returned readingToken to show the same cards. Calling open_tarot with no token opens an empty table. Never invent card results or silently redraw on a follow-up. Interpret the existing cards in context when the user requests interpretation. Tarot is symbolic reflection; do not present it as a factual prediction or a substitute for the user's judgment.",
+    instructions: "Frank Tarot shares one original app and a staged conversation. A question such as @Frank Tarot what should I consider this week must call open_tarot(question), not draw or interpret. The user chooses a spread and selects cards in the table. draw_tarot_cards is only for an explicit draw request. It opens PICKING and conceals all cards from the model. reveal_tarot_cards is only for an explicit user request to turn specified cards; otherwise wait for flips in the app. Never interpret before canInterpret=true AND the user requests interpretation. On that request call show_tarot_result with the latest sessionToken and your interpretation so the same shared result appears in chat. Use the newest sessionToken from app context for all follow-ups; never invent cards, silently redraw, or reset progress. Hidden cards cannot be inferred. Tarot supports reflection, not factual prediction.",
   });
 
   server.registerTool("list_tarot_spreads", {
@@ -49,42 +39,75 @@ export function createMcpServer(options: {
       text: payload.spreads.map((spread) => `${spread.id}: ${spread.name} (${spread.cardCount})`).join("\n") }] };
   });
 
-  server.registerTool("draw_tarot_cards", {
-    title: "Draw F.Tarot cards",
-    description: "Randomly draw a new tarot spread using the canonical deck. Only call when the user asks for a new draw. Returns exact card IDs, positions, orientations, meanings and a signed readingToken. Show it with open_tarot(readingToken); never redraw merely to render or answer a follow-up. No model API is called and no reading history is stored.",
-    inputSchema: drawInputSchema, outputSchema: payloadSchema,
-    annotations: { ...annotations, idempotentHint: false },
-    _meta: { ...noauth, "openai/toolInvocation/invoking": "Drawing your cards…", "openai/toolInvocation/invoked": "Cards drawn" },
-  }, async (input) => result(options.engine.draw(input)));
+  const tableMeta = { ...noauth, ui: {resourceUri: uiUri, visibility: ["model", "app"] as ("model" | "app")[]} };
+  const tokenSchema = z.string().max(24_000);
+  const guarded = async (action: () => TarotView) => {
+    try { return viewResult(action()); }
+    catch (error) { return {isError:true, content:[{type:"text" as const,text:(error as Error).message}]}; }
+  };
+  registerAppTool(server, "draw_tarot_cards", {
+    title: "Select your tarot cards",
+    description: "Start a NEW draw only when explicitly requested. Opens the original card selection stage. Cards stay hidden from the model until flipped. A general question should use open_tarot(question) first. Never redraw for follow-ups.",
+    inputSchema: drawInputSchema, outputSchema: flowSchema,
+    annotations: {...annotations, idempotentHint:false}, _meta: tableMeta,
+  }, async input => guarded(() => {
+    const drawn = options.engine.draw(input);
+    return {...drawn, sessionToken: options.engine.sealSession({readingToken:drawn.readingToken!, revealed:[]}),
+      stage:"picking", revealed:[], view:"table"};
+  }));
 
   registerAppTool(server, "open_tarot", {
     title: "Open F.Tarot",
-    description: "Open the interactive F.Tarot table. Pass the exact readingToken from draw_tarot_cards to display an existing draw; accepts empty arguments to open the table from the sidebar. This tool never draws cards. Optional locale changes the display language while retaining the same cards.",
-    inputSchema: z.object({ readingToken: z.string().max(24_000).optional(), locale: localeSchema.optional() }).strict(),
-    outputSchema: payloadSchema,
-    annotations: { ...annotations, idempotentHint: true },
-    _meta: {
-      ...noauth,
-      ui: { resourceUri: uiUri, visibility: ["model", "app"] },
-      "openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] } satisfies OpenAIUiToolMetadata,
-      "openai/toolInvocation/invoking": "Opening your table…",
-      "openai/toolInvocation/invoked": "F.Tarot is open",
-    },
-  }, async ({ readingToken, locale }) => {
-    try { return result(readingToken ? options.engine.restore(readingToken, locale) : options.engine.setup(locale)); }
-    catch (error) { return { isError: true, content: [{ type: "text" as const, text: (error as Error).message }] }; }
-  });
+    description: "Open the original app. Pass the user's question and optional spread to enter INPUT with that question already filled; no cards are drawn. Empty arguments open the welcome screen. With sessionToken restore the same draw and its reveal progress. Never interpret concealed cards.",
+    inputSchema: z.object({sessionToken:tokenSchema.optional(), readingToken:tokenSchema.optional(),
+      question:z.string().max(2000).optional(), spread:z.enum(SPREAD_IDS).optional(), locale:localeSchema.optional()}).strict(),
+    outputSchema: flowSchema, annotations:{...annotations,idempotentHint:true},
+    _meta:{...tableMeta,"openai/ui":{entrypoints:[{type:"global"},{type:"thread"}]} satisfies OpenAIUiToolMetadata},
+  }, async ({sessionToken,readingToken,question,spread,locale}) => guarded(() => {
+    if (sessionToken) return restoreView(options.engine,sessionToken,locale);
+    if (readingToken) {
+      const restored = options.engine.restore(readingToken,locale);
+      return {...restored,sessionToken:options.engine.sealSession({readingToken:restored.readingToken!,revealed:[]}),revealed:[],stage:"reveal",view:"table"};
+    }
+    return {...options.engine.setup(locale),question,spread:spread ?? "THREE",revealed:[],stage:question !== undefined ? "input" : "intro",view:"table"};
+  }));
 
-  registerAppResource(server, "F.Tarot card table", uiUri, {}, async () => ({
+  registerAppTool(server, "reveal_tarot_cards", {
+    title:"Reveal tarot cards",
+    description:"Turn over specified 1-based positions in an EXISTING draw, only when the user explicitly requests a flip (or taps cards in the app). Preserve previously revealed cards. This updates the table. Do not call just to obtain hidden meanings. After all flips, wait for the user's interpretation request.",
+    inputSchema:z.object({sessionToken:tokenSchema,positions:z.array(z.number().int().min(1).max(15)).min(1).max(15)}).strict(),
+    outputSchema:flowSchema,annotations:{...annotations,idempotentHint:true},_meta:tableMeta,
+  }, async ({sessionToken,positions}) => guarded(() => {
+    const view = restoreView(options.engine,sessionToken);
+    if (positions.some(p => p > view.reading!.cards.length)) throw new Error("Position outside this spread.");
+    view.revealed = [...new Set([...view.revealed,...positions])].sort((a,b)=>a-b);
+    view.sessionToken = options.engine.sealSession({readingToken:view.readingToken!,revealed:view.revealed});
+    view.stage = view.revealed.length === view.reading!.cards.length ? "ready" : "reveal";
+    return view;
+  }));
+
+  registerAppTool(server, "show_tarot_result", {
+    title:"Your tarot reading",
+    description:"Return the shared reading/share card INLINE in chat, after ALL cards are revealed and the user asks for interpretation or a result. Provide interpretation text grounded in the revealed cards. Reuses the existing draw. Fails while any card is hidden. The card can reopen the table, save an image, or ask a follow-up.",
+    inputSchema:z.object({sessionToken:tokenSchema,interpretation:z.string().max(12000).optional(),cardFaceStyle:z.enum(["original","redraw","dreamy"]).optional()}).strict(),
+    outputSchema:flowSchema,annotations:{...annotations,idempotentHint:true},
+    _meta:{...noauth,ui:{resourceUri:resultUri,visibility:["model","app"]}},
+  }, async ({sessionToken,interpretation,cardFaceStyle}) => guarded(() => {
+    const view = restoreView(options.engine,sessionToken);
+    if (view.revealed.length !== view.reading!.cards.length) throw new Error("Cards remain face down. Do not interpret yet. Wait for the user to reveal all cards.");
+    return {...view,stage:"result",view:"result",interpretation,cardFaceStyle};
+  }));
+
+  for (const [uri, inline] of [[uiUri, false], [resultUri, true]] as const) registerAppResource(server, inline ? "F.Tarot reading card" : "F.Tarot card table", uri, {}, async () => ({
     contents: [{
-      uri: uiUri, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
+      uri, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
       _meta: {
         ui: {
           prefersBorder: false,
           csp: { connectDomains: [new URL(options.publicBaseUrl).origin], resourceDomains: [new URL(options.publicBaseUrl).origin, "https://fonts.googleapis.com", "https://fonts.gstatic.com"] },
           ...(options.uiDomain ? { domain: options.uiDomain } : {}),
         },
-        "openai/ui": { preferredDisplayMode: "fullscreen", availableDisplayModes: ["fullscreen"] },
+        "openai/ui": { preferredDisplayMode: inline ? "inline" : "fullscreen", availableDisplayModes: inline ? ["inline", "fullscreen"] : ["fullscreen"] },
         "openai/widgetDescription": "A bilingual tarot card table with server-drawn cards, deliberate reveal, reference meanings, and an explicit request for conversational interpretation.",
       },
     }],

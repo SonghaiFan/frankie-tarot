@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import groundTruth from "../../src/features/tarot/data/ground-truth.json";
 import type { Locale, TarotPayload, TarotReading, TarotSpread } from "./shared";
@@ -130,7 +130,25 @@ export function createTarotEngine(options: {
     return { locale: snapshot.locale, spreads, reading, readingToken: encode(snapshot) };
   };
 
+  const sessionKey = createHash("sha256").update(`tarot-session:${secret}`).digest();
   return {
+    // Opaque authenticated envelope: model-visible handles cannot expose hidden cards.
+    sealSession(value: { readingToken: string; revealed: number[] }) {
+      const iv = randomBytes(12);
+      const cipher = createCipheriv("aes-256-gcm", sessionKey, iv);
+      const body = Buffer.concat([cipher.update(JSON.stringify(value)), cipher.final()]);
+      return Buffer.concat([iv, cipher.getAuthTag(), body]).toString("base64url");
+    },
+    openSession(token: string): { readingToken: string; revealed: number[] } {
+      try {
+        if (token.length > 24000) throw new Error();
+        const bytes = Buffer.from(token, "base64url");
+        const decipher = createDecipheriv("aes-256-gcm", sessionKey, bytes.subarray(0, 12));
+        decipher.setAuthTag(bytes.subarray(12, 28));
+        const json = Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString();
+        return z.object({readingToken: z.string(), revealed: z.array(z.number().int().positive()).max(15)}).strict().parse(JSON.parse(json));
+      } catch { throw new Error("Invalid session. Reopen the original reading; do not draw replacement cards."); }
+    },
     setup(locale: Locale = "zh-CN"): TarotPayload {
       return { locale, spreads: listSpreads(locale) };
     },

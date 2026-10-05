@@ -37,3 +37,14 @@ export interface TarotPayload {
   reading?: TarotReading;
   readingToken?: string;
 }
+
+export interface TarotView extends TarotPayload {
+  sessionToken?: string;
+  stage: "intro" | "input" | "picking" | "reveal" | "ready" | "result";
+  question?: string;
+  spread?: string;
+  revealed: number[];
+  interpretation?: string;
+  view: "table" | "result";
+  cardFaceStyle?: "original" | "redraw" | "dreamy";
+}

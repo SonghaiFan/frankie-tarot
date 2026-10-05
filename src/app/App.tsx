@@ -50,7 +50,7 @@ import {
   findPackByCombination,
 } from "@/features/tarot/constants/cardPacks";
 
-const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading }> = ({ host, initialReading }) => {
+const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialSetup?: {question: string; spread: SpreadType; revision: number} }> = ({ host, initialReading, initialSetup }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
   const aiEnabled = !host && hasAiKey();
@@ -169,14 +169,36 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading }> = ({ h
     ritualIdRef.current++;
     setQuestion(initialReading.question);
     setSpread(initialReading.spread);
-    setPickedCards(initialReading.cards);
-    setRevealedCardIds(new Set());
+    const picking = initialReading.stage === 'picking';
+    setPickedCards(picking ? [] : initialReading.cards);
+    predeterminedCardsRef.current = initialReading.cards;
+    predeterminedCardsIndexRef.current = 0;
+    hiddenCardIdsRef.current.clear();
+    setRevealedCardIds(new Set(initialReading.revealedCardIds ?? []));
     setSelectedCardId(null);
-    setReadingText("");
+    setReadingText(initialReading.interpretation ?? "");
     setIsThinking(false);
     setHostError("");
-    setGameState(GameState.READING);
-  }, [initialReading?.id]);
+    setGameState(initialReading.stage === 'picking' ? GameState.PICKING : GameState.READING);
+  }, [initialReading?.id, initialReading?.revealedCardIds?.join(','), initialReading?.interpretation]);
+
+  useEffect(() => {
+    if (!initialSetup) return;
+    ritualIdRef.current++;
+    setQuestion(initialSetup.question); setSpread(initialSetup.spread);
+    setPickedCards([]); setRevealedCardIds(new Set()); setReadingText("");
+    setSelectedCardId(null); setIsThinking(false); setGameState(GameState.INPUT);
+  }, [initialSetup?.revision]);
+
+  useEffect(() => {
+    if (!host?.reportState) return;
+    const timer = setTimeout(() => {
+      void host.reportState!({stage:gameState,question,spread,revealedCardIds:[...revealedCardIds],pickedCount:pickedCards.length,cardFaceStyle})
+        .then(()=>setHostError(""))
+        .catch(()=>setHostError(locale === 'zh-CN' ? '翻牌进度未同步，请再次点击解读重试。' : 'Progress could not sync. Use Interpret to retry.'));
+    }, 150);
+    return ()=>clearTimeout(timer);
+  }, [host,gameState,question,spread,pickedCards.length,[...revealedCardIds].join(','),cardFaceStyle]);
 
   useEffect(() => {
     if (!isThinking) return;
@@ -431,7 +453,8 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading }> = ({ h
     spread!,
     pickedCards,
     readingText,
-    locale
+    locale,
+    cardFaceStyle
   );
 
   const toggleLibrary = () => {
@@ -515,7 +538,7 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading }> = ({ h
             onReplayAudio={replayAudio}
             onDownload={downloadReading}
             onReset={resetRitual}
-            onInterpret={host ? () => host.interpret(locale) : undefined}
+            onInterpret={host ? (reflection) => host.interpret(locale, reflection) : undefined}
           />
         );
       default:
@@ -574,7 +597,7 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading }> = ({ h
         }`}
       >
         <HeaderBar
-          gameState={gameState}
+          gameState={gameState === GameState.READING && revealedCardIds.size < pickedCards.length ? GameState.REVEAL : gameState}
           isAudioPlaying={isAudioPlaying}
           pickingCount={spread ? SPREADS[spread].cardCount : 0}
           pickedCount={pickedCards.length}
