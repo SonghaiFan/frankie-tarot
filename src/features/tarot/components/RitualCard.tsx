@@ -118,7 +118,10 @@ const RitualCard: React.FC<RitualCardProps> = ({
   const hasImageError = failedImageUrl === activeCardImageUrl;
   const imageRef = React.useCallback((image: HTMLImageElement | null) => {
     if (image?.complete) {
-      if (image.naturalWidth > 0) setLoadedImageUrl(activeCardImageUrl);
+      if (image.naturalWidth > 0) {
+        setLoadedImageUrl(activeCardImageUrl);
+        setFailedImageUrl(undefined);
+      }
       else setFailedImageUrl(activeCardImageUrl);
     }
   }, [activeCardImageUrl]);
@@ -696,7 +699,10 @@ const RitualCard: React.FC<RitualCardProps> = ({
                   alt={card.nameEn}
                   loading={isRevealed ? "eager" : "lazy"}
                   decoding="async"
-                  onLoad={() => setLoadedImageUrl(activeCardImageUrl)}
+                  onLoad={() => {
+                    setLoadedImageUrl(activeCardImageUrl);
+                    setFailedImageUrl(undefined);
+                  }}
                   onError={() => setFailedImageUrl(activeCardImageUrl)}
                   className={`absolute object-cover transition-[filter,opacity] duration-500 ${
                     isCurrentFaceOriginal

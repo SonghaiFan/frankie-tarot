@@ -37,14 +37,15 @@ function originalReading(value: TarotView): HostedReading {
 async function syncContext() {
   if(!current) return;
   const reading=current.reading;
+  const stage = current.view === 'table' && uiState?.stage === 'READING'
+    ? (current.revealed.length === reading?.cards.length ? 'ready' : 'reveal')
+    : current.stage;
   // Hidden draw and legacy readingToken stay inside the app, never in model context.
   await bridge.updateModelContext({structuredContent:{
     sessionToken:current.sessionToken, readingId:reading?.id, flowId:current.flowId,
-    nextAction:nextAction(current),
+    nextAction:nextAction({...current,stage}),
     requestedAction,
-    stage:current.stage === "ready" || current.stage === "reveal" ? current.stage
-      : uiState?.stage === "READING" ? (current.revealed.length === (reading?.cards.length ?? -1) ? "ready" : "reveal")
-      : uiState?.stage === "PICKING" ? "picking" : current.stage,
+    stage,
     question:reading?.question ?? uiState?.question ?? current.question,
     spread:reading?.spread ?? uiState?.spread ?? current.spread,
     pickedCount:uiState?.pickedCount, cardFaceStyle:uiState?.cardFaceStyle ?? current.cardFaceStyle, revealed:current.revealed,
