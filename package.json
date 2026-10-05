@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:vercel": "node scripts/vercel-build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "cli": "tsx scripts/cli.ts",
@@ -15,6 +16,7 @@
     "plugin:start": "node plugins/chatgpt/dist/server.mjs",
     "plugin:dev": "npm run plugin:build && npm run plugin:start",
     "plugin:test": "node --import tsx --test plugins/chatgpt/*.test.ts",
+    "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts",
     "plugin:configure": "node plugins/chatgpt/configure.mjs",
     "build:site": "node scripts/site/build.mjs"
   },

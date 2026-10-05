@@ -7,7 +7,7 @@ This is a host adapter inside the original Frank Tarot repository, not a second 
 - Canonical card/spread data: `src/features/tarot/data/ground-truth.json`.
 - `ui/index.tsx` connects MCP to the original App through `src/host/tarotHost.ts`.
 - UI resource URIs include a hash of the built HTML so a host cannot reuse a previous UI under the same identifier. The preview discovers the URI from tool metadata.
-- `mcp.ts` declares the tools and UI resource, shared by the local server and deployed Worker.
+- `mcp.ts` declares the tools and UI resource, shared by local and Vercel handlers.
 - `engine.ts` adds server-side secure draws and signed recovery tokens over canonical data.
 
 The ChatGPT host supplies interpretation in the current conversation. The original question, shuffle, manual selection, reveal, card library, three artwork styles, audio and language controls remain the original components. Provider API keys are never included in the widget. The plugin requests fullscreen when supported. Browser storage is best-effort because sandboxed hosts may disallow it.
@@ -27,22 +27,22 @@ npm run plugin:test
 npm run build
 ```
 
-## One source, two build targets
+## One source, website and ChatGPT endpoint
 
-`npm run build` builds the original website. `PUBLIC_BASE_URL=https://frank-tarot.frankf.chatgpt.site npm run build:site` builds that same website plus its MCP Worker. No second UI is maintained.
+`npm run build:vercel` builds the original website, builds the ChatGPT widget from the same `src/` components, and places its card artwork under the website's `/assets/` path. The build defaults the widget's static media URLs to `https://tarot.songhai.site`; `PUBLIC_BASE_URL` can override that for another deployment. The existing Vercel project serves both the website and the MCP endpoint at `/mcp`; `vercel.json` rewrites that path to `api/mcp.ts` before the website fallback. No second website or UI is maintained.
 
-The Site build uses ffmpeg to produce a compact mono delivery copy of the original background soundtrack; the original master stays in this repository.
+Set `TAROT_SIGNING_KEY` (at least 32 characters) in the Vercel Production environment so signed readings survive serverless cold starts and deploys. Keep it in Vercel's secret environment-variable store; never commit it. The MCP endpoint derives its public asset origin from the incoming request, so production cards load from the same domain as the site.
 
-The existing Site is bound by the root `.openai/hosting.json`. Keep its project and plugin IDs. Configure `PUBLIC_BASE_URL` and secret `TAROT_SIGNING_KEY` in the hosting environment. Do not commit secrets.
+The previous OpenAI Sites export and Worker scripts remain legacy tooling; they are not part of the Vercel production build. The root `.openai/hosting.json` still describes the old Sites app and does not control the Vercel deployment.
 
-For Sites publication, `node scripts/site/export.mjs <existing-sites-checkout>` produces a generated deployment mirror of this repository and its build output. Edit only this repository; never edit the generated mirror. The Sites source helper then saves/pushes/packages that exact generated snapshot. It is hosting transport, not a second maintained project. The previous standalone Sites UI is replaced.
+For local integration testing, `node --import tsx --test tests/vercel-mcp.test.ts` exercises the Vercel web handler's preflight, origin policy, MCP discovery, staged draw, and same-origin card URLs. `npm run plugin:dev` remains the browser preview against the local Node MCP server.
 
-After deployment, verify the MCP tools and the embedded UI separately: an HTTP or tool result alone does not prove the ChatGPT UI rendered correctly.
+After deploying, verify the website, `/mcp`, and the embedded UI separately: an HTTP or tool result alone does not prove that ChatGPT rendered the resource correctly.
 
 ## Refresh the installed ChatGPT app after publication
 
-A successful Site deploy does not prove that an installed development app has refreshed its cached tool metadata. In ChatGPT, open Frank Tarot → Manage → Refresh tools, wait for completion, then reopen `open_tarot`. Verify the original dark starfield UI in ChatGPT itself, not only the website or local preview. Keep the same app and plugin; do not create another one.
+A successful Vercel deploy does not prove that a ChatGPT development app has refreshed its cached tool metadata. After its MCP endpoint is set to `https://tarot.songhai.site/mcp`, refresh tools in ChatGPT and reopen `open_tarot`. Verify the original dark starfield UI in ChatGPT itself, not only the website or local preview.
 
 ## Public website and shared assets
 
-The owner chose public Site access so the ChatGPT iframe can load this same site's `images/` and `audio/` without a website login cookie. UI, deck data and assets all come from the same project and publication. The widget loads through `/media/images/` and `/media/audio/` on this same origin; the Worker reads the same asset binding and adds CORS headers. No separate GitHub asset origin or pinned asset release is needed. After deployment, verify anonymous image/audio HTTP responses and the real ChatGPT iframe, then refresh its tools when UI resource metadata changes.
+The public website and ChatGPT widget use the same Vercel project, canonical deck data, and card-art files. Card images load from same-origin `/assets/` URLs, so the widget needs no separately hosted asset site or pinned GitHub release. Verify anonymous card-image responses and the real ChatGPT iframe after deployment.
