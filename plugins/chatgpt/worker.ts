@@ -1,7 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer, VERSION } from "./mcp";
 import { createTarotEngine } from "./engine";
-import assetSource from "./asset-source.json";
 import widgetHtml from "./dist/widget.html";
 interface Env {
   TAROT_SIGNING_KEY: string;
@@ -24,7 +23,7 @@ export default {
     if (request.method !== "POST") return new Response("Use POST",{status:405,headers:{Allow:"POST"}});
     if (!env.TAROT_SIGNING_KEY || env.TAROT_SIGNING_KEY.length < 32) return new Response("Signing key is not configured",{status:503});
     const publicBaseUrl = env.PUBLIC_BASE_URL || url.origin;
-    const server=createMcpServer({engine:createTarotEngine({publicBaseUrl,assetBaseUrl:assetSource.baseUrl,signingKey:env.TAROT_SIGNING_KEY}),widgetHtml,publicBaseUrl,assetBaseUrl:assetSource.baseUrl});
+    const server=createMcpServer({engine:createTarotEngine({publicBaseUrl,signingKey:env.TAROT_SIGNING_KEY}),widgetHtml,publicBaseUrl});
     const transport=new WebStandardStreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true,maxRequestBodySize:128*1024});
     try {
       await server.connect(transport);

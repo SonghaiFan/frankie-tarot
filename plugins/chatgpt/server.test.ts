@@ -24,7 +24,7 @@ before(async () => {
   directory = await mkdtemp(join(tmpdir(), "tarot-mcp-test-"));
   await mkdir(join(directory, "redraw"));
   await copyFile(join(root, "public/images/cards/maj00.webp"), join(directory, "redraw/maj00.webp"));
-  server = createTarotHttpServer({ engine, publicBaseUrl: "http://127.0.0.1:8787", assetDirectory: directory, assetBaseUrl: "https://raw.githubusercontent.com/SonghaiFan/frankie-tarot/pinned/public/",
+  server = createTarotHttpServer({ engine, publicBaseUrl: "http://127.0.0.1:8787", assetDirectory: directory,
     widgetHtml });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
@@ -88,7 +88,7 @@ test("UI resource uses MCP Apps MIME, exact image CSP and no generated reading H
   assert.equal(resource.mimeType, "text/html;profile=mcp-app");
   assert.equal(resource.uri, UI_URI);
   assert.equal((resource._meta?.ui as any).prefersBorder, false);
-  assert.deepEqual((resource._meta?.ui as any).csp, { connectDomains: ["https://raw.githubusercontent.com"], resourceDomains: ["https://raw.githubusercontent.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"] });
+  assert.deepEqual((resource._meta?.ui as any).csp, { connectDomains: ["http://127.0.0.1:8787"], resourceDomains: ["http://127.0.0.1:8787", "https://fonts.googleapis.com", "https://fonts.gstatic.com"] });
   assert.deepEqual((resource._meta?.["openai/ui"] as any).availableDisplayModes, ["fullscreen"]);
   assert.match((resource as any).text, /F.Tarot test resource/);
 });

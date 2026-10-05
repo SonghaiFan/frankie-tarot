@@ -90,7 +90,6 @@ export function getPoolIds(pool = "FULL"): string[] {
 
 export function createTarotEngine(options: {
   publicBaseUrl: string;
-  assetBaseUrl?: string;
   signingKey?: string;
   now?: () => number;
 }) {
@@ -120,8 +119,8 @@ export function createTarotEngine(options: {
           nameCn: card.name["zh-CN"], position: index + 1,
           positionLabel: spread.labels[index] || String(index + 1),
           isReversed: selection.reversed,
-          imageUrl: options.assetBaseUrl ? `${options.assetBaseUrl}images/cards/${key}.webp` : `${publicOrigin}/assets/redraw/${key}.webp`,
-          originalImageUrl: options.assetBaseUrl ? `${options.assetBaseUrl}images/cards_rws_original/${key}.webp` : `${publicOrigin}/assets/original/${key}.webp`,
+          imageUrl: `${publicOrigin}/assets/redraw/${key}.webp`,
+          originalImageUrl: `${publicOrigin}/assets/original/${key}.webp`,
           keywords: [...card.keywords[snapshot.locale]],
           meaning: card.meanings[selection.reversed ? "reversed" : "upright"][snapshot.locale],
           description: card.description[snapshot.locale],

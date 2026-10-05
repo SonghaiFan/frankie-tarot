@@ -2,7 +2,7 @@ import { build as viteBuild } from "vite";
 import { build as bundle } from "esbuild";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { cp, mkdir, readdir, writeFile, rm, readFile } from "node:fs/promises";
+import { cp, mkdir, readdir, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -11,11 +11,8 @@ process.chdir(root);
 const origin=process.env.PUBLIC_BASE_URL;
 if(!origin) throw new Error("Set PUBLIC_BASE_URL to the existing Site origin");
 await rm(join(root,"dist"),{recursive:true,force:true});
-const assetSource=JSON.parse(await readFile("plugins/chatgpt/asset-source.json","utf8"));
-// Publishing cannot silently point at an older set of artwork.
-execFileSync("git",["diff","--exit-code",assetSource.commit,"--","public"],{stdio:"pipe"});
 // Both targets import the same original src/app/App.tsx and canonical data.
-execFileSync(process.execPath,["plugins/chatgpt/build.mjs"],{stdio:"inherit",env:{...process.env,TAROT_ASSET_BASE_URL:assetSource.baseUrl}});
+execFileSync(process.execPath,["plugins/chatgpt/build.mjs"],{stdio:"inherit",env:process.env});
 await bundle({entryPoints:["scripts/site/sites-vite-plugin.ts"],bundle:true,platform:"node",format:"esm",packages:"external",outfile:"node_modules/.cache/tarot-sites-plugin.mjs"});
 const {sites}=await import(new URL("../../node_modules/.cache/tarot-sites-plugin.mjs",import.meta.url));
 await viteBuild({configFile:false,root,base:"/",publicDir:false,plugins:[react(),tailwindcss(),sites({mockAuth:false})],
@@ -34,8 +31,9 @@ await copyAssets(join(root,"public"),join(root,"dist/client"));
 // Keep the original 30-minute soundtrack; emit a compact web delivery file.
 execFileSync("ffmpeg",["-v","error","-y","-i","public/audio/background.mp3","-ac","1","-b:a","32k","dist/client/audio/background.mp3"],{stdio:"inherit"});
 await cp("plugins/chatgpt/dist/assets","dist/client/assets",{recursive:true});
+await writeFile("dist/client/_headers", "/images/*\n  Access-Control-Allow-Origin: *\n/audio/*\n  Access-Control-Allow-Origin: *\n/assets/*\n  Access-Control-Allow-Origin: *\n");
 await mkdir("dist/server",{recursive:true});
 await bundle({entryPoints:["plugins/chatgpt/worker.ts"],bundle:true,platform:"node",format:"esm",target:"es2022",outfile:"dist/server/index.js",loader:{".html":"text"},external:["node:*"],minify:true});
-await writeFile("dist/server/wrangler.json",JSON.stringify({name:"frank-tarot",main:"index.js",compatibility_date:"2026-05-15",compatibility_flags:["nodejs_compat"],no_bundle:true,assets:{directory:"../client",binding:"ASSETS"}},null,2));
+await writeFile("dist/server/wrangler.json",JSON.stringify({name:"frank-tarot",main:"index.js",compatibility_date:"2026-05-15",compatibility_flags:["nodejs_compat"],no_bundle:true,assets:{directory:"../client",binding:"ASSETS",run_worker_first:true}},null,2));
 await mkdir("dist/.openai",{recursive:true});await cp(".openai/hosting.json","dist/.openai/hosting.json");
 console.log("Built website and MCP Worker from one Frank Tarot source tree.");
