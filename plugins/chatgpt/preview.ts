@@ -23,7 +23,7 @@ async function start() {
     const draw=CallToolResultSchema.parse(await client.callTool({name:toolName,arguments:{question:'我这周该注意什么',spread:'THREE',locale}}));
     const token=(draw.structuredContent as any).sessionToken;
     const reveal=await client.callTool({name:'reveal_tarot_cards',arguments:{sessionToken:token,positions:[1,2,3]}});
-    initial=CallToolResultSchema.parse(await client.callTool({name:'show_tarot_result',arguments:{sessionToken:(reveal.structuredContent as any).sessionToken,interpretation:'本地交互验证：这段文字用于确认同一组牌显示在聊天结果卡中，不是模型生成的解读。',cardFaceStyle:'dreamy'}}));
+    initial=CallToolResultSchema.parse(await client.callTool({name:'show_tarot_result',arguments:{sessionToken:(reveal.structuredContent as any).sessionToken,interpretation:'本地交互验证：这段文字用于确认同一组牌显示在原版牌桌的解读区域，不是模型生成的解读。',cardFaceStyle:'dreamy'}}));
     toolName='show_tarot_result';
   }
   const { tools } = await client.listTools();
@@ -38,9 +38,23 @@ async function start() {
   iframe.setAttribute("sandbox", "allow-scripts");
   container.append(iframe);
   const bridge = new AppBridge(client, { name: "F.Tarot local preview", version: "0.1.0" }, {
-    serverTools: {}, serverResources: {}, message: { text: {} }, updateModelContext: {},
+    serverTools: {}, serverResources: {}, message: { text: {} }, updateModelContext: {}, downloadFile: {},
   }, { hostContext: { theme: "light", locale, displayMode: "inline", availableDisplayModes: ["inline", "fullscreen"] } });
   let latestContext: Record<string, any> = {};
+  bridge.ondownloadfile = async ({contents}) => {
+    const image=contents[0];
+    if(image.type!=='resource' || !('blob' in image.resource)) return {isError:true};
+    const link=document.createElement('a');
+    link.href=`data:${image.resource.mimeType};base64,${image.resource.blob}`;
+    link.download=image.resource.uri.split('/').pop()!;
+    link.textContent=`Download ${link.download}`;
+    const output=document.getElementById('preview-output')!;
+    output.replaceChildren(link);
+    const thumbnail=document.createElement('img');
+    thumbnail.src=link.href;thumbnail.alt='Exported reading PNG';thumbnail.style.width='100%';
+    output.append(thumbnail);
+    return {};
+  };
   bridge.onupdatemodelcontext = async (params) => {
     latestContext = params.structuredContent ?? {};
     context.textContent = JSON.stringify(params, null, 2);

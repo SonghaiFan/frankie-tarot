@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Download, RefreshCw, Volume2, Copy, Check } from "lucide-react";
 import { SpreadType, PickedCard } from "@/features/tarot/types";
@@ -6,6 +6,7 @@ import { SILKY_EASE } from "@/shared/constants/ui";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
 import buildFollowUpPrompt from "@/features/tarot/utils/buildFollowUpPrompt";
+import type { SavedReadingImage } from '@/host/tarotHost';
 
 interface ReadingSectionProps {
   spread: SpreadType;
@@ -19,7 +20,7 @@ interface ReadingSectionProps {
   readingAudioBuffer: AudioBuffer | null;
   isAudioPlaying: boolean;
   onReplayAudio: () => void;
-  onSaveResult: () => Promise<void>;
+  onSaveResult: () => Promise<SavedReadingImage>;
   savesToChat?: boolean;
   onReset: () => void;
   onInterpret?: () => Promise<void>;
@@ -50,12 +51,14 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [savedImage, setSavedImage] = useState<SavedReadingImage>();
+  useEffect(()=>{setIsCopied(false);setSavedImage(undefined);},[readingText,question]);
 
   const handleCopyPrompt = async () => {
     if (onInterpret) {
       if (isSending || isCopied) return;
       setIsSending(true); setSendError("");
-      try { await onInterpret(); setIsCopied(true); }
+      try { await onInterpret(); setIsCopied(true); if(readingText) setTimeout(()=>setIsCopied(false),2000); }
       catch { setSendError(locale === "zh-CN" ? "发送失败，请重试。你的牌阵已保留。" : "Could not send. Your cards are preserved; please retry."); }
       finally { setIsSending(false); }
       return;
@@ -83,7 +86,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   const handleSaveResult = async () => {
     if (isSavingResult) return;
     setIsSavingResult(true); setSendError("");
-    try { await onSaveResult(); }
+    try { setSavedImage(await onSaveResult()); }
     catch { setSendError(locale === "zh-CN" ? "保存失败，请重试。你的牌阵已保留。" : "Could not save. Your cards are preserved; please retry."); }
     finally { setIsSavingResult(false); }
   };
@@ -187,11 +190,15 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                   )}
                 </div>
                 <p className="text-xs md:text-sm text-neutral-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-                  {onInterpret ? (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.") : t("reading.deeperNotice")}
+                  {onInterpret ? (readingText ? (locale === "zh-CN" ? "点击“深入问问”，在当前对话里继续探索这次解读。" : "Use Ask Deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.")) : t("reading.deeperNotice")}
                 </p>
               </div>
 
               {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
+              {savedImage && <p role="status" className="text-xs text-neutral-400 mb-4">
+                {savedImage.destination==='library' ? (locale==='zh-CN'?'图片已保存到 ChatGPT 文件库':'Image saved to the ChatGPT file library') : (locale==='zh-CN'?'结果图片已导出':'Reading image exported')}
+                {savedImage.downloadUrl && <> · <a href={savedImage.downloadUrl} target="_blank" rel="noopener noreferrer" className="underline">{locale==='zh-CN'?'下载 PNG':'Download PNG'}</a></>}
+              </p>}
               <div className="shrink-0 flex flex-col items-center w-full">
                 <div className="flex items-center justify-center gap-4 mb-8">
                   {readingAudioBuffer && (
@@ -235,7 +242,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     title={onInterpret ? "ChatGPT" : t("reading.promptTitle")}
                   >
                     {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "请 ChatGPT 解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : "Interpret with ChatGPT")) : (isCopied ? t("reading.copied") : t("reading.prompt"))}
+                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : readingText ? t("reading.prompt") : "请 ChatGPT 解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : readingText ? t("reading.prompt") : "Interpret with ChatGPT")) : (isCopied ? t("reading.copied") : t("reading.prompt"))}
                   </motion.button>
                 </div>
 

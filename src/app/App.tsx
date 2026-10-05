@@ -38,7 +38,7 @@ import PickingSection from "@/features/tarot/components/PickingSection";
 import ReadingSection from "@/features/tarot/components/ReadingSection";
 import RitualCardStage from "@/features/tarot/components/RitualCardStage";
 import DeckLibrary from "@/features/tarot/components/DeckLibrary";
-import printTheReading from "@/features/tarot/utils/printTheReading";
+import printTheReading, { renderReadingImage } from "@/features/tarot/utils/printTheReading";
 import { useTarotAudio } from "@/features/tarot/hooks/useTarotAudio";
 import { useResponsive } from "@/shared/hooks/useResponsive";
 import { useTranslation } from "react-i18next";
@@ -451,7 +451,9 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     }
   };
 
-  const saveResult = host ? () => host.saveResult(locale, readingText) : printTheReading(
+  const saveResult = host ? async () => host.saveResult(locale, readingText, await renderReadingImage({
+    question, spread:spread!, pickedCards, readingText, locale, cardFaceStyle
+  })) : printTheReading(
     question,
     spread!,
     pickedCards,

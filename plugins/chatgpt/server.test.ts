@@ -90,7 +90,8 @@ test("HTTP stages conceal cards, preserve identities and gate result until every
   assert.match((ready.structuredContent as any).interpretationPrompt,/130-180 words/);
   const result=await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,interpretation:"Reflection, not prediction.",intent:'interpret'}});
   assert.deepEqual((result.structuredContent as any).cards,privateDraw.reading.cards);
-  assert.equal((result.structuredContent as any).view,"result");
+  assert.equal((result.structuredContent as any).view,"table");
+  assert.equal((result.structuredContent as any).stage,"result");
   assert.equal((result.structuredContent as any).interpretation,"Reflection, not prediction.");
   assert.match((result.structuredContent as any).followUpPrompt,/Initial Interpretation:\nReflection, not prediction\./);
   assert.match((result.content as any)[0].text,/ordinary assistant response OUTSIDE the app/);

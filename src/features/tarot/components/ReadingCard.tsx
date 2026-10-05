@@ -3,7 +3,7 @@ import { getCardImageUrl } from '../constants/cards';
 import { getLocalizedSpread } from '../constants/spreads';
 import type { PickedCard, SpreadType, Locale, CardFaceStyle } from '../types';
 
-/** One reading composition for image export and the ChatGPT inline result. */
+/** The shared reading composition for PNG export on the website and in MCP hosts. */
 export interface ReadingCardProps {
   question: string; spread: SpreadType; pickedCards: PickedCard[];
   readingText: string; locale: Locale; cardFaceStyle?: CardFaceStyle;

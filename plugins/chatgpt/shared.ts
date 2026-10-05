@@ -52,7 +52,7 @@ export interface TarotView extends TarotPayload {
   cardFaceStyle?: "original" | "redraw" | "dreamy";
 }
 export function nextAction(view: TarotView) {
-  if (view.view === 'result') return 'read_result' as const;
+  if (view.stage === 'result' || view.interpretation) return 'read_result' as const;
   if (!view.reading) return 'choose_spread' as const;
   if (view.revealed.length === view.reading.cards.length) return 'request_interpretation' as const;
   return view.stage === 'picking' ? 'pick_cards' as const : 'reveal_cards' as const;

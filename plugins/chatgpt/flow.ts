@@ -34,10 +34,10 @@ export function viewResult(view: TarotView) {
     structuredContent: state,
     // Only the app receives the complete draw. Never copy this into model context.
     _meta: { tarot: view, ...(view.flowId ? {'openai/widgetSessionId': view.flowId} : {}) },
-    content: [{type:'text' as const, text: view.view === 'result'
+    content: [{type:'text' as const, text: view.stage === 'result'
       ? view.resultIntent === 'interpret'
-        ? 'The brief initial interpretation is now in the shared result card. Next use followUpPrompt to give deeper analysis in the ordinary assistant response OUTSIDE the app. Do not repeat the brief paragraph, call show_tarot_result again with the deeper text, replace the result card, or redraw.'
-        : `Saved this existing reading as a result card. Preserve its cards, artwork and any provided interpretation. Do not add an interpretation unless explicitly requested. Do not run followUpPrompt on a save request.`
+        ? 'The brief initial interpretation is now in the original interactive table. Next use followUpPrompt to give deeper analysis in the ordinary assistant response OUTSIDE the app. Do not repeat the brief paragraph, call show_tarot_result again with the deeper text, open a separate result card, or redraw.'
+        : `Updated this existing reading in its original interactive table. No image file was exported by this tool. Saving an image uses the app Save result button. Preserve its cards, artwork and any provided interpretation. Do not add an interpretation unless explicitly requested. Do not run followUpPrompt on a save request.`
       : state.canInterpret
       ? `All ${state.cardCount} cards are revealed. Keep this reading and its positions unchanged. Interpret only when requested: follow interpretationPrompt for one brief paragraph, call show_tarot_result with intent="interpret", then use its followUpPrompt for deeper analysis outside the app.`
       : `Stage: ${state.stage}. ${state.revealed.length}/${state.cardCount} cards revealed. Do not interpret, name hidden cards, or infer a reading. Guide the user to select/reveal in the table. A question alone opens setup; it is not permission to skip the ritual.`}],
