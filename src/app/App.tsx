@@ -278,8 +278,10 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
       setIsThinking(true);
       try {
         targets = (await host.draw(question, selectedSpread, locale)).cards;
-      } catch {
-        setHostError(locale === "zh-CN" ? "抽牌没有完成，请重试。" : "The draw did not complete. Please try again.");
+      } catch (error) {
+        console.error("Hosted tarot draw failed", error);
+        const detail = error instanceof Error ? error.message : String(error);
+        setHostError(locale === "zh-CN" ? `抽牌没有完成：${detail}` : `The draw did not complete: ${detail}`);
         return;
       } finally { setIsThinking(false); }
     } else {
