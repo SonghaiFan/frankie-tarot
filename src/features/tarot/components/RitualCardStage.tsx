@@ -293,7 +293,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
         className={`pointer-events-none ${usesScaledAbsoluteLayout ? "" : wrapperWidth} ${CARD_ASPECT_CLASS} shrink-0`}
       >
         <RitualCard
-          layoutId={`card-${card.id}`}
+          layoutId={`card-${card.visualId ?? card.id}`}
           card={card}
           isRevealed={isReading && revealedCardIds.has(card.id)}
           cardBackId={cardBackId}

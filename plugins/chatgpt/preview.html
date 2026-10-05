@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>F.Tarot · Local MCP Apps preview</title>
+  <style>
+    :root { color-scheme: light; font: 14px/1.5 system-ui, sans-serif; color: #3d3b40; background: #f0efeb; }
+    :root[data-theme=dark] { color-scheme: dark; color: #ddd; background: #17171b; }
+    body { margin: 0; padding: 28px 20px 60px; }
+    main { max-width: 1000px; margin: auto; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 auto 24px; }
+    h1 { font-size: 16px; margin: 0 0 5px; font-weight: 550; }
+    p { margin: 0; color: #777; }
+    button { padding: 8px 12px; border: 1px solid #aaa5; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
+    #preview-table { max-width: 720px; margin: auto; border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 8px 48px #2421290b; }
+    #preview-table.fullscreen { max-width: 1200px; }
+    iframe { display: block; border: 0; width: 100%; min-height: 580px; }
+    .note { max-width: 720px; margin: 18px auto 24px; font-size: 12px; }
+    details { margin: 16px auto; max-width: 720px; }
+    summary { cursor: pointer; color: #777; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #8080800c; border-radius: 10px; padding: 16px; max-height: 400px; overflow-y: auto; font-size: 11px; }
+    @media(max-width:520px) { body { padding: 16px 10px 40px; } header { align-items: flex-start; } #preview-table { border-radius: 14px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header><div><h1>F.Tarot · Local preview</h1><p id="preview-status">Connecting to the MCP server…</p></div><button id="preview-theme">Toggle theme</button></header>
+    <section id="preview-table" aria-label="Embedded card table"></section>
+    <p class="note">This local host exercises the MCP Apps bridge. “Interpret with ChatGPT” records its outgoing message below; it does not call a model here.</p>
+    <details><summary>Model context from the card table</summary><pre id="preview-context">No draw yet.</pre></details>
+    <details open><summary>Message requested by the user</summary><pre id="preview-message">No interpretation requested.</pre></details>
+  </main>
+  <script src="/preview.js" defer></script>
+</body>
+</html>

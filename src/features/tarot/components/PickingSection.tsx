@@ -109,7 +109,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
   }, []);
 
   const pickedIdSet = React.useMemo(() => {
-    return new Set(pickedCards.map((c) => c.id));
+    return new Set(pickedCards.map((c) => c.visualId ?? c.id));
   }, [pickedCards]);
 
   const cloudCards = React.useMemo<CloudCardRenderData[]>(() => {

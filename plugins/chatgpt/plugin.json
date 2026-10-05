@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "frankie-tarot",
+  "version": "0.1.0",
+  "description": "Draw and explore a bilingual tarot deck with an interactive card table and reflective conversation.",
+  "author": { "name": "Songhai Fan" },
+  "repository": "https://github.com/SonghaiFan/frankie-tarot",
+  "license": "MIT",
+  "keywords": ["tarot", "reflection", "cards", "mcp-apps"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "F.Tarot",
+        "shortDescription": "A card table for reflection and conversation",
+        "developerName": "Songhai Fan",
+        "brandColor": "#7A688A",
+        "defaultPrompt": ["Open F.Tarot so I can choose a spread and draw my cards.", "打开 F.Tarot，我想选一个牌阵，自己抽牌。"]
+      }
+    }
+  }
+}

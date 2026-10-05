@@ -1,4 +1,4 @@
-import { buildTarotFollowUpPrompt } from "@/core";
+import { buildTarotFollowUpPrompt } from "@/core/promptBuilder";
 import { Locale, PickedCard, SpreadType } from "@/features/tarot/types";
 
 export default function buildFollowUpPrompt(

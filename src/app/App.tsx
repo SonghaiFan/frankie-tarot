@@ -1,3 +1,4 @@
+import { preferences } from "@/shared/storage";
 import React, {
   useState,
   useEffect,
@@ -27,7 +28,8 @@ import {
   hasAiKey,
   predictBestSpread,
 } from "@/features/tarot/services/gemini";
-import { drawCards } from "@/core";
+import { drawCards } from "@/core/tarotEngine";
+import type { TarotHost, HostedReading } from "@/host/tarotHost";
 import Galaxy from "@/app/components/Galaxy";
 import HeaderBar from "@/app/components/HeaderBar";
 import IntroSection from "@/features/tarot/components/IntroSection";
@@ -48,10 +50,10 @@ import {
   findPackByCombination,
 } from "@/features/tarot/constants/cardPacks";
 
-const App: React.FC = () => {
+const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading }> = ({ host, initialReading }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
-  const aiEnabled = hasAiKey();
+  const aiEnabled = !host && hasAiKey();
 
   const { isMobile, isTablet, isShortViewport } = useResponsive();
 
@@ -88,7 +90,7 @@ const App: React.FC = () => {
 
   // Input State
   const [question, setQuestion] = useState("");
-  const [spread, setSpread] = useState<SpreadType | null>("AUTO");
+  const [spread, setSpread] = useState<SpreadType | null>(host ? "THREE" : "AUTO");
 
   // Game Data
   const [pickedCards, setPickedCards] = useState<PickedCard[]>([]);
@@ -100,13 +102,15 @@ const App: React.FC = () => {
   );
   const [hasPlayedReadingAudio, setHasPlayedReadingAudio] = useState(false);
 
+  const [hostError, setHostError] = useState("");
+
   // System State
   const [isThinking, setIsThinking] = useState(false);
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [thinkingKeywordIndex, setThinkingKeywordIndex] = useState(0);
   const [cardBackId, setCardBackId] = useState<CardBackId>(() => {
-    const savedCardBack = window.localStorage.getItem("f-tarot-card-back");
+    const savedCardBack = preferences.getItem("f-tarot-card-back");
     return savedCardBack === "celestial-compass" ||
       savedCardBack === "eclipse-nocturne" ||
       savedCardBack === "thorn-bloom" ||
@@ -116,14 +120,14 @@ const App: React.FC = () => {
   });
 
   const [cardFaceStyle, setCardFaceStyle] = useState<CardFaceStyle>(() => {
-    const saved = window.localStorage.getItem("f-tarot-card-face-style");
+    const saved = preferences.getItem("f-tarot-card-face-style");
     return saved === "original" || saved === "redraw" || saved === "dreamy"
       ? saved
       : "dreamy";
   });
 
   const [cardPackId, setCardPackId] = useState<string>(() => {
-    const saved = window.localStorage.getItem("f-tarot-card-pack");
+    const saved = preferences.getItem("f-tarot-card-pack");
     return saved || DEFAULT_CARD_PACK_ID;
   });
 
@@ -131,9 +135,9 @@ const App: React.FC = () => {
     setCardPackId(pack.id);
     setCardFaceStyle(pack.cardFaceStyle);
     setCardBackId(pack.cardBackId);
-    window.localStorage.setItem("f-tarot-card-pack", pack.id);
-    window.localStorage.setItem("f-tarot-card-face-style", pack.cardFaceStyle);
-    window.localStorage.setItem("f-tarot-card-back", pack.cardBackId);
+    preferences.setItem("f-tarot-card-pack", pack.id);
+    preferences.setItem("f-tarot-card-face-style", pack.cardFaceStyle);
+    preferences.setItem("f-tarot-card-back", pack.cardBackId);
   };
 
   const handleCardFaceStyleChange = (style: CardFaceStyle) => {
@@ -141,7 +145,7 @@ const App: React.FC = () => {
     const matched = findPackByCombination(style, cardBackId);
     const newPackId = matched ? matched.id : "custom";
     setCardPackId(newPackId);
-    window.localStorage.setItem("f-tarot-card-pack", newPackId);
+    preferences.setItem("f-tarot-card-pack", newPackId);
   };
 
   const handleCardBackChange = (back: CardBackId) => {
@@ -149,7 +153,7 @@ const App: React.FC = () => {
     const matched = findPackByCombination(cardFaceStyle, back);
     const newPackId = matched ? matched.id : "custom";
     setCardPackId(newPackId);
-    window.localStorage.setItem("f-tarot-card-pack", newPackId);
+    preferences.setItem("f-tarot-card-pack", newPackId);
   };
 
   // --- Refs ---
@@ -161,6 +165,20 @@ const App: React.FC = () => {
   const hiddenCardIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
+    if (!initialReading) return;
+    ritualIdRef.current++;
+    setQuestion(initialReading.question);
+    setSpread(initialReading.spread);
+    setPickedCards(initialReading.cards);
+    setRevealedCardIds(new Set());
+    setSelectedCardId(null);
+    setReadingText("");
+    setIsThinking(false);
+    setHostError("");
+    setGameState(GameState.READING);
+  }, [initialReading?.id]);
+
+  useEffect(() => {
     if (!isThinking) return;
     const interval = setInterval(() => {
       setThinkingKeywordIndex((prev) => prev + 1);
@@ -169,11 +187,11 @@ const App: React.FC = () => {
   }, [isThinking]);
 
   useEffect(() => {
-    window.localStorage.setItem("f-tarot-card-back", cardBackId);
+    preferences.setItem("f-tarot-card-back", cardBackId);
   }, [cardBackId]);
 
   useEffect(() => {
-    window.localStorage.setItem("f-tarot-card-face-style", cardFaceStyle);
+    preferences.setItem("f-tarot-card-face-style", cardFaceStyle);
   }, [cardFaceStyle]);
 
   // --- Computed Deck ---
@@ -211,6 +229,8 @@ const App: React.FC = () => {
   };
 
   const startRitual = async () => {
+    if (isThinking) return;
+    setHostError("");
     let selectedSpread = spread;
     if ((!selectedSpread || selectedSpread === "AUTO") && aiEnabled) {
       setIsThinking(true);
@@ -231,6 +251,18 @@ const App: React.FC = () => {
 
     if (!selectedSpread) selectedSpread = "SINGLE";
 
+    let targets: PickedCard[];
+    if (host) {
+      setIsThinking(true);
+      try {
+        targets = (await host.draw(question, selectedSpread, locale)).cards;
+      } catch {
+        setHostError(locale === "zh-CN" ? "抽牌没有完成，请重试。" : "The draw did not complete. Please try again.");
+        return;
+      } finally { setIsThinking(false); }
+    } else {
+      targets = drawCards(selectedSpread);
+    }
     setGameState(GameState.PICKING);
     setPickedCards([]);
     setSelectedCardId(null);
@@ -244,7 +276,6 @@ const App: React.FC = () => {
     const currentRitualId = ritualIdRef.current + 1;
     ritualIdRef.current = currentRitualId;
 
-    const targets = drawCards(selectedSpread);
 
     predeterminedCardsRef.current = targets;
     predeterminedCardsIndexRef.current = 0;
@@ -296,7 +327,7 @@ const App: React.FC = () => {
     } else {
       readingReadyRef.current = true;
       readingPromiseRef.current = Promise.resolve(
-        t("errors.missingApiKeyReading")
+        host ? "" : t("errors.missingApiKeyReading")
       );
     }
 
@@ -319,7 +350,7 @@ const App: React.FC = () => {
 
     const hybridCard: PickedCard = {
       ...targetCard,
-      id: visualCard.id,
+      visualId: visualCard.id,
     };
 
     hiddenCardIdsRef.current.add(visualCard.id);
@@ -335,6 +366,7 @@ const App: React.FC = () => {
   const startRevealProcess = async (finalCards: PickedCard[]) => {
     setGameState(GameState.READING);
     playVoice(staticScripts.REVEAL, "REVEAL", "reveal");
+    if (host) { setReadingText(""); setIsThinking(false); return; }
 
     if (!readingReadyRef.current) {
       setThinkingKeywordIndex(0);
@@ -483,6 +515,7 @@ const App: React.FC = () => {
             onReplayAudio={replayAudio}
             onDownload={downloadReading}
             onReset={resetRitual}
+            onInterpret={host ? () => host.interpret(locale) : undefined}
           />
         );
       default:
@@ -546,6 +579,7 @@ const App: React.FC = () => {
           pickingCount={spread ? SPREADS[spread].cardCount : 0}
           pickedCount={pickedCards.length}
           onLibraryClick={toggleLibrary}
+          onExpand={host?.expand}
           onHomeClick={() => {
             stopDrone();
             setSelectedCardId(null);
@@ -610,6 +644,7 @@ const App: React.FC = () => {
         </div>
       </motion.main>
 
+      {hostError && <div role="alert" className="fixed bottom-12 inset-x-4 z-[200] text-center text-sm text-red-200">{hostError}</div>}
       {/* Creator Credit */}
       <div className="fixed bottom-[calc(var(--safe-bottom)+0.75rem)] right-[calc(var(--safe-right)+1rem)] md:right-6 z-50 text-[9px] text-neutral-600 font-sans tracking-widest opacity-50 select-none pointer-events-none mix-blend-difference">
         Created by 范松海frank

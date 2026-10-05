@@ -49,6 +49,8 @@ export interface TarotCard {
 }
 
 export interface PickedCard extends TarotCard {
+  /** Identity of the face-down tile, used only for the selection animation. */
+  visualId?: number;
   isReversed: boolean;
 }
 

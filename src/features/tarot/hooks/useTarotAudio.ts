@@ -20,6 +20,7 @@ class SoundEngine {
     try {
       const baseUrl = import.meta.env.BASE_URL;
       this.audioElement = new Audio(`${baseUrl}audio/background.mp3`);
+      this.audioElement.crossOrigin = "anonymous";
       this.audioElement.loop = true;
 
       this.source = this.ctx.createMediaElementSource(this.audioElement);

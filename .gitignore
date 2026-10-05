@@ -75,3 +75,8 @@ coverage/
 .history/
 __pycache__/
 .DS_Store
+
+# Generated plugin outputs
+plugins/chatgpt/dist/
+plugins/chatgpt/package/
+.sites-runtime/

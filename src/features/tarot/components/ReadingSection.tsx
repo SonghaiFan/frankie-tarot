@@ -21,6 +21,7 @@ interface ReadingSectionProps {
   onReplayAudio: () => void;
   onDownload: () => void;
   onReset: () => void;
+  onInterpret?: () => Promise<void>;
 }
 
 const ReadingSection: React.FC<ReadingSectionProps> = ({
@@ -37,14 +38,25 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   onReplayAudio,
   onDownload,
   onReset,
+  onInterpret,
 }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
   const displayedCards = pickedCards;
 
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopyPrompt = async () => {
+    if (onInterpret) {
+      if (isSending || isCopied) return;
+      setIsSending(true); setSendError("");
+      try { await onInterpret(); setIsCopied(true); }
+      catch { setSendError(locale === "zh-CN" ? "发送失败，请重试。你的牌阵已保留。" : "Could not send. Your cards are preserved; please retry."); }
+      finally { setIsSending(false); }
+      return;
+    }
     const prompt = buildFollowUpPrompt(
       displayedCards,
       spread,
@@ -152,6 +164,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 )}
                 <div className="w-12 h-px bg-white/20 mx-auto mb-6" />
                 <div className="text-base md:text-xl leading-loose text-neutral-300 font-light font-serif tracking-wide mb-12 text-center">
+                  {onInterpret && !readingText && (locale === "zh-CN" ? "先看看你的牌。准备好后，邀请 ChatGPT 一起解读。" : "Take a moment with your cards. When ready, invite ChatGPT to explore them with you.")}
                   {readingText.split("**").map((part, idx) =>
                     idx % 2 === 1 ? (
                       <strong key={idx} className="font-bold text-white/90">
@@ -163,10 +176,11 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                   )}
                 </div>
                 <p className="text-xs md:text-sm text-neutral-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-                  {t("reading.deeperNotice")}
+                  {onInterpret ? (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.") : t("reading.deeperNotice")}
                 </p>
               </div>
 
+              {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
               <div className="shrink-0 flex flex-col items-center w-full">
                 <div className="flex items-center justify-center gap-4 mb-8">
                   {readingAudioBuffer && (
@@ -205,10 +219,11 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     transition={{ delay: 2.4 }}
                     onClick={handleCopyPrompt}
                     className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-neutral-600 hover:text-white transition-colors group px-4 py-2 border border-neutral-800 hover:border-white/20"
-                    title={t("reading.promptTitle")}
+                    disabled={isSending || (!!onInterpret && isCopied)}
+                    title={onInterpret ? "ChatGPT" : t("reading.promptTitle")}
                   >
                     {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {isCopied ? t("reading.copied") : t("reading.prompt")}
+                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "请 ChatGPT 解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : "Interpret with ChatGPT")) : (isCopied ? t("reading.copied") : t("reading.prompt"))}
                   </motion.button>
                 </div>
 

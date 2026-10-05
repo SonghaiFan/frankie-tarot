@@ -19,6 +19,7 @@ interface HeaderBarProps {
   pickedCount?: number;
   onLibraryClick: () => void;
   onHomeClick: () => void;
+  onExpand?: () => Promise<void>;
 }
 
 const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -28,6 +29,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   pickedCount = 0,
   onLibraryClick,
   onHomeClick,
+  onExpand,
 }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
@@ -38,6 +40,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   };
 
   const handleFullscreen = () => {
+    if (onExpand) { void onExpand().catch(() => {}); return; }
     if (!isFullscreen) {
       if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen();

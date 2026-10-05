@@ -10,7 +10,13 @@
     "typecheck": "tsc --noEmit",
     "cli": "tsx scripts/cli.ts",
     "api": "tsx scripts/server.ts",
-    "generate-cards": "python3 scripts/generate_card_art.py"
+    "generate-cards": "python3 scripts/generate_card_art.py",
+    "plugin:build": "node plugins/chatgpt/build.mjs",
+    "plugin:start": "node plugins/chatgpt/dist/server.mjs",
+    "plugin:dev": "npm run plugin:build && npm run plugin:start",
+    "plugin:test": "node --import tsx --test plugins/chatgpt/*.test.ts",
+    "plugin:configure": "node plugins/chatgpt/configure.mjs",
+    "build:site": "node scripts/site/build.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
@@ -22,7 +28,11 @@
     "ogl": "^1.0.11",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-i18next": "^16.5.8"
+    "react-i18next": "^16.5.8",
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@openai/mcp-extensions": "^0.1.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",
@@ -32,6 +42,7 @@
     "tailwindcss": "^4.1.17",
     "tsx": "^4.20.6",
     "typescript": "~5.8.2",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "esbuild": "^0.25.12"
   }
 }

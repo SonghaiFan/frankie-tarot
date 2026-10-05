@@ -1,3 +1,4 @@
+import { preferences } from "@/shared/storage";
 import React, { useEffect } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import i18n, { LOCALE_STORAGE_KEY } from "@/i18n/config";
@@ -8,7 +9,7 @@ const I18nSideEffects: React.FC = () => {
 
   useEffect(() => {
     const lang = instance.language;
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, lang);
+    preferences.setItem(LOCALE_STORAGE_KEY, lang);
     document.documentElement.lang = lang;
     document.title = t("appTitle");
   }, [instance.language, t]);

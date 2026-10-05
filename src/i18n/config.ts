@@ -1,3 +1,4 @@
+import { preferences } from "@/shared/storage";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import enTranslation from "@/i18n/locales/en.json";
@@ -8,7 +9,7 @@ const LOCALE_STORAGE_KEY = "mystic-tarot-locale";
 
 const getInitialLocale = (): Locale => {
   if (typeof window === "undefined") return "zh-CN";
-  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  const stored = preferences.getItem(LOCALE_STORAGE_KEY);
   return stored === "en" || stored === "zh-CN" ? stored : "zh-CN";
 };
 
