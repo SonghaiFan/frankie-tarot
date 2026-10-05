@@ -114,7 +114,8 @@ test("UI resource uses MCP Apps MIME, exact image CSP and no generated reading H
   assert.equal(resource.uri, UI_URI);
   assert.equal((resource._meta?.ui as any).prefersBorder, false);
   assert.deepEqual((resource._meta?.ui as any).csp, { connectDomains: ["http://127.0.0.1:8787"], resourceDomains: ["http://127.0.0.1:8787", "https://fonts.googleapis.com", "https://fonts.gstatic.com"] });
-  assert.deepEqual((resource._meta?.["openai/ui"] as any).availableDisplayModes, ["fullscreen"]);
+  assert.equal((resource._meta?.["openai/ui"] as any).preferredDisplayMode, "inline");
+  assert.deepEqual((resource._meta?.["openai/ui"] as any).availableDisplayModes, ["inline", "fullscreen"]);
   assert.match((resource as any).text, /F.Tarot test resource/);
 });
 

@@ -107,11 +107,10 @@ export function createMcpServer(options: {
           csp: { connectDomains: [new URL(options.publicBaseUrl).origin], resourceDomains: [new URL(options.publicBaseUrl).origin, "https://fonts.googleapis.com", "https://fonts.gstatic.com"] },
           ...(options.uiDomain ? { domain: options.uiDomain } : {}),
         },
-        "openai/ui": { preferredDisplayMode: inline ? "inline" : "fullscreen", availableDisplayModes: inline ? ["inline", "fullscreen"] : ["fullscreen"] },
+        "openai/ui": { preferredDisplayMode: "inline", availableDisplayModes: ["inline", "fullscreen"] },
         "openai/widgetDescription": "A bilingual tarot card table with server-drawn cards, deliberate reveal, reference meanings, and an explicit request for conversational interpretation.",
       },
     }],
   }));
   return server;
 }
-

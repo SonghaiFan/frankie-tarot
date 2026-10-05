@@ -10,7 +10,7 @@ This is a host adapter inside the original Frank Tarot repository, not a second 
 - `mcp.ts` declares the tools and UI resource, shared by local and Vercel handlers.
 - `engine.ts` adds server-side secure draws and signed recovery tokens over canonical data.
 
-The ChatGPT host supplies interpretation in the current conversation. The original question, shuffle, manual selection, reveal, card library, three artwork styles, audio and language controls remain the original components. Provider API keys are never included in the widget. The plugin requests fullscreen when supported. Browser storage is best-effort because sandboxed hosts may disallow it.
+The ChatGPT host supplies interpretation in the current conversation. The original question, shuffle, manual selection, reveal, card library, three artwork styles, audio and language controls remain the original components. Provider API keys are never included in the widget. The table and result open inline by default. The table reserves 640 pixels of inline height for the original viewport-based app; its fullscreen button requests the host's expanded presentation. Returning to the table from a result stays inline. ChatGPT owns its tab controls and chat/composer visibility; the plugin does not manipulate the host interface. Browser storage is best-effort because sandboxed hosts may disallow it.
 
 ## Local testing
 

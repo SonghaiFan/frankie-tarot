@@ -12,7 +12,7 @@ import type { SpreadType } from '@/features/tarot/types';
 import type { TarotView } from '../shared';
 import '@/app/index.css';
 
-const bridge = new McpApp({name:'Frank Tarot',version:'0.3.0'}, {}, {autoResize:true});
+const bridge = new McpApp({name:'Frank Tarot',version:'0.3.0'}, {availableDisplayModes:['inline','fullscreen']}, {autoResize:true});
 let current: TarotView | undefined;
 let uiState: Parameters<NonNullable<TarotHost['reportState']>>[0] | undefined;
 let syncQueue: Promise<void> = Promise.resolve();
@@ -94,6 +94,7 @@ const host:TarotHost={
   },
 };
 function PluginRoot(){
+  const [displayMode,setDisplayMode]=useState<'inline'|'fullscreen'|'pip'>('inline');
   const [view,setView]=useState<TarotView>();
   const [initialReading,setInitialReading]=useState<HostedReading>();
   const [setup,setSetup]=useState<{question:string;spread:SpreadType;revision:number}>();
@@ -108,7 +109,9 @@ function PluginRoot(){
   }
   useEffect(()=>{
     bridge.ontoolresult=result=>{try{receive(payload(result));}catch(e){setError((e as Error).message);}};
-    void bridge.connect().catch(()=>setError('暂时无法连接对话，请重新打开 Frank Tarot。'));
+    const updateDisplayMode=()=>setDisplayMode(bridge.getHostContext()?.displayMode ?? 'inline');
+    bridge.onhostcontextchanged=updateDisplayMode;
+    void bridge.connect().then(updateDisplayMode).catch(()=>setError('暂时无法连接对话，请重新打开 Frank Tarot。'));
     return ()=>{void bridge.close();};
   },[]);
   async function action(fn:()=>Promise<void>){if(busy)return;setBusy(true);setError('');try{await fn();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
@@ -120,7 +123,7 @@ function PluginRoot(){
       <ReadingCard question={reading.question} spread={reading.spread} pickedCards={reading.cards} readingText={view.interpretation ?? ''} locale={view.locale} cardFaceStyle={view.cardFaceStyle}
         onCardClick={position=>void action(()=>send(`${zh?'请深入讨论':'Explore'} ${position} ${zh?'号牌与我问题的关系；沿用当前牌阵。':'in relation to my question, keeping this draw.'}`))}>
         <div className="flex flex-wrap gap-2 mt-5">
-          <button className={button} disabled={busy} onClick={()=>void action(async()=>{const next=payload(await bridge.callServerTool({name:'open_tarot',arguments:{sessionToken:current!.sessionToken}}));receive({...next,interpretation:view.interpretation});await host.expand?.();})}>{zh?'回到牌桌':'Open table'}</button>
+          <button className={button} disabled={busy} onClick={()=>void action(async()=>{const next=payload(await bridge.callServerTool({name:'open_tarot',arguments:{sessionToken:current!.sessionToken}}));receive({...next,interpretation:view.interpretation});})}>{zh?'回到牌桌':'Open table'}</button>
           <button className={button} disabled={busy} onClick={()=>void action(printTheReading(reading.question,reading.spread,reading.cards,view.interpretation ?? '',view.locale))}>{zh?'保存图文':'Save image'}</button>
         </div>
         <form className="flex gap-2 mt-4" onSubmit={e=>{e.preventDefault();if(followup.trim()) void action(async()=>{await send(followup.trim());setFollowup('');});}}>
@@ -129,7 +132,7 @@ function PluginRoot(){
         </form>
       </ReadingCard>
       {error&&<p role="alert">{error}</p>}
-    </main> : view ? <OriginalApp host={host} initialReading={initialReading} initialSetup={setup}/> : <p className="p-6 text-neutral-400">Connecting Frank Tarot…</p>}
+    </main> : view ? <div style={{height:displayMode==='inline'?640:'100dvh'}}><OriginalApp host={host} initialReading={initialReading} initialSetup={setup}/></div> : <p className="p-6 text-neutral-400">Connecting Frank Tarot…</p>}
     {error && view?.view!=='result' && <div role="alert" className="fixed bottom-12 inset-x-4 z-[300] text-center text-red-200">{error}</div>}
   </I18nProvider>;
 }
