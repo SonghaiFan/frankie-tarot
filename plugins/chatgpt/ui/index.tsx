@@ -16,6 +16,7 @@ const bridge = new McpApp({name:'Frank Tarot',version:'0.3.0'}, {availableDispla
 let current: TarotView | undefined;
 let uiState: Parameters<NonNullable<TarotHost['reportState']>>[0] | undefined;
 let syncQueue: Promise<void> = Promise.resolve();
+let requestedAction: 'interpret' | 'save' | 'deeper' | undefined;
 function payload(result: unknown): TarotView {
   const value = result as {isError?:boolean;_meta?:{tarot?:TarotView};content?:{text?:string}[]};
   if (value.isError || !value._meta?.tarot) throw new Error(value.content?.[0]?.text ?? 'Tarot tool failed');
@@ -39,6 +40,7 @@ async function syncContext() {
   // Hidden draw and legacy readingToken stay inside the app, never in model context.
   await bridge.updateModelContext({structuredContent:{
     sessionToken:current.sessionToken, readingId:reading?.id,
+    requestedAction,
     stage:current.stage === "ready" || current.stage === "reveal" ? current.stage
       : uiState?.stage === "READING" ? (current.revealed.length === (reading?.cards.length ?? -1) ? "ready" : "reveal")
       : uiState?.stage === "PICKING" ? "picking" : current.stage,
@@ -76,6 +78,7 @@ const host:Omit<TarotHost,'saveResult'>={
   async expand(){if(bridge.getHostContext()?.availableDisplayModes?.includes('fullscreen')) await bridge.requestDisplayMode({mode:'fullscreen'});},
   async draw(question,spread,locale){
     await syncQueue.catch(()=>{});
+    requestedAction=undefined;
     current=payload(await bridge.callServerTool({name:'draw_tarot_cards',arguments:{question,spread,locale}}));
     uiState=undefined;
     void syncContext().catch(()=>{});
@@ -84,16 +87,17 @@ const host:Omit<TarotHost,'saveResult'>={
   async reportState(state){
     uiState=state;
     // Returning to input clears the old draw from subsequent model context.
-    if(state.stage==='INPUT' && current?.reading) current={locale:current.locale,spreads:current.spreads,question:state.question,spread:state.spread ?? 'THREE',revealed:[],stage:'input',view:'table'};
+    if(state.stage==='INPUT' && current?.reading) {requestedAction=undefined;current={locale:current.locale,spreads:current.spreads,question:state.question,spread:state.spread ?? 'THREE',revealed:[],stage:'input',view:'table'};}
     syncQueue=syncQueue.catch(()=>{}).then(syncReveals);
     await syncQueue;
   },
   async interpret(locale){
     await syncQueue.catch(()=>{}); await syncReveals();
     if(!current?.reading || current.revealed.length!==current.reading.cards.length) throw new Error('Reveal all cards first');
+    requestedAction='interpret';
     await send((locale==='zh-CN'
-      ? '我已翻开全部卡牌。请按 interpretationPrompt 中网页端的风格，写一段 120–180 字的简短解读，用 show_tarot_result（intent=interpret）把它与当前牌阵作为结果卡返回聊天。随后复用结果中的 followUpPrompt 在卡片外的普通聊天回复里继续深入分析，不要把详细分析放进结果卡或替换简短答案。保持同一组牌，不重新抽牌。'
-      : 'I have revealed every card. Follow the website’s interpretationPrompt for one brief paragraph of 130–180 words. Call show_tarot_result with intent=interpret to put that brief reading in the shared result card. Then use its followUpPrompt for deeper analysis in ordinary chat outside the card. Do not replace the brief card with detailed analysis or redraw.'));
+      ? '请解读这次已翻开的牌。我点击了“请 ChatGPT 解读”，现在明确请求开始解读。请沿用网页端的简短回答风格，把简短答案放进结果卡，然后在卡外的聊天回复里继续深入分析。保持同一组牌，不重新抽牌。'
+      : 'Please interpret these revealed cards. I clicked “Interpret with ChatGPT” and explicitly request interpretation now. Use the website’s brief reading style for the result card, then continue deeper in ordinary chat outside it. Keep this draw; do not redraw.'));
   },
 };
 function PluginRoot(){
@@ -104,6 +108,7 @@ function PluginRoot(){
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   function receive(next:TarotView){
+    requestedAction=undefined;
     current=next;uiState=undefined;setView(next);setError('');
     void i18n.changeLanguage(next.locale);
     if(next.reading) {setSetup(undefined);setInitialReading(originalReading(next));}
@@ -121,6 +126,7 @@ function PluginRoot(){
       // App tool calls render locally; an explicit message asks the host to also
       // publish the same result in the conversation, without a new interpretation.
       current=saved; uiState=undefined;
+      requestedAction='save';
       await syncContext();
       await send(locale==='zh-CN'
         ? '保存这次结果。请用 show_tarot_result 将当前牌阵、画风和已有解读作为结果卡返回聊天。仅保存，不新增解读，不重新抽牌；如果没有已有解读，请省略 interpretation。'
@@ -148,6 +154,7 @@ function PluginRoot(){
           <button className={button} disabled={busy} onClick={()=>void action(async()=>{const next=payload(await bridge.callServerTool({name:'open_tarot',arguments:{sessionToken:current!.sessionToken}}));receive({...next,interpretation:view.interpretation});})}>{zh?'回到牌桌':'Open table'}</button>
           {view.interpretation && <button className={button} disabled={busy} onClick={()=>void action(async()=>{
             const prompt=readingPrompts(view).followUpPrompt;
+            requestedAction='deeper';
             if(prompt) await send(`${prompt}\n\n${zh?'请在结果卡外的聊天回复中回答，保留卡片中的简短解读，不调用 show_tarot_result 替换它，也不重新抽牌。':'Answer in ordinary chat outside the result card. Preserve its brief reading; do not call show_tarot_result to replace it or redraw.'}`);
           })}>{i18n.t('reading.prompt')}</button>}
         </div>
