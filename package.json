@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "cli": "tsx scripts/cli.ts",
-    "api": "tsx scripts/server.ts"
+    "api": "tsx scripts/server.ts",
+    "generate-cards": "python3 scripts/generate_card_art.py"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
