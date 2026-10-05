@@ -2,7 +2,7 @@ import { build as viteBuild } from "vite";
 import { build as bundle } from "esbuild";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { cp, mkdir, readdir, writeFile, rm } from "node:fs/promises";
+import { cp, mkdir, readdir, writeFile, rm, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -11,8 +11,11 @@ process.chdir(root);
 const origin=process.env.PUBLIC_BASE_URL;
 if(!origin) throw new Error("Set PUBLIC_BASE_URL to the existing Site origin");
 await rm(join(root,"dist"),{recursive:true,force:true});
+const assetSource=JSON.parse(await readFile("plugins/chatgpt/asset-source.json","utf8"));
+// Publishing cannot silently point at an older set of artwork.
+execFileSync("git",["diff","--exit-code",assetSource.commit,"--","public"],{stdio:"pipe"});
 // Both targets import the same original src/app/App.tsx and canonical data.
-execFileSync(process.execPath,["plugins/chatgpt/build.mjs"],{stdio:"inherit",env:process.env});
+execFileSync(process.execPath,["plugins/chatgpt/build.mjs"],{stdio:"inherit",env:{...process.env,TAROT_ASSET_BASE_URL:assetSource.baseUrl}});
 await bundle({entryPoints:["scripts/site/sites-vite-plugin.ts"],bundle:true,platform:"node",format:"esm",packages:"external",outfile:"node_modules/.cache/tarot-sites-plugin.mjs"});
 const {sites}=await import(new URL("../../node_modules/.cache/tarot-sites-plugin.mjs",import.meta.url));
 await viteBuild({configFile:false,root,base:"/",publicDir:false,plugins:[react(),tailwindcss(),sites({mockAuth:false})],

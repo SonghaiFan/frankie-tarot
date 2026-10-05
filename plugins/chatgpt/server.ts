@@ -17,6 +17,7 @@ export function createTarotHttpServer(options: {
   publicBaseUrl: string;
   assetDirectory: string;
   uiDomain?: string;
+  assetBaseUrl?: string;
   preview?: { html: string; javascript: string };
 }) {
   const publicUrl = new URL(options.publicBaseUrl);

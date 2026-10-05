@@ -31,6 +31,7 @@ export function createMcpServer(options: {
   widgetHtml: string;
   publicBaseUrl: string;
   uiDomain?: string;
+  assetBaseUrl?: string;
 }) {
   const uiUri = getUiUri(options.widgetHtml);
   const server = new McpServer({ name: "frankie-tarot", version: VERSION }, {
@@ -81,7 +82,7 @@ export function createMcpServer(options: {
       _meta: {
         ui: {
           prefersBorder: false,
-          csp: { connectDomains: [new URL(options.publicBaseUrl).origin], resourceDomains: [new URL(options.publicBaseUrl).origin, "https://fonts.googleapis.com", "https://fonts.gstatic.com"] },
+          csp: { connectDomains: [new URL(options.assetBaseUrl || options.publicBaseUrl).origin], resourceDomains: [new URL(options.assetBaseUrl || options.publicBaseUrl).origin, "https://fonts.googleapis.com", "https://fonts.gstatic.com"] },
           ...(options.uiDomain ? { domain: options.uiDomain } : {}),
         },
         "openai/ui": { preferredDisplayMode: "fullscreen", availableDisplayModes: ["fullscreen"] },

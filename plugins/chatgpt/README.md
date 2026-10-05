@@ -42,3 +42,9 @@ After deployment, verify the MCP tools and the embedded UI separately: an HTTP o
 ## Refresh the installed ChatGPT app after publication
 
 A successful Site deploy does not prove that an installed development app has refreshed its cached tool metadata. In ChatGPT, open Frank Tarot → Manage → Refresh tools, wait for completion, then reopen `open_tarot`. Verify the original dark starfield UI in ChatGPT itself, not only the website or local preview. Keep the same app and plugin; do not create another one.
+
+## Assets inside ChatGPT
+
+The Site remains private. Its asset routes require a Site login cookie that the ChatGPT iframe does not have. The hosted widget therefore uses the already-public `public/` files in this same GitHub repository, pinned by `asset-source.json`. Both the widget base URL and MCP CSP use this configuration. Website/local preview still use their own same-origin assets. Do not add credentials to image URLs or publish the private Site to solve asset loading.
+
+When changing `public/`, publish those source changes to the original GitHub repository and update the pinned commit/base URL. The Site build rejects differences between local assets and the pinned source commit, preventing two silently diverging copies.

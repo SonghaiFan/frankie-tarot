@@ -276,3 +276,13 @@ test("existing API_KEY and GEMINI_API_KEY environment values cannot trigger prov
     else process.env.GEMINI_API_KEY = previousGeminiKey;
   }
 });
+
+test("hosted card links use public source assets rather than private Site routes", () => {
+  const base = "https://raw.githubusercontent.com/SonghaiFan/frankie-tarot/pinned/public/";
+  const hosted = createTarotEngine({publicBaseUrl:"https://private.example",assetBaseUrl:base});
+  const result = hosted.draw({spread:"THREE",question:"asset check",locale:"en",reversedProbability:0});
+  for (const card of result.reading!.cards) {
+    assert.ok(card.imageUrl.startsWith(base + "images/cards/"));
+    assert.ok(card.originalImageUrl.startsWith(base + "images/cards_rws_original/"));
+  }
+});
