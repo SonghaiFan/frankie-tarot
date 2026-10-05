@@ -11,6 +11,16 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/health") return Response.json({status:"ok",name:"frankie-tarot",version:VERSION});
+    // This non-static route must run in the Worker so the host cannot bypass CORS.
+    if (/^\/media\/(images|audio)\//.test(url.pathname)) {
+      const assetUrl = new URL(url);
+      assetUrl.pathname = assetUrl.pathname.slice("/media".length);
+      const asset = env.ASSETS ? await env.ASSETS.fetch(new Request(assetUrl, request)) : new Response("Not found", {status:404});
+      const headers = new Headers(asset.headers);
+      headers.set("Access-Control-Allow-Origin", "*");
+      if (assetUrl.pathname.endsWith(".webp")) headers.set("Content-Type", "image/webp");
+      return new Response(asset.body, {status:asset.status,headers});
+    }
     if (url.pathname !== "/mcp") {
       const asset = env.ASSETS ? await env.ASSETS.fetch(request) : new Response("Not found",{status:404});
       if (/^\/(images|audio|assets)\//.test(url.pathname)) {

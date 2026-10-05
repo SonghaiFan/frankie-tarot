@@ -45,4 +45,4 @@ A successful Site deploy does not prove that an installed development app has re
 
 ## Public website and shared assets
 
-The owner chose public Site access so the ChatGPT iframe can load this same site's `images/` and `audio/` without a website login cookie. UI, deck data and assets all come from the same project and publication. No separate GitHub asset origin or pinned asset release is needed. After deployment, verify anonymous image/audio HTTP responses and the real ChatGPT iframe, then refresh its tools when UI resource metadata changes.
+The owner chose public Site access so the ChatGPT iframe can load this same site's `images/` and `audio/` without a website login cookie. UI, deck data and assets all come from the same project and publication. The widget loads through `/media/images/` and `/media/audio/` on this same origin; the Worker reads the same asset binding and adds CORS headers. No separate GitHub asset origin or pinned asset release is needed. After deployment, verify anonymous image/audio HTTP responses and the real ChatGPT iframe, then refresh its tools when UI resource metadata changes.

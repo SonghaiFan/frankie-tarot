@@ -10,10 +10,10 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const output = join(directory, "dist");
 await mkdir(output, { recursive: true });
 const origin = process.env.PUBLIC_BASE_URL || "http://127.0.0.1:8787";
-const base = new URL(origin);
-if (base.pathname !== "/" || base.search || base.hash || base.username || base.password) throw new Error("Use a plain asset origin");
+const base = new URL(process.env.TAROT_ASSET_BASE_URL || `${origin}/`);
+if (!base.pathname.endsWith("/") || base.search || base.hash || base.username || base.password) throw new Error("Use a plain asset origin");
 const result = await build({
-  configFile: false, root, base: `${base.origin}/`, publicDir: false,
+  configFile: false, root, base: base.href, publicDir: false,
   plugins: [react(), tailwindcss()],
   resolve: { alias: [
     { find: "@/features/tarot/services/gemini", replacement: join(directory, "ui/localAudio.ts") },
@@ -44,5 +44,5 @@ await mkdir(join(output,"card-backs"),{recursive:true});
 for(const f of await readdir(join(root,"public/images/card-backs"))) if(f.endsWith(".svg")) await copyFile(join(root,"public/images/card-backs",f),join(output,"card-backs",f));
 const modules=files.filter(f=>f.type==='chunk').flatMap(f=>Object.keys(f.modules));
 if(modules.some(p=>p.includes('@google/genai') || p.endsWith('/core/services.ts'))) throw new Error("Plugin imported model-provider code");
-await writeFile(join(output,"build-info.json"),JSON.stringify({sourceEntry:"src/app/App.tsx",assetOrigin:base.origin,sourceInputs:modules,widgetBytes:Buffer.byteLength(js)+Buffer.byteLength(css)},null,2));
+await writeFile(join(output,"build-info.json"),JSON.stringify({sourceEntry:"src/app/App.tsx",assetOrigin:base.href,sourceInputs:modules,widgetBytes:Buffer.byteLength(js)+Buffer.byteLength(css)},null,2));
 console.log("Built plugin from the original App, shared components, styles, data and artwork.");

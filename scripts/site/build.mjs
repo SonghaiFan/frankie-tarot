@@ -12,7 +12,7 @@ const origin=process.env.PUBLIC_BASE_URL;
 if(!origin) throw new Error("Set PUBLIC_BASE_URL to the existing Site origin");
 await rm(join(root,"dist"),{recursive:true,force:true});
 // Both targets import the same original src/app/App.tsx and canonical data.
-execFileSync(process.execPath,["plugins/chatgpt/build.mjs"],{stdio:"inherit",env:process.env});
+execFileSync(process.execPath,["plugins/chatgpt/build.mjs"],{stdio:"inherit",env:{...process.env,TAROT_ASSET_BASE_URL:`${origin}/media/`}});
 await bundle({entryPoints:["scripts/site/sites-vite-plugin.ts"],bundle:true,platform:"node",format:"esm",packages:"external",outfile:"node_modules/.cache/tarot-sites-plugin.mjs"});
 const {sites}=await import(new URL("../../node_modules/.cache/tarot-sites-plugin.mjs",import.meta.url));
 await viteBuild({configFile:false,root,base:"/",publicDir:false,plugins:[react(),tailwindcss(),sites({mockAuth:false})],
