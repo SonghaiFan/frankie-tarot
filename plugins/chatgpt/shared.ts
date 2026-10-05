@@ -45,6 +45,7 @@ export interface TarotView extends TarotPayload {
   spread?: string;
   revealed: number[];
   interpretation?: string;
+  resultIntent?: 'interpret' | 'save';
   view: "table" | "result";
   cardFaceStyle?: "original" | "redraw" | "dreamy";
 }

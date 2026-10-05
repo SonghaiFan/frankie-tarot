@@ -6,6 +6,7 @@ import { z } from "zod";
 import { drawInputSchema, localeSchema, SPREAD_IDS, spreadSchema, type TarotEngine } from "./engine";
 import { flowSchema, restoreView, viewResult } from "./flow";
 import type { TarotView } from "./shared";
+import { validateBriefReading } from './prompts';
 
 /** Content-addressed resources prevent hosts from reusing an older UI after deploy. */
 export function getUiUri(html: string) {
@@ -24,7 +25,7 @@ export function createMcpServer(options: {
   const uiUri = getUiUri(options.widgetHtml);
   const resultUri = uiUri.replace("/app-", "/result-");
   const server = new McpServer({ name: "frankie-tarot", version: VERSION }, {
-    instructions: "Frank Tarot shares one original app and a staged conversation. A question such as @Frank Tarot what should I consider this week must call open_tarot(question), not draw or interpret. The user chooses a spread and selects cards in the table. draw_tarot_cards is only for an explicit draw request. It opens PICKING and conceals all cards from the model. reveal_tarot_cards is only for an explicit user request to turn specified cards; otherwise wait for flips in the app. Never interpret before canInterpret=true AND the user requests interpretation. On that request call show_tarot_result with the latest sessionToken and your interpretation so the same shared result appears in chat. For an explicit Save result request, call show_tarot_result preserving existing interpretation exactly, or omit interpretation if none exists. Saving is not permission to generate a new interpretation. Preserve cardFaceStyle from app context. Use the newest sessionToken from app context for all follow-ups; never invent cards, silently redraw, or reset progress. Hidden cards cannot be inferred. Tarot supports reflection, not factual prediction.",
+    instructions: "Frank Tarot shares one original app and a staged conversation. A question such as @Frank Tarot what should I consider this week must call open_tarot(question), not draw or interpret. The user chooses a spread and selects cards in the table. draw_tarot_cards is only for an explicit draw request. It opens PICKING and conceals all cards from the model. reveal_tarot_cards is only for an explicit user request to turn specified cards; otherwise wait for flips in the app. Never interpret before canInterpret=true AND the user requests interpretation. On that request follow interpretationPrompt (the website's shared voice and length: one cohesive paragraph, 120–180 Chinese characters or 130–180 English words). Call show_tarot_result with intent=interpret, the newest sessionToken and ONLY this brief initial interpretation. Then use the returned followUpPrompt (the website's copied Ask Deeper prompt) for deeper analysis in your ordinary chat response OUTSIDE the app; do not put that analysis in the card or replace the card. Subsequent deeper questions also belong in ordinary chat and preserve the brief card. For an explicit Save result request, call show_tarot_result with intent=save, preserving existing interpretation exactly, or omit interpretation if none exists. Saving is not permission to generate an interpretation or deeper analysis. Preserve cardFaceStyle from app context. Use the newest sessionToken from app context for all follow-ups; never invent cards, silently redraw, or reset progress. Hidden cards cannot be inferred. Tarot supports reflection, not factual prediction.",
   });
 
   server.registerTool("list_tarot_spreads", {
@@ -88,14 +89,15 @@ export function createMcpServer(options: {
 
   registerAppTool(server, "show_tarot_result", {
     title:"Your tarot reading",
-    description:"Save or return the shared result card INLINE in chat, after ALL cards are revealed and the user asks to save, see a result, or interpret. For Save result, preserve existing interpretation exactly, or omit it if none exists; do not generate a new interpretation. Only provide new interpretation text when explicitly requested. Preserve the existing draw and artwork style. Fails while any card is hidden. The result can reopen the table or ask a follow-up.",
-    inputSchema:z.object({sessionToken:tokenSchema,interpretation:z.string().max(12000).optional(),cardFaceStyle:z.enum(["original","redraw","dreamy"]).optional()}).strict(),
+    description:"Return the shared result card INLINE after ALL cards are revealed. For interpretation requests use intent=interpret and follow interpretationPrompt: one concise paragraph, 120–180 Chinese characters or 130–180 English words, the same voice as the website. Then use the returned followUpPrompt for deeper analysis in the ordinary chat response outside the app, never as card text. For Save result use intent=save and preserve existing interpretation exactly, or omit it if none exists; do not generate interpretation or deeper analysis. Preserve the existing draw and artwork. Fails while any card is hidden.",
+    inputSchema:z.object({sessionToken:tokenSchema,interpretation:z.string().max(12000).optional(),cardFaceStyle:z.enum(["original","redraw","dreamy"]).optional(),intent:z.enum(['interpret','save']).default('save')}).strict(),
     outputSchema:flowSchema,annotations:{...annotations,idempotentHint:true},
     _meta:{...noauth,ui:{resourceUri:resultUri,visibility:["model","app"]}},
-  }, async ({sessionToken,interpretation,cardFaceStyle}) => guarded(() => {
+  }, async ({sessionToken,interpretation,cardFaceStyle,intent}) => guarded(() => {
     const view = restoreView(options.engine,sessionToken);
     if (view.revealed.length !== view.reading!.cards.length) throw new Error("Cards remain face down. Do not interpret yet. Wait for the user to reveal all cards.");
-    return {...view,stage:"result",view:"result",interpretation,cardFaceStyle};
+    if (intent === 'interpret') validateBriefReading(interpretation, view.locale);
+    return {...view,stage:"result",view:"result",interpretation,cardFaceStyle,resultIntent:intent};
   }));
 
   for (const [uri, inline] of [[uiUri, false], [resultUri, true]] as const) registerAppResource(server, inline ? "F.Tarot reading card" : "F.Tarot card table", uri, {}, async () => ({

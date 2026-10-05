@@ -67,6 +67,8 @@ test("HTTP stages conceal cards, preserve identities and gate result until every
   const privateDraw = (drawn._meta as any).tarot;
   assert.equal(state.stage,"picking"); assert.equal(state.canInterpret,false);
   assert.deepEqual(state.cards,[]); assert.equal(state.readingToken,undefined);
+  assert.equal(state.interpretationPrompt,undefined);
+  assert.equal(state.followUpPrompt,undefined);
   assert.ok(privateDraw.reading.cards.every((c:any)=>c.isReversed));
   assert.ok(!JSON.stringify([state,drawn.content]).includes(privateDraw.reading.cards[0].name));
   let token=state.sessionToken;
@@ -76,6 +78,7 @@ test("HTTP stages conceal cards, preserve identities and gate result until every
   token=(partial.structuredContent as any).sessionToken;
   assert.deepEqual((partial.structuredContent as any).cards.map((c:any)=>c.position),[2]);
   assert.equal((partial.structuredContent as any).canInterpret,false);
+  assert.equal((partial.structuredContent as any).interpretationPrompt,undefined);
   const restored=await client.callTool({name:"open_tarot",arguments:{sessionToken:token}});
   assert.deepEqual((restored.structuredContent as any).revealed,[2]);
   assert.equal(((restored._meta as any).tarot.reading.id),privateDraw.reading.id);
@@ -83,10 +86,22 @@ test("HTTP stages conceal cards, preserve identities and gate result until every
   const ready=await client.callTool({name:"reveal_tarot_cards",arguments:{sessionToken:token,positions:[1,3]}});
   token=(ready.structuredContent as any).sessionToken;
   assert.equal((ready.structuredContent as any).canInterpret,true);
-  const result=await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,interpretation:"Reflection, not prediction."}});
+  assert.match((ready.structuredContent as any).interpretationPrompt,/One cohesive paragraph/);
+  assert.match((ready.structuredContent as any).interpretationPrompt,/130-180 words/);
+  const result=await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,interpretation:"Reflection, not prediction.",intent:'interpret'}});
   assert.deepEqual((result.structuredContent as any).cards,privateDraw.reading.cards);
   assert.equal((result.structuredContent as any).view,"result");
   assert.equal((result.structuredContent as any).interpretation,"Reflection, not prediction.");
+  assert.match((result.structuredContent as any).followUpPrompt,/Initial Interpretation:\nReflection, not prediction\./);
+  assert.match((result.content as any)[0].text,/ordinary assistant response OUTSIDE the app/);
+  const longReading=Array(181).fill('reflection').join(' ');
+  const oversized=await client.callTool({name:'show_tarot_result',arguments:{sessionToken:token,interpretation:longReading,intent:'interpret'}});
+  assert.equal(oversized.isError,true,'deeper analysis must not become card text');
+  const paragraphs=await client.callTool({name:'show_tarot_result',arguments:{sessionToken:token,interpretation:'First paragraph.\n\nSecond paragraph.',intent:'interpret'}});
+  assert.equal(paragraphs.isError,true);
+  const savedExisting=await client.callTool({name:'show_tarot_result',arguments:{sessionToken:token,interpretation:longReading,intent:'save'}});
+  assert.equal((savedExisting.structuredContent as any).interpretation,longReading,'save preserves legacy text exactly rather than truncating it');
+  assert.match((savedExisting.content as any)[0].text,/Do not run followUpPrompt on a save request/);
   const saved=await client.callTool({name:"show_tarot_result",arguments:{sessionToken:token,cardFaceStyle:"original"}});
   assert.equal(saved.isError,undefined);
   assert.equal((saved.structuredContent as any).interpretation,undefined,'saving cards alone must not synthesize an interpretation');
@@ -99,6 +114,20 @@ test("HTTP stages conceal cards, preserve identities and gate result until every
   const uri=(tools.find(t=>t.name==='show_tarot_result')!._meta!.ui as any).resourceUri;
   const resource=(await client.readResource({uri})).contents[0];
   assert.equal((resource._meta?.['openai/ui'] as any).preferredDisplayMode,'inline');
+});
+
+test("Chinese brief readings follow the website prompt and keep deeper text outside the card", async () => {
+  const draw=await client.callTool({name:'draw_tarot_cards',arguments:{question:'如何推进创作？',spread:'SINGLE',locale:'zh-CN'}});
+  const ready=await client.callTool({name:'reveal_tarot_cards',arguments:{sessionToken:(draw.structuredContent as any).sessionToken,positions:[1]}});
+  const state=ready.structuredContent as any;
+  assert.match(state.interpretationPrompt,/120-180 Chinese characters/);
+  const brief='先把心中的方向落实成一个小作品，再从真实的反馈里调整节奏。你不必一次证明所有可能，让今天的一步清晰而踏实。';
+  const result=await client.callTool({name:'show_tarot_result',arguments:{sessionToken:state.sessionToken,interpretation:brief,intent:'interpret'}});
+  assert.equal((result.structuredContent as any).interpretation,brief);
+  assert.match((result.structuredContent as any).followUpPrompt,/请基于这些内容，继续给出更深入、更细致的分析/);
+  assert.ok((result.structuredContent as any).followUpPrompt.includes(brief));
+  const long=await client.callTool({name:'show_tarot_result',arguments:{sessionToken:state.sessionToken,interpretation:'星'.repeat(181),intent:'interpret'}});
+  assert.equal(long.isError,true);
 });
 
 test("protocol input validation rejects unknown spread and attempted custom cards", async () => {

@@ -9,6 +9,7 @@ import { FULL_DECK } from '@/features/tarot/constants/cards';
 import type { HostedReading, TarotHost } from '@/host/tarotHost';
 import type { SpreadType } from '@/features/tarot/types';
 import type { TarotView } from '../shared';
+import { readingPrompts } from '../prompts';
 import '@/app/index.css';
 
 const bridge = new McpApp({name:'Frank Tarot',version:'0.3.0'}, {availableDisplayModes:['inline','fullscreen']}, {autoResize:true});
@@ -48,9 +49,10 @@ async function syncContext() {
     cards:reading?.cards.filter(card=>current!.revealed.includes(card.position)) ?? [],
     interpretation:current.interpretation,
     canInterpret:!!reading && current.revealed.length===reading.cards.length,
+    ...readingPrompts(current),
     instruction:current.view==='result'
       ? 'This result is saved. Preserve its cards, artwork and existing interpretation. For Save result use show_tarot_result without adding interpretation. Only interpret when explicitly requested. Never redraw.'
-      : 'Wait for all cards to be revealed AND the user to request interpretation. Use show_tarot_result with the newest sessionToken to return the shared inline card. Never silently redraw.',
+      : 'Wait for all cards to be revealed AND the user to request interpretation. Follow interpretationPrompt for the brief card, use show_tarot_result with intent=interpret and the newest sessionToken, then follow followUpPrompt for deeper analysis in ordinary chat outside the app. Never silently redraw.',
   }});
 }
 async function syncReveals() {
@@ -90,8 +92,8 @@ const host:Omit<TarotHost,'saveResult'>={
     await syncQueue.catch(()=>{}); await syncReveals();
     if(!current?.reading || current.revealed.length!==current.reading.cards.length) throw new Error('Reveal all cards first');
     await send((locale==='zh-CN'
-      ? '我已翻开全部卡牌。请结合我的问题解读，用 show_tarot_result 把这次牌阵与解读作为结果卡返回聊天，保持同一组牌，不要重新抽牌。'
-      : 'I have revealed every card. Interpret this existing reading and call show_tarot_result to return the shared reading card in chat. Do not redraw.'));
+      ? '我已翻开全部卡牌。请按 interpretationPrompt 中网页端的风格，写一段 120–180 字的简短解读，用 show_tarot_result（intent=interpret）把它与当前牌阵作为结果卡返回聊天。随后复用结果中的 followUpPrompt 在卡片外的普通聊天回复里继续深入分析，不要把详细分析放进结果卡或替换简短答案。保持同一组牌，不重新抽牌。'
+      : 'I have revealed every card. Follow the website’s interpretationPrompt for one brief paragraph of 130–180 words. Call show_tarot_result with intent=interpret to put that brief reading in the shared result card. Then use its followUpPrompt for deeper analysis in ordinary chat outside the card. Do not replace the brief card with detailed analysis or redraw.'));
   },
 };
 function PluginRoot(){
@@ -101,7 +103,6 @@ function PluginRoot(){
   const [setup,setSetup]=useState<{question:string;spread:SpreadType;revision:number}>();
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
-  const [followup,setFollowup]=useState('');
   function receive(next:TarotView){
     current=next;uiState=undefined;setView(next);setError('');
     void i18n.changeLanguage(next.locale);
@@ -114,6 +115,7 @@ function PluginRoot(){
       if(!current?.reading || current.revealed.length!==current.reading.cards.length) throw new Error('Reveal all cards first');
       const saved=payload(await bridge.callServerTool({name:'show_tarot_result',arguments:{
         sessionToken:current.sessionToken,interpretation:readingText || current.interpretation,
+        intent:'save',
         cardFaceStyle:uiState?.cardFaceStyle ?? current.cardFaceStyle,
       }}));
       // App tool calls render locally; an explicit message asks the host to also
@@ -144,11 +146,11 @@ function PluginRoot(){
       <section aria-label={zh?'结果操作':'Result actions'} className="px-3">
         <div className="flex flex-wrap gap-2 mt-5">
           <button className={button} disabled={busy} onClick={()=>void action(async()=>{const next=payload(await bridge.callServerTool({name:'open_tarot',arguments:{sessionToken:current!.sessionToken}}));receive({...next,interpretation:view.interpretation});})}>{zh?'回到牌桌':'Open table'}</button>
+          {view.interpretation && <button className={button} disabled={busy} onClick={()=>void action(async()=>{
+            const prompt=readingPrompts(view).followUpPrompt;
+            if(prompt) await send(`${prompt}\n\n${zh?'请在结果卡外的聊天回复中回答，保留卡片中的简短解读，不调用 show_tarot_result 替换它，也不重新抽牌。':'Answer in ordinary chat outside the result card. Preserve its brief reading; do not call show_tarot_result to replace it or redraw.'}`);
+          })}>{i18n.t('reading.prompt')}</button>}
         </div>
-        <form className="flex gap-2 mt-4" onSubmit={e=>{e.preventDefault();if(followup.trim()) void action(async()=>{await send(followup.trim());setFollowup('');});}}>
-          <input aria-label={zh?'继续追问':'Follow-up question'} value={followup} maxLength={2000} onChange={e=>setFollowup(e.target.value)} placeholder={zh?'对这组牌，继续问……':'Ask about these cards…'} className="min-w-0 flex-1 bg-transparent border border-white/25 rounded-md px-3 py-2 text-sm"/>
-          <button className={button} disabled={busy || !followup.trim()}>{zh?'继续聊':'Discuss'}</button>
-        </form>
       </section>
       {error&&<p role="alert">{error}</p>}
     </main> : view ? <div style={{height:displayMode==='inline'?640:'100dvh'}}><OriginalApp host={appHost} initialReading={initialReading} initialSetup={setup}/></div> : <p className="p-6 text-neutral-400">Connecting Frank Tarot…</p>}

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { localeSchema, spreadSchema, readingSchema, type TarotEngine } from './engine';
 import type { TarotView, Locale } from './shared';
+import { readingPrompts } from './prompts';
 
 export const flowSchema = z.object({
   locale: localeSchema, spreads: z.array(spreadSchema),
@@ -10,6 +11,7 @@ export const flowSchema = z.object({
   revealed: z.array(z.number()), cardCount: z.number(),
   cards: readingSchema.shape.cards, canInterpret: z.boolean(),
   interpretation: z.string().optional(), cardFaceStyle: z.enum(["original","redraw","dreamy"]).optional(),
+  interpretationPrompt: z.string().optional(), followUpPrompt: z.string().optional(),
 });
 export function publicState(view: TarotView) {
   return {
@@ -20,6 +22,7 @@ export function publicState(view: TarotView) {
     cards: view.reading?.cards.filter(card => view.revealed.includes(card.position)) ?? [],
     canInterpret: !!view.reading && view.revealed.length === view.reading.cards.length,
     interpretation: view.interpretation, cardFaceStyle: view.cardFaceStyle,
+    ...readingPrompts(view),
   };
 }
 export function viewResult(view: TarotView) {
@@ -29,9 +32,11 @@ export function viewResult(view: TarotView) {
     // Only the app receives the complete draw. Never copy this into model context.
     _meta: { tarot: view },
     content: [{type:'text' as const, text: view.view === 'result'
-      ? `Saved this existing reading as a result card. Preserve its cards, artwork and any provided interpretation. Do not add an interpretation unless explicitly requested.`
+      ? view.resultIntent === 'interpret'
+        ? 'The brief initial interpretation is now in the shared result card. Next use followUpPrompt to give deeper analysis in the ordinary assistant response OUTSIDE the app. Do not repeat the brief paragraph, call show_tarot_result again with the deeper text, replace the result card, or redraw.'
+        : `Saved this existing reading as a result card. Preserve its cards, artwork and any provided interpretation. Do not add an interpretation unless explicitly requested. Do not run followUpPrompt on a save request.`
       : state.canInterpret
-      ? `All ${state.cardCount} cards are revealed. Keep this reading and its positions unchanged. Interpret only when requested; use show_tarot_result for the inline result.`
+      ? `All ${state.cardCount} cards are revealed. Keep this reading and its positions unchanged. Interpret only when requested: follow interpretationPrompt for one brief paragraph, call show_tarot_result with intent="interpret", then use its followUpPrompt for deeper analysis outside the app.`
       : `Stage: ${state.stage}. ${state.revealed.length}/${state.cardCount} cards revealed. Do not interpret, name hidden cards, or infer a reading. Guide the user to select/reveal in the table. A question alone opens setup; it is not permission to skip the ritual.`}],
   };
 }
