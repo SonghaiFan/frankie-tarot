@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "frankie-tarot",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Draw and explore a bilingual tarot deck with an interactive card table and reflective conversation.",
   "author": {
     "name": "Songhai Fan"
@@ -16,6 +16,7 @@
   ],
   "extensions": {
     "com.openai": {
+      "apps": "./.app.json",
       "interface": {
         "displayName": "F.Tarot",
         "shortDescription": "Your tarot table in ChatGPT",

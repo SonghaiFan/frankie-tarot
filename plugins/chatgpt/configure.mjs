@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { mkdir, readFile, writeFile, copyFile, rm } from "node:fs/promises";
+import { mkdir, readFile, writeFile, copyFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
@@ -14,17 +14,19 @@ if (appId && !/^asdk_app_[A-Za-z0-9_-]+$/.test(appId)) throw new Error("Use the 
 const directory = fileURLToPath(new URL("./", import.meta.url));
 const target = join(directory, "package");
 const manifest = JSON.parse(await readFile(join(directory, "plugin.json"), "utf8"));
-if (appId) manifest.extensions["com.openai"].apps = "./.app.json";
+// Keep the verified account mapping in packages generated without an override.
+const apps = appId
+  ? { apps: { "frankie-tarot": { id: appId } } }
+  : JSON.parse(await readFile(join(directory, ".app.json"), "utf8"));
+manifest.extensions["com.openai"].apps = "./.app.json";
 await mkdir(target, { recursive: true });
 await writeFile(join(target, "plugin.json"), JSON.stringify(manifest, null, 2) + "\n");
 await writeFile(join(target, "mcp.json"), JSON.stringify({
   $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   mcpServers: { "frankie-tarot": { type: "streamable-http", url: url.href } },
 }, null, 2) + "\n");
-if (appId) await writeFile(join(target, ".app.json"), JSON.stringify({ apps: { "frankie-tarot": { id: appId } } }, null, 2) + "\n");
-else await rm(join(target, ".app.json"), { force: true });
+await writeFile(join(target, ".app.json"), JSON.stringify(apps, null, 2) + "\n");
 await mkdir(join(target, "assets"), { recursive: true });
 await copyFile(join(directory, "assets/tarot-icon.svg"), join(target, "assets/tarot-icon.svg"));
 await copyFile(join(directory, "README.md"), join(target, "README.md"));
 console.log(`Generated the plugin package in ${target}`);
-if (!appId) console.log("No registered ChatGPT app ID supplied. Register the endpoint in developer mode, then rerun with --app-id.");

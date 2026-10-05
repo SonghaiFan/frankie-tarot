@@ -39,6 +39,14 @@ For local integration testing, `node --import tsx --test tests/vercel-mcp.test.t
 
 After deploying, verify the website, `/mcp`, and the embedded UI separately: an HTTP or tool result alone does not prove that ChatGPT rendered the resource correctly.
 
+## ChatGPT web and desktop
+
+The personal ChatGPT connection is registered against the existing public Vercel endpoint at `https://tarot.songhai.site/mcp`. Its verified ID is stored in `.app.json`; `plugin.json` references that mapping through `extensions.com.openai.apps`. The portable `mcp.json` remains available to desktop MCP clients. Both hosts use the same tools, staged reading state, original UI and Vercel deployment.
+
+Generate the account plugin package with `npm run plugin:configure -- --url https://tarot.songhai.site/mcp`. The generated package includes the registered app mapping by default, so subsequent icon or metadata updates do not accidentally restore a desktop-only package. For another ChatGPT account, register the endpoint there and supply its own verified ID with `--app-id plugin_asdk_app_…`.
+
+Open F.Tarot in ChatGPT on the web, or start a Work chat and select F.Tarot with `@`. A question should open the original input stage; cards stay hidden until the user chooses and reveals them. Only request interpretation after all selected cards are visible.
+
 ## Refresh the installed ChatGPT app after publication
 
 A successful Vercel deploy does not prove that a ChatGPT development app has refreshed its cached tool metadata. After its MCP endpoint is set to `https://tarot.songhai.site/mcp`, refresh tools in ChatGPT and reopen `open_tarot`. Verify the original dark starfield UI in ChatGPT itself, not only the website or local preview.
