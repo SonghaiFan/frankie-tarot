@@ -16,7 +16,10 @@ async function start() {
   });
   await client.connect(new StreamableHTTPClientTransport(new URL("/mcp", location.href)));
   const initial = CallToolResultSchema.parse(await client.callTool({ name: "open_tarot", arguments: { locale } }));
-  const resource = await client.readResource({ uri: "ui://frankie-tarot/v1/table.html" });
+  const { tools } = await client.listTools();
+  const uiUri = (tools.find(tool => tool.name === "open_tarot")?._meta?.ui as {resourceUri?: string})?.resourceUri;
+  if (!uiUri) throw new Error("Missing UI resource in tool discovery");
+  const resource = await client.readResource({ uri: uiUri });
   const html = resource.contents.find((item) => "text" in item);
   if (!html || !("text" in html)) throw new Error("The MCP UI resource contains no HTML.");
   const iframe = document.createElement("iframe");

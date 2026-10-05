@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { TarotEngine } from "./engine";
 import { createMcpServer, VERSION } from "./mcp";
-export { createMcpServer, VERSION, UI_URI } from "./mcp";
+export { createMcpServer, VERSION, getUiUri } from "./mcp";
 const localHost = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
 function send(res: ServerResponse, status: number, type: string, body: string | Buffer) {
   res.writeHead(status, { "Content-Type": type, "X-Content-Type-Options": "nosniff" });

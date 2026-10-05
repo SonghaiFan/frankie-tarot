@@ -6,6 +6,7 @@ This is a host adapter inside the original Frank Tarot repository, not a second 
 - Components, animations, styles, translations and card artwork: existing `src/` and `public/`.
 - Canonical card/spread data: `src/features/tarot/data/ground-truth.json`.
 - `ui/index.tsx` connects MCP to the original App through `src/host/tarotHost.ts`.
+- UI resource URIs include a hash of the built HTML so a host cannot reuse a previous UI under the same identifier. The preview discovers the URI from tool metadata.
 - `mcp.ts` declares the tools and UI resource, shared by the local server and deployed Worker.
 - `engine.ts` adds server-side secure draws and signed recovery tokens over canonical data.
 

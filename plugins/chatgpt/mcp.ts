@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { OpenAIUiToolMetadata } from "@openai/mcp-extensions/server";
@@ -5,8 +6,11 @@ import { z } from "zod";
 import { drawInputSchema, localeSchema, payloadSchema, spreadSchema, type TarotEngine } from "./engine";
 import type { TarotPayload } from "./shared";
 
-export const UI_URI = "ui://frankie-tarot/v1/table.html";
-export const VERSION = "0.1.0";
+/** Content-addressed resources prevent hosts from reusing an older UI after deploy. */
+export function getUiUri(html: string) {
+  return `ui://frankie-tarot/app-${createHash("sha256").update(html).digest("hex").slice(0,20)}.html`;
+}
+export const VERSION = "0.2.1";
 const noauth = { securitySchemes: [{ type: "noauth" }] };
 const annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
@@ -28,6 +32,7 @@ export function createMcpServer(options: {
   publicBaseUrl: string;
   uiDomain?: string;
 }) {
+  const uiUri = getUiUri(options.widgetHtml);
   const server = new McpServer({ name: "frankie-tarot", version: VERSION }, {
     instructions: "F.Tarot is an interactive bilingual tarot deck for reflection. Use list_tarot_spreads to inspect real spreads. Use draw_tarot_cards only for an explicit new draw, then open_tarot with the returned readingToken to show the same cards. Calling open_tarot with no token opens an empty table. Never invent card results or silently redraw on a follow-up. Interpret the existing cards in context when the user requests interpretation. Tarot is symbolic reflection; do not present it as a factual prediction or a substitute for the user's judgment.",
   });
@@ -60,7 +65,7 @@ export function createMcpServer(options: {
     annotations: { ...annotations, idempotentHint: true },
     _meta: {
       ...noauth,
-      ui: { resourceUri: UI_URI, visibility: ["model", "app"] },
+      ui: { resourceUri: uiUri, visibility: ["model", "app"] },
       "openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] } satisfies OpenAIUiToolMetadata,
       "openai/toolInvocation/invoking": "Opening your table…",
       "openai/toolInvocation/invoked": "F.Tarot is open",
@@ -70,9 +75,9 @@ export function createMcpServer(options: {
     catch (error) { return { isError: true, content: [{ type: "text" as const, text: (error as Error).message }] }; }
   });
 
-  registerAppResource(server, "F.Tarot card table", UI_URI, {}, async () => ({
+  registerAppResource(server, "F.Tarot card table", uiUri, {}, async () => ({
     contents: [{
-      uri: UI_URI, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
+      uri: uiUri, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
       _meta: {
         ui: {
           prefersBorder: false,

@@ -8,7 +8,10 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { createTarotEngine, payloadSchema } from "./engine";
-import { createTarotHttpServer, UI_URI } from "./server";
+import { createTarotHttpServer, getUiUri } from "./server";
+
+const widgetHtml = "<!doctype html><html><body>F.Tarot test resource</body></html>";
+const UI_URI = getUiUri(widgetHtml);
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const engine = createTarotEngine({ publicBaseUrl: "http://127.0.0.1:8787", signingKey: "integration-test-signing-key-32-characters" });
@@ -22,7 +25,7 @@ before(async () => {
   await mkdir(join(directory, "redraw"));
   await copyFile(join(root, "public/images/cards/maj00.webp"), join(directory, "redraw/maj00.webp"));
   server = createTarotHttpServer({ engine, publicBaseUrl: "http://127.0.0.1:8787", assetDirectory: directory,
-    widgetHtml: "<!doctype html><html><body>F.Tarot test resource</body></html>" });
+    widgetHtml });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   assert.ok(address && typeof address === "object");
@@ -106,4 +109,10 @@ test("MCP rejects unexpected browser origins and excessive request bodies", asyn
   assert.equal(unexpected.status, 403);
   const oversized = await fetch(`${baseUrl}/mcp`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: JSON.stringify({ payload: "x".repeat(130 * 1024) }) });
   assert.equal(oversized.status, 413);
+});
+
+ test("UI resource identity changes with UI content and is stable across restarts", () => {
+  assert.equal(getUiUri(widgetHtml), UI_URI);
+  assert.notEqual(getUiUri(widgetHtml + "<!-- updated -->"), UI_URI);
+  assert.match(UI_URI, /^ui:\/\/frankie-tarot\/app-[0-9a-f]{20}\.html$/);
 });
