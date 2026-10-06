@@ -61,8 +61,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
     <header className="fixed left-0 right-0 top-0 z-40 flex min-h-12 items-center justify-between bg-linear-to-b from-black/90 via-black/35 to-transparent pl-[calc(var(--safe-left)+1rem)] pr-[calc(var(--safe-right)+1rem)] pt-[var(--safe-top)] pointer-events-none md:min-h-16 md:px-8">
       {/* Left: Logo / Home */}
       <div className="flex items-center gap-3 md:gap-6 pointer-events-auto">
-        {/* The intro hero carries the wordmark itself; fade the header copy out there. */}
-        <button onClick={onHomeClick} className={`flex flex-col gap-1 group transition-opacity duration-700 ${gameState === GameState.INTRO ? "invisible opacity-0" : "opacity-100"}`}>
+        <button onClick={onHomeClick} className="flex flex-col gap-1 group">
           <div className="flex items-center gap-2 text-white/80 group-hover:text-white transition-colors">
             <FrankSignature className="h-5 w-auto" />
             <h1 className="hidden sm:block text-xs font-cinzel tracking-[0.4em] font-bold">

@@ -8,8 +8,15 @@ const SPARKLE = "M50 0C54 34 66 46 100 50 66 54 54 66 50 100 46 66 34 54 0 50 34
 export const HERO_AURA_SCALE = 150;
 
 /** The home page's single card: the deck's aura behind glass, edged in warm light. */
-const AuraHeroCard: React.FC<{ className?: string }> = ({ className = "" }) => {
-  const faceRef = useRef<HTMLCanvasElement>(null);
+interface AuraHeroCardProps {
+  className?: string;
+  /** Receives the painted face canvas, e.g. for the water to reflect. */
+  faceCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
+}
+
+const AuraHeroCard: React.FC<AuraHeroCardProps> = ({ className = "", faceCanvasRef }) => {
+  const ownFaceRef = useRef<HTMLCanvasElement>(null);
+  const faceRef = faceCanvasRef ?? ownFaceRef;
   const glowRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -19,8 +26,9 @@ const AuraHeroCard: React.FC<{ className?: string }> = ({ className = "" }) => {
 
   return (
     <div aria-hidden="true" className={`relative ${CARD_ASPECT_CLASS} ${className}`}>
-      {/* The card's own colour bleeding into the dark around it. */}
-      <canvas ref={glowRef} className="absolute inset-[6%] rounded-[8%] opacity-70 blur-[42px] saturate-150" />
+      {/* The card's own colour bleeding into the dark around it. A canvas does not
+          stretch between insets, so it is sized explicitly. */}
+      <canvas ref={glowRef} className="absolute left-[10%] top-[10%] h-[80%] w-[80%] rounded-[8%] opacity-35 blur-[36px]" />
       <div className="absolute inset-0 overflow-hidden rounded-[7%/4.1%] border-[1.5px] border-[rgba(255,214,184,0.8)] bg-neutral-950 shadow-[0_0_0_1px_rgba(0,0,0,0.6),0_0_28px_rgba(255,190,150,0.18),0_30px_80px_-20px_rgba(0,0,0,0.9)]">
         <canvas ref={faceRef} className="absolute inset-0 h-full w-full" />
         {/* Glass: a soft sheen from the top-left and a hairline inner bevel. */}

@@ -2,7 +2,15 @@
   "appTitle": "Frank Tarot",
   "intro": {
     "enter": "开始占卜",
-    "hint": "轻触牌盒，开始占卜"
+    "title": "塔罗",
+    "tagline1": "一个更安静的空间",
+    "tagline2": "照见更明亮的问题",
+    "pillar1": "反思",
+    "pillar2": "厘清",
+    "pillar3": "向前",
+    "footnote1": "同样的问题，",
+    "footnote2": "更开阔的视角。",
+    "madeBy": "FRANK 制作"
   },
   "header": {
     "brand": "Frank Tarot",

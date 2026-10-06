@@ -3,6 +3,7 @@
 @theme {
   --font-cinzel: "Cinzel", serif;
   --font-noto: "Noto Serif SC", serif;
+  --font-display: "Jost", "Noto Serif SC", ui-sans-serif, sans-serif;
 }
 
 /* 配置暗黑模式为 class 策略 */
@@ -74,19 +75,8 @@ body::after {
   will-change: transform;
 }
 
-/* A band of light crossing the intro pack now and then: an invitation to touch it. */
-@keyframes aura-pack-shine {
-  0%, 62% { transform: translateX(-130%) skewX(-18deg); }
-  100% { transform: translateX(230%) skewX(-18deg); }
-}
-
-.aura-pack-shine {
-  animation: aura-pack-shine 5.5s cubic-bezier(0.45, 0, 0.25, 1) 2.4s infinite both;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .tarot-card-cloud,
-  .aura-pack-shine {
+  .tarot-card-cloud {
     animation: none;
   }
 }

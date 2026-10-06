@@ -391,12 +391,13 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     }
   };
 
-  const bgOpacity = gameState === GameState.INTRO ? 0.9 : 0.3;
+  // The intro draws its own turning night sky, so the galaxy rests there.
+  const bgOpacity = gameState === GameState.INTRO ? 0 : 0.3;
 
   const renderPhase = () => {
     switch (gameState) {
       case GameState.INTRO:
-        return <IntroSection cardBackId={cardBackId} onStart={initAudio} onEnter={enterInputPhase} />;
+        return <IntroSection onEnter={enterInputPhase} />;
       case GameState.LIBRARY:
         return (
           <DeckLibrary
@@ -589,10 +590,10 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       </motion.main>
 
       {hostError && <div role="alert" className="fixed bottom-12 inset-x-4 z-[200] text-center text-sm text-red-200">{hostError}</div>}
-      {/* Creator Credit */}
-      <div className="fixed bottom-[calc(var(--safe-bottom)+0.75rem)] right-[calc(var(--safe-right)+1rem)] md:right-6 z-50 text-[9px] text-neutral-600 font-sans tracking-widest opacity-50 select-none pointer-events-none mix-blend-difference">
+      {/* Creator Credit (the intro carries its own) */}
+      {gameState !== GameState.INTRO && <div className="fixed bottom-[calc(var(--safe-bottom)+0.75rem)] right-[calc(var(--safe-right)+1rem)] md:right-6 z-50 text-[9px] text-neutral-600 font-sans tracking-widest opacity-50 select-none pointer-events-none mix-blend-difference">
         Created by 范松海frank
-      </div>
+      </div>}
     </div>
   );
 };

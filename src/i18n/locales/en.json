@@ -1,8 +1,16 @@
 {
   "appTitle": "Frank Tarot",
   "intro": {
-    "enter": "ENTER THE VOID",
-    "hint": "Touch the deck to begin"
+    "enter": "START READING",
+    "title": "TAROT",
+    "tagline1": "A QUIETER SPACE",
+    "tagline2": "FOR BRIGHTER QUESTIONS",
+    "pillar1": "REFLECT",
+    "pillar2": "CLARIFY",
+    "pillar3": "MOVE FORWARD",
+    "footnote1": "SAME QUESTIONS.",
+    "footnote2": "A WIDER PERSPECTIVE.",
+    "madeBy": "MADE BY FRANK"
   },
   "header": {
     "brand": "FRANK TAROT",
