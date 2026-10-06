@@ -207,6 +207,18 @@ test("UI resource uses MCP Apps MIME, exact image CSP and no generated reading H
   assert.match((resource as any).text, /F.Tarot test resource/);
 });
 
+test("cached launch descriptors remain readable after a UI deployment", async () => {
+  const oldUri = getUiUri("previous deployment");
+  assert.notEqual(oldUri, UI_URI);
+  const current = (await client.readResource({ uri: UI_URI })).contents[0];
+  const alias = (await client.readResource({ uri: oldUri })).contents[0];
+  assert.deepEqual(alias, { ...current, uri: oldUri });
+  await assert.rejects(client.readResource({ uri: "ui://frankie-tarot/app-invalid.html" }));
+  await assert.rejects(client.readResource({ uri: "ui://other-app/app-01234567890123456789.html" }));
+  const opened = await client.callTool({ name: "open_tarot", arguments: {} });
+  assert.match((opened.content as any)[0].text, /does not confirm.*successfully rendered/);
+});
+
 test("HTTP serves the actual canonical artwork and clean error responses", async () => {
   const asset = await fetch(`${baseUrl}/assets/redraw/maj00.webp`);
   assert.equal(asset.status, 200);

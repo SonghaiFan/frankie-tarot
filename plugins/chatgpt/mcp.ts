@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { OpenAIUiToolMetadata } from "@openai/mcp-extensions/server";
 import { z } from "zod";
@@ -104,9 +104,9 @@ export function createMcpServer(options: {
     return {...view,stage:"result",view:"table",interpretation,cardFaceStyle,resultIntent:intent};
   }));
 
-  registerAppResource(server, "F.Tarot interaction", uiUri, {}, async () => ({
+  const readUi = (uri: string) => ({
     contents: [{
-      uri:uiUri, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
+      uri, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
       _meta: {
         ui: {
           prefersBorder: false,
@@ -117,6 +117,15 @@ export function createMcpServer(options: {
         "openai/widgetDescription": "A bilingual tarot card table with server-drawn cards, deliberate reveal, reference meanings, and an explicit request for conversational interpretation.",
       },
     }],
-  }));
+  });
+  registerAppResource(server, "F.Tarot interaction", uiUri, {}, async () => readUi(uiUri));
+  // Connected hosts can retain an earlier deployment's tool descriptor. Keep
+  // those launch URLs readable as aliases to the current, compatible app.
+  server.registerResource("F.Tarot previous launch", new ResourceTemplate(
+    "ui://frankie-tarot/app-{hash}.html", { list: undefined },
+  ), { mimeType: RESOURCE_MIME_TYPE }, async (uri, { hash }) => {
+    if (typeof hash !== "string" || !/^[a-f0-9]{20}$/.test(hash)) throw new Error("Invalid F.Tarot UI resource.");
+    return readUi(uri.href);
+  });
   return server;
 }

@@ -41,7 +41,7 @@ export function viewResult(view: TarotView) {
     content: [{type:'text' as const, text: view.stage === 'result'
       ? 'Updated the existing table. Preserve this draw. Do not add an interpretation unless explicitly requested. Do not run followUpPrompt on a save request. Further answers belong in ordinary chat; no automatic follow-up is required.'
       : !view.reading
-      ? 'Setup is open with the question and chosen spread. Suggest the side tab / expanded view if available. Wait for the user to shuffle and pick cards. Explain revealOrder without revealing identities.'
+      ? 'Setup data is prepared for the interactive table. This tool result does not confirm that ChatGPT successfully rendered it. Do not claim the table is open if the host shows a loading error; acknowledge the error and suggest Retry. Once the table is visible, suggest the side tab / expanded view if available. Wait for the user to shuffle and pick cards. Explain revealOrder without revealing identities.'
       : `Stage: ${state.stage}. ${state.revealed.length}/${state.cardCount} cards revealed. When responding, briefly interpret newly revealed cards using their positions and orientations, unless the user asked to wait. Do not repeat cards already discussed. Never infer hidden cards. ${state.nextReveal ? `Next position: ${state.nextReveal.position} — ${state.nextReveal.label}. Wait for the user to flip it.` : 'All cards are visible. Offer 深入解读 / Explore deeper for the full interpretationPrompt, answered directly in chat without a result-tool call.'} App context updates do not themselves start an assistant turn; never manufacture user messages to trigger one.`}],
   };
 }
