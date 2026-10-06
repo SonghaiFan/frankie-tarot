@@ -59,19 +59,19 @@ The Chinese subtitle and description are declared under `publication.translation
 | Publisher | Individual, Songhai Fan, based in Australia as confirmed; verification status unknown |
 | Supported countries | All available countries, confirmed; `publication.countries: []` removes country restrictions |
 | Payments or purchases | None, confirmed; `review.commerce: false` |
-| Public support page and working contact | Creator confirmed songhai.fan2022@gmail.com; bilingual page prepared in `public/support/index.html`, not yet verified on production |
-| Published privacy policy | Minimal bilingual page in `public/privacy/index.html`; creator confirmed no saved user questions/information; production URL not yet verified |
-| Published terms of service | Minimal bilingual page in `public/terms/index.html`; Australia confirmed; production URL not yet verified |
+| Public support page and working contact | Creator confirmed songhai.fan2022@gmail.com; published and anonymously verified at https://tarot.songhai.site/support/ |
+| Published privacy policy | Minimal bilingual page in `public/privacy/index.html`; creator confirmed no saved user questions/information; published and anonymously verified on production |
+| Published terms of service | Minimal bilingual page in `public/terms/index.html`; Australia confirmed; published and anonymously verified on production |
 
 The creator chose a minimal policy approach and confirmed the app does not save user questions or information. The prepared privacy page distinguishes this from temporary processing, local browser preferences, ChatGPT files/conversations, provider logs and optional support email. The email is a required working support contact, not a request to create a user-history system. No fixed 90-day email rule or automatic deletion has been configured.
 
-The creator confirmed ownership or authorization for the supplied logo/card materials. The concise terms preserve artwork ownership and existing result export, without adding an independent 18+ restriction or an invented court jurisdiction. Policy source text lives only in the prepared HTML pages; the old draft notes link there.
+The creator confirmed ownership or authorization for the supplied logo/card materials. The concise terms preserve artwork ownership and existing result export, without adding an independent 18+ restriction or an invented court jurisdiction. Policy source text lives only in the published HTML pages; the old draft notes link there.
 
 Optional dark-mode icon/color choices can reuse the existing brand; no separate dark-mode asset is currently declared.
 
 ## Submission boundary
 
-This listing is not a complete public submission. Five positive and three negative review cases and release notes are now saved in the source manifest. Their natural-language host flows have not yet been run against a portal submission. The actual demo recording and accessible URL, support/privacy/terms pages, developer and domain verification, and required portal checks remain open. See `SUBMISSION.md` for the walkthrough, data inventory and evidence status.
+This listing is not a complete public submission. Five positive and three negative review cases and release notes are now saved in the source manifest. Their natural-language host flows have not yet been run against a portal submission. The actual demo recording and accessible URL, developer and domain verification, and required portal checks remain open. Support/privacy/terms pages are now live and their URLs are in the manifest. See `SUBMISSION.md` for the walkthrough, data inventory and evidence status.
 
 Keep the original private app binding intact. The public packaging script generates a separate upload copy that omits `.app.json` and `extensions.com.openai.apps`, and declares the existing verified `/mcp` endpoint in `mcp.json` instead. An incomplete archive is only a draft, not ready for review.
 

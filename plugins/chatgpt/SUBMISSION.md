@@ -9,7 +9,7 @@ Prepared 6 October 2026 for the existing F.Tarot project. This document is prepa
 - Country targeting: all available countries. Commerce: none. Both confirmed by the creator.
 - New icon: `assets/aura-logo.svg` from the creator; `assets/aura-logo.png` is the square 512×512 submission rendering.
 - Exactly five positive and three negative cases are in `extensions.com.openai.review.test_cases`. Release notes are in `publication.release_notes`.
-- Minimal bilingual support, privacy and terms pages are prepared in `public/support/index.html`, `public/privacy/index.html` and `public/terms/index.html`. These are the canonical policy texts; the former draft notes point to them. The pages are not deployed or verified as listing URLs yet.
+- Minimal bilingual support, privacy and terms pages are prepared in `public/support/index.html`, `public/privacy/index.html` and `public/terms/index.html`. These are the canonical policy texts; the former draft notes point to them. The pages are published and anonymously verified as listing URLs.
 - Tools declare boolean `readOnlyHint`, `destructiveHint` and `openWorldHint` annotations. They create/restore self-contained reading state and do not modify an external account, transact, or browse another service. PNG file export is a separate explicit UI action through host file APIs.
 
 ## Review cases and evidence
@@ -66,7 +66,7 @@ No claim of “zero data collection,” automatic deletion, a fixed hosting-log 
 
 On 6 October 2026, the connected Vercel API listed the existing `frank-tarot` project and its `tarot.songhai.site` domain. The project-scoped Drains response was empty. Project/team responses did **not** include analytics activation, account plan or log-retention fields; missing fields do not establish that those features are disabled. Vercel's current runtime-log documentation describes plan-dependent retention, which is distinct from application reading history and cannot yet be assigned to this project. No hosting configuration was changed and no request/conversation log content was retrieved for this check.
 
-## Minimal pages prepared
+## Minimal pages published
 
 The creator asked for the simplest approach and confirmed the app does not save user questions or information. The privacy page states this as no application-database question, reading or profile history, while disclosing the transient current-reading processing, browser preferences, ChatGPT conversations/files, infrastructure records and optional contact email. It does not claim that hosting providers or ChatGPT retain no data.
 
@@ -76,13 +76,13 @@ The terms are concise: intended reflective use, no commerce, lawful use, host el
 
 The creator confirmed rights/authorization for the supplied logo and card materials. The pages allow the existing Save Result behavior without asserting transfer of artwork ownership.
 
-Prepared routes are `/support/`, `/privacy/` and `/terms/` on the existing site. Both forms with and without trailing slash have explicit Vercel rewrites before the app fallback. Before entering URL fields in the manifest, deploy these pages and check their actual anonymous content on the production domain. Hosting-log retention is a technical verification item, not another policy questionnaire for the creator. The provider retention link in the prepared privacy page does not verify this account's exact setting.
+Prepared routes are `/support/`, `/privacy/` and `/terms/` on the existing site. Both forms with and without trailing slash have explicit Vercel rewrites before the app fallback. Anonymous production checks confirmed the exact content of all six routes on 6 October 2026; their verified URLs are now in the manifest. Hosting-log retention is a technical verification item, not another policy questionnaire for the creator. The provider retention link in the prepared privacy page does not verify this account's exact setting.
 
 Identity/domain verification, an actual reviewer-accessible demo recording, review-case execution against the saved portal version and developer attestations still remain. Preparing pages or a ZIP does not complete those steps.
 
 On 6 October 2026, anonymous initialization and tool discovery succeeded against `https://tarot.songhai.site/mcp`. It reported the five expected tools and all required boolean annotations. The current local plugin test suite passed 49/49. These checks do not replace the eight natural-language portal review cases or a recorded demo.
 
-The new Aura logo was converted proportionally to a 512 × 512 transparent PNG and checked on light and dark backgrounds. The bilingual support page was checked in a real browser with its logo and contact link loaded. Explicit Vercel rewrites for support, privacy and terms, with and without trailing slashes, are prepared locally. The generated 0.3.4 draft ZIP passed its CRC check and contains only `plugin.json`, `mcp.json` and the referenced Aura PNG; no private app binding is included. None of these local changes has been deployed or submitted.
+The new Aura logo was converted proportionally to a 512 × 512 transparent PNG and checked on light and dark backgrounds. The bilingual support page was checked in a real browser with its logo and contact link loaded. Explicit Vercel rewrites for support, privacy and terms, with and without trailing slashes, are prepared locally. The generated 0.3.4 draft ZIP passed its CRC check and contains only `plugin.json`, `mcp.json` and the referenced Aura PNG; no private app binding is included. The source changes were deployed to Vercel production as commit `d2f1830` and verified on `tarot.songhai.site`; no Directory submission has been made.
 
 ## Public package and final portal steps
 
@@ -93,3 +93,9 @@ Once all preparation fields and the recording are complete, inspect the ZIP, upl
 References: [OpenAI submission guide](https://developers.openai.com/plugins/deploy/submission), [Plugin guidelines](https://developers.openai.com/plugins/plugin-guidelines).
 
 Policy preparation references: [OpenAI age and access terms](https://openai.com/policies/terms-of-use/#registration-and-access), [Vercel runtime-log retention](https://vercel.com/docs/logs/runtime#limits).
+
+## Production release verification — 6 October 2026
+
+Commit `d2f1830` is pushed to GitHub main. Vercel deployment `dpl_5Ww5nA9xQYoBWiGUEyrW3Hzhep3d` reached READY and was aliased to `tarot.songhai.site`. Anonymous checks verified exact support/privacy/terms content both with and without trailing slashes, the new favicon, an actual WebP from each of the three card styles, MCP initialization and all five tools. The live support and privacy pages were also checked in Chrome. The isolated release passed typechecking, 49 plugin tests, 2 Vercel integration tests and the full production build.
+
+Cleanup removed the obsolete Sites export/Worker pipeline, old logo and preview assets, duplicate `/cards` delivery alias and unused image-manifest generator/static-script constants. Source PNG masters and all three 78-card WebP sets were retained. Other unfinished UI/audio changes in the workspace were excluded from this release.

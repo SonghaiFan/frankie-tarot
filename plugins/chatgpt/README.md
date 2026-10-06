@@ -1,6 +1,6 @@
 # Frank Tarot in ChatGPT
 
-Public directory preparation: [listing copy](LISTING.md), [review cases, demo plan and data inventory](SUBMISSION.md). `npm run plugin:submission` produces an allowlisted public draft archive without the private app binding. Missing policies, recording and portal checks are reported separately; a generated draft is not ready for review.
+Public directory preparation: [listing copy](LISTING.md), [review cases, demo plan and data inventory](SUBMISSION.md). `npm run plugin:submission` produces an allowlisted public draft archive without the private app binding. Missing recording, category and portal checks are reported separately; a generated draft is not ready for review.
 
 This is a host adapter inside the original Frank Tarot repository, not a second app.
 

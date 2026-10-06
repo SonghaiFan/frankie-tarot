@@ -30,7 +30,10 @@
           "Open F.Tarot. I want to reflect on what deserves my attention this week."
         ],
         "logo": "./assets/aura-logo.png",
-        "composerIcon": "./assets/aura-logo.png"
+        "composerIcon": "./assets/aura-logo.png",
+        "supportURL": "https://tarot.songhai.site/support/",
+        "privacyPolicyURL": "https://tarot.songhai.site/privacy/",
+        "termsOfServiceURL": "https://tarot.songhai.site/terms/"
       },
       "review": {
         "commerce": false,
