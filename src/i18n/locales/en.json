@@ -1,12 +1,11 @@
 {
-  "appTitle": "F.Tarot",
+  "appTitle": "Frank Tarot",
   "intro": {
-    "focus": "FaTe ForTune",
-    "subtitle": "TAROT",
-    "enter": "ENTER THE VOID"
+    "enter": "ENTER THE VOID",
+    "hint": "Touch the deck to begin"
   },
   "header": {
-    "brand": "F.TAROT",
+    "brand": "FRANK TAROT",
     "library": "Library",
     "back": "Back",
     "openLibraryTitle": "Open library",

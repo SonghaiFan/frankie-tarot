@@ -19,6 +19,8 @@ const SETTINGS = {
 } as const;
 
 const subscribers = new Set<HTMLCanvasElement>();
+/** Card height (px) the aura pattern is sized to, for windows much larger than a deck card. */
+const scaleReferences = new WeakMap<HTMLCanvasElement, number>();
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const maxDpr = 2;
 
@@ -232,7 +234,8 @@ const paintField = (time: number) => {
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
   fieldScale = activeSource.width / Math.max(1, window.innerWidth);
   const firstCard = subscribers.values().next().value as HTMLCanvasElement | undefined;
-  const cardHeight = firstCard?.getBoundingClientRect().height ?? 160;
+  const reference = Array.from(subscribers, (canvas) => scaleReferences.get(canvas)).find(Boolean);
+  const cardHeight = reference ?? firstCard?.getBoundingClientRect().height ?? 160;
 
   if (gl && program && canvas) {
     const width = Math.max(1, Math.ceil(window.innerWidth * SETTINGS.renderScale * dpr));
@@ -327,8 +330,9 @@ if (typeof window !== "undefined") {
   reducedMotion.addEventListener("change", invalidate);
 }
 
-export const registerAuraWindow = (canvas: HTMLCanvasElement) => {
+export const registerAuraWindow = (canvas: HTMLCanvasElement, scaleReference?: number) => {
   subscribers.add(canvas);
+  if (scaleReference) scaleReferences.set(canvas, scaleReference);
   invalidate();
   return () => {
     subscribers.delete(canvas);

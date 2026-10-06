@@ -396,7 +396,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   const renderPhase = () => {
     switch (gameState) {
       case GameState.INTRO:
-        return <IntroSection onEnter={enterInputPhase} />;
+        return <IntroSection cardBackId={cardBackId} onStart={initAudio} onEnter={enterInputPhase} />;
       case GameState.LIBRARY:
         return (
           <DeckLibrary

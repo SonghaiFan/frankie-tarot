@@ -74,8 +74,19 @@ body::after {
   will-change: transform;
 }
 
+/* A band of light crossing the intro pack now and then: an invitation to touch it. */
+@keyframes aura-pack-shine {
+  0%, 62% { transform: translateX(-130%) skewX(-18deg); }
+  100% { transform: translateX(230%) skewX(-18deg); }
+}
+
+.aura-pack-shine {
+  animation: aura-pack-shine 5.5s cubic-bezier(0.45, 0, 0.25, 1) 2.4s infinite both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tarot-card-cloud {
+  .tarot-card-cloud,
+  .aura-pack-shine {
     animation: none;
   }
 }
