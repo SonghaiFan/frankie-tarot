@@ -119,7 +119,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
               {t("deck.packs.title")}
             </h3>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:gap-6">
+            <div className="grid grid-cols-3 gap-2 md:gap-4 lg:gap-6">
               {CARD_PACKS.map((pack) => {
                 const isSelected = cardPackId === pack.id ||
                   (!cardPackId && activeMatchedPack?.id === pack.id);
@@ -132,14 +132,14 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                     onClick={() => handlePackClick(pack)}
                     onMouseEnter={() => setHoveredPackId(pack.id)}
                     onMouseLeave={() => setHoveredPackId(null)}
-                    className="flex flex-col items-center p-5 text-center"
+                    className="flex min-w-0 flex-col items-center px-2 py-3 text-center md:p-5"
                   >
-                    <h4 className="text-xs font-cinzel uppercase tracking-[0.16em] text-white/80">
+                    <h4 className="text-[10px] font-cinzel uppercase tracking-[0.08em] text-white/80 md:text-xs md:tracking-[0.16em]">
                       {t(pack.nameKey)}
                     </h4>
 
-                    <div aria-hidden="true" className="pointer-events-none relative mx-auto my-6 h-48 w-48">
-                      <div className={`absolute left-3 top-3 w-[5.75rem] ${CARD_ASPECT_CLASS} -rotate-8 transition-transform duration-300 group-hover:-rotate-10`}>
+                    <div aria-hidden="true" className="pointer-events-none relative mx-auto my-3 w-full max-w-48 aspect-square md:my-6">
+                      <div className={`absolute left-[6.25%] top-[6.25%] w-[48%] ${CARD_ASPECT_CLASS} -rotate-8 transition-transform duration-300 group-hover:-rotate-10`}>
                         <LibraryCardPreview
                           image={pack.previewCard}
                           cardFaceStyle={pack.cardFaceStyle}
@@ -148,7 +148,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                           isHighlighted={isHighlighted}
                         />
                       </div>
-                      <div className={`absolute right-4 top-0 w-[5.75rem] ${CARD_ASPECT_CLASS} rotate-6 transition-transform duration-300 group-hover:rotate-8`}>
+                      <div className={`absolute right-[8.33%] top-0 w-[48%] ${CARD_ASPECT_CLASS} rotate-6 transition-transform duration-300 group-hover:rotate-8`}>
                         <LibraryCardPreview
                           image={pack.previewCard}
                           cardFaceStyle={pack.cardFaceStyle}
@@ -159,10 +159,10 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                       </div>
                     </div>
 
-                    <p className="flex-1 text-[11px] leading-relaxed text-neutral-400">
+                    <p className="flex-1 text-[10px] md:text-[11px] leading-relaxed text-neutral-400">
                       {t(pack.descriptionKey)}
                     </p>
-                    <span className={`mt-5 inline-flex items-center gap-1.5 text-[10px] tracking-[0.16em] ${isSelected ? "text-white/80" : "text-neutral-500"}`}>
+                    <span className={`mt-3 md:mt-5 inline-flex items-center gap-1 text-[9px] md:text-[10px] tracking-[0.08em] md:tracking-[0.16em] ${isSelected ? "text-white/80" : "text-neutral-500"}`}>
                       {isSelected && <Check size={12} />}
                       {t(isSelected ? "deck.packs.selected" : "deck.packs.apply")}
                     </span>

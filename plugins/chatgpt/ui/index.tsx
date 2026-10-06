@@ -7,7 +7,7 @@ import i18n from '@/i18n/config';
 import { FULL_DECK } from '@/features/tarot/constants/cards';
 import type { HostedReading, TarotHost } from '@/host/tarotHost';
 import type { SpreadType } from '@/features/tarot/types';
-import { nextAction, type TarotView } from '../shared';
+import { nextAction, revealGuidance, type TarotView } from '../shared';
 import { readingPrompts } from '../prompts';
 import { saveReadingImage } from './saveReadingImage';
 import '@/app/index.css';
@@ -16,7 +16,7 @@ const bridge = new McpApp({name:'Frank Tarot',version:'0.3.0'}, {availableDispla
 let current: TarotView | undefined;
 let uiState: Parameters<NonNullable<TarotHost['reportState']>>[0] | undefined;
 let syncQueue: Promise<void> = Promise.resolve();
-let requestedAction: 'interpret' | 'save' | 'deeper' | undefined;
+let requestedAction: 'interpret' | undefined;
 function payload(result: unknown): TarotView {
   const value = result as {isError?:boolean;_meta?:{tarot?:TarotView};content?:{text?:string}[]};
   if (value.isError || !value._meta?.tarot) throw new Error(value.content?.[0]?.text ?? 'Tarot tool failed');
@@ -54,9 +54,8 @@ async function syncContext() {
     interpretation:current.interpretation,
     canInterpret:!!reading && current.revealed.length===reading.cards.length,
     ...readingPrompts(current),
-    instruction:current.stage==='result'
-      ? 'The brief reading is displayed in the original interactive table. Preserve its cards, artwork and interpretation. Save result exports a PNG from the app; do not call show_tarot_result to save or open a separate result page. Deeper follow-ups belong in ordinary chat. Never redraw.'
-      : 'Wait for all cards to be revealed AND the user to request interpretation. Follow interpretationPrompt for the brief reading, use show_tarot_result with intent=interpret and the newest sessionToken, then follow followUpPrompt for deeper analysis in ordinary chat outside the app. Never silently redraw.',
+    ...revealGuidance(current),
+    instruction: 'Use the current revealed cards only. When the user speaks, interpret newly revealed cards not already discussed unless they asked to wait, then guide nextReveal. Never infer hidden cards or flip for the user. Context updates alone do not trigger a reply; do not manufacture user messages. An explicit Explore deeper click sends interpretationPrompt verbatim: answer directly in chat without calling show_tarot_result or redrawing.',
   }});
 }
 async function syncReveals() {
@@ -93,19 +92,13 @@ const host:Omit<TarotHost,'saveResult'>={
     syncQueue=syncQueue.catch(()=>{}).then(syncReveals);
     await syncQueue;
   },
-  async interpret(locale){
+  async interpret(){
     await syncQueue.catch(()=>{}); await syncReveals();
     if(!current?.reading || current.revealed.length!==current.reading.cards.length) throw new Error('Reveal all cards first');
-    if(current.interpretation) {
-      requestedAction='deeper';
-      const prompt=readingPrompts(current).followUpPrompt;
-      if(prompt) await send(`${prompt}\n\n${locale==='zh-CN'?'请在普通聊天里继续深入，保留牌桌中的简短解读，不重新调用结果工具，不重新抽牌。':'Continue in ordinary chat, keeping the brief reading in the table. Do not call the result tool again or redraw.'}`);
-    } else {
-      requestedAction='interpret';
-      await send(locale==='zh-CN'
-        ? '请解读这次已翻开的牌。我点击了“请 ChatGPT 解读”，现在明确请求开始解读。请沿用网页端的简短回答风格，把简短答案写回当前原版牌桌的解读区域，然后在聊天回复里继续深入分析。保持同一组牌，不打开另一张结果卡，不重新抽牌。'
-        : 'Please interpret these revealed cards. I explicitly clicked Interpret with ChatGPT. Write the brief website-style reading back into the original interactive table, then continue deeper in ordinary chat. Keep this draw; do not open a separate result card or redraw.');
-    }
+    const prompt=readingPrompts(current).interpretationPrompt;
+    if(!prompt) throw new Error('Missing interpretation prompt');
+    requestedAction='interpret';
+    await send(prompt);
   },
 };
 function PluginRoot(){

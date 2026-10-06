@@ -5,6 +5,7 @@ import { SpreadType, PickedCard } from "@/features/tarot/types";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
+import { getLocalizedSpread } from "@/features/tarot/constants/spreads";
 import { buildTarotReadingPrompt } from "@/core/promptBuilder";
 import type { SavedReadingImage } from '@/host/tarotHost';
 
@@ -48,7 +49,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
     if (onInterpret) {
       if (isSending || isCopied) return;
       setIsSending(true); setSendError("");
-      try { await onInterpret(); setIsCopied(true); if(readingText) setTimeout(()=>setIsCopied(false),2000); }
+      try { await onInterpret(); setIsCopied(true); setTimeout(()=>setIsCopied(false),2000); }
       catch { setSendError(locale === "zh-CN" ? "发送失败，请重试。你的牌阵已保留。" : "Could not send. Your cards are preserved; please retry."); }
       finally { setIsSending(false); }
       return;
@@ -73,6 +74,9 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
     }
   };
 
+  const localizedSpread = getLocalizedSpread(spread, locale);
+  const nextIndex = pickedCards.findIndex(card => !revealedCardIds.has(card.id));
+  const nextLabel = localizedSpread.positions?.[nextIndex]?.label ?? localizedSpread.labels?.[nextIndex];
   const allCardsRevealed = revealedCardIds.size === pickedCards.length;
 
   const handleSaveResult = async () => {
@@ -104,7 +108,9 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
               exit={{ opacity: 0 }}
               className="text-neutral-400 text-sm tracking-widest uppercase"
             >
-              {t("reading.revealPrompt")}
+              <span aria-live="polite">{onInterpret && nextIndex >= 0
+                ? (locale === "zh-CN" ? `接下来翻开第 ${nextIndex + 1} 张${nextLabel ? ` · ${nextLabel}` : ""}` : `Reveal card ${nextIndex + 1}${nextLabel ? ` · ${nextLabel}` : ""}`)
+                : t("reading.revealPrompt")}</span>
             </motion.div>
           ) : (
             <motion.div
@@ -137,7 +143,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                   )}
                 </div>
                 <p className="text-xs md:text-sm text-neutral-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-                  {onInterpret ? (readingText ? (locale === "zh-CN" ? "点击“深入问问”，在当前对话里继续探索这次解读。" : "Use Ask Deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.")) : t("reading.deeperNotice")}
+                  {onInterpret ? (readingText ? (locale === "zh-CN" ? "点击“深入解读”，在当前对话里探索这次牌阵。" : "Use Explore deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.")) : t("reading.deeperNotice")}
                 </p>
               </div>
 
@@ -171,7 +177,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     title={onInterpret ? "ChatGPT" : t("reading.promptTitle")}
                   >
                     {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : readingText ? t("reading.prompt") : "请 ChatGPT 解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : readingText ? t("reading.prompt") : "Interpret with ChatGPT")) : (isCopied ? t("reading.copied") : t("reading.copyToChatGPT"))}
+                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "深入解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : "Explore deeper")) : (isCopied ? t("reading.copied") : t("reading.copyToChatGPT"))}
                   </motion.button>
                 </div>
 

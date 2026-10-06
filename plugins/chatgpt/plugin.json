@@ -20,7 +20,7 @@
       "interface": {
         "displayName": "F.Tarot",
         "shortDescription": "Draw cards. Find perspective.",
-        "longDescription": "F.Tarot is an interactive tarot table for taking a moment to reflect on a question, a creative block, or a choice.\n\nChoose from 11 spreads, pick and turn over your cards, and explore a 78-card deck with English and Simplified Chinese meanings. Switch between original, redrawn, and dreamy artwork as you explore the cards.\n\nWhen you're ready, invite ChatGPT to interpret your spread. A brief reading appears in the card table; use Ask Deeper to continue the conversation with the same cards. Save Result exports a PNG of your cards, question, and reading.\n\nDesigned for personal reflection and exploring possibilities.",
+        "longDescription": "F.Tarot is an interactive tarot table for taking a moment to reflect on a question, a creative block, or a choice.\n\nChoose from 11 spreads, pick and turn over your cards, and explore a 78-card deck with English and Simplified Chinese meanings. Switch between original, redrawn, and dreamy artwork as you explore the cards.\n\nAsk your question naturally and let ChatGPT suggest a spread. Pick and reveal the cards yourself. Explore deeper sends the complete reading prompt for a direct answer in the conversation. Save Result exports a PNG of your cards and question, including any reading already present in the table.\n\nDesigned for personal reflection and exploring possibilities.",
         "developerName": "Songhai Fan",
         "websiteURL": "https://tarot.songhai.site/",
         "brandColor": "#7A688A",
@@ -53,10 +53,10 @@
               "expected_behavior": "Call open_tarot with the question and locale=zh-CN; omit flowId only on the first launch. The returned stage is input, the question is prefilled, cards is empty and canInterpret=false. Open the original table inline. Do not draw, flip, or interpret from this question alone."
             },
             {
-              "description": "P3 — Complete an English three-card reading. In the app select THREE, start the ritual, pick three cards and turn over all three. Observe that the assistant waits, then click Interpret with ChatGPT. Use only the current session's structured data.",
+              "description": "P3 — Complete an English three-card reading. In the app select THREE, start the ritual, pick three cards and turn over all three. Observe that no synthetic messages are sent, then click Explore deeper. Use only the current session's structured data.",
               "prompt": "Open F.Tarot in English with a three-card spread for: What could help my creative work this week? Let me pick and reveal the cards, then wait for me to request an interpretation.",
-              "tools_triggered": "open_tarot, draw_tarot_cards, reveal_tarot_cards, show_tarot_result",
-              "expected_behavior": "Open setup with spread=THREE and locale=en. The app's start and flip actions call draw_tarot_cards and reveal_tarot_cards while preserving flowId; hidden cards are absent from model-visible cards. After all three flips and the explicit interpretation click, call show_tarot_result with intent=interpret and the newest sessionToken. Use the exact returned cards, positions and orientations, with a brief cohesive English reading in the original table. Deeper analysis stays in ordinary chat. Do not redraw or open a separate result page. Verify actual card images load."
+              "tools_triggered": "open_tarot, draw_tarot_cards, reveal_tarot_cards",
+              "expected_behavior": "Open setup with spread=THREE and locale=en. The app's start and flip actions call draw_tarot_cards and reveal_tarot_cards while preserving flowId; hidden cards are absent from model-visible cards. After all three flips, Explore deeper sends interpretationPrompt verbatim exactly once. Answer directly in chat using the exact cards, positions and orientations. Do not call show_tarot_result. Do not redraw or open a separate result page. Verify actual card images load."
             },
             {
               "description": "P4 — Partial reveal and restoration. Setup: start a Chinese THREE draw in the app, pick three cards and leave them face down. Use its current structured session. After the first prompt, ask to reopen the same table without a new draw.",
@@ -65,10 +65,10 @@
               "expected_behavior": "Call reveal_tarot_cards with positions=[2] and the newest sessionToken. Exactly that position becomes revealed; hidden card identities and complete-spread prompts remain absent from model-visible content and canInterpret=false. On the follow-up request to reopen, call open_tarot with the newest sessionToken. Preserve readingId, flowId, the revealed card and the two concealed positions. No new draw or show_tarot_result."
             },
             {
-              "description": "P5 — Save, deeper discussion, then a new question in the same conversation. Setup: finish P3 and retain its brief reading. Click Save Result and inspect the actual PNG via the host download/file-library flow. Click Ask Deeper. Then send the prompt below. Record any host export limitation instead of claiming success.",
+              "description": "P5 — Save, deeper discussion, then a new question in the same conversation. Setup: finish P3 and retain its cards. Click Save Result and inspect the actual PNG via the host download/file-library flow. Click Explore deeper. Then send the prompt below. Record any host export limitation instead of claiming success.",
               "prompt": "My next question is: What should I make next? Return to setup in this conversation's existing table. Let me choose my cards; do not draw or interpret yet.",
               "tools_triggered": "open_tarot",
-              "expected_behavior": "Save Result generates a real PNG using the shared export layout and offers a download or file-library result without any MCP result/save tool call, redraw or extra interpretation. The file includes the same question, spread, visible cards, orientations and existing brief reading. Ask Deeper continues in ordinary chat with the same reading and no new result tool call. For the new question, call open_tarot with that question and the existing flowId. Return input with no old draw, preserve the interaction slot, and await the user's choices. Do not claim the file automatically appears in Outputs."
+              "expected_behavior": "Save Result generates a real PNG using the shared export layout and offers a download or file-library result without any MCP result/save tool call, redraw or extra interpretation. The file includes the same question, spread, visible cards, orientations and any interpretation already in the table (not the chat-only answer). Explore deeper continues in ordinary chat with the same reading and no new result tool call. For the new question, call open_tarot with that question and the existing flowId. Return input with no old draw, preserve the interaction slot, and await the user's choices. Do not claim the file automatically appears in Outputs."
             }
           ],
           "negative": [
@@ -89,11 +89,11 @@
       },
       "publication": {
         "countries": [],
-        "release_notes": "First public-submission draft of F.Tarot. Includes the original interactive tarot table, English and Simplified Chinese card meanings, deliberate card selection and reveal, brief ChatGPT interpretation in the table, deeper conversation and shared PNG export. Adds the creator's Aura logo, bilingual directory copy and staged-flow review cases. No payments or purchases.",
+        "release_notes": "First public-submission draft of F.Tarot. Includes the original interactive tarot table, English and Simplified Chinese card meanings, deliberate card selection and reveal, direct ChatGPT interpretation in the conversation and shared PNG export. Adds the creator's Aura logo, bilingual directory copy and staged-flow review cases. No payments or purchases.",
         "translations": {
           "zh-CN": {
             "subtitle": "一个问题，几张牌，换一个视角。",
-            "description": "留一点时间，给自己。带着心里的问题、创作中的停顿，或正在考虑的选择，打开 F.Tarot，从几张牌里发现新的视角。\n\n选择一个牌阵，亲手选牌、逐张翻开。探索 78 张塔罗牌、11 种牌阵，以及中英文牌义；也可以切换原版、重绘和梦幻三种牌面。\n\n准备好后，邀请 ChatGPT 一起解读。简短答案会留在牌桌里；点击「深入问问」，在聊天中继续探索同一组牌。点击「保存结果」，将问题、牌面和解读保存成一张 PNG 图片。\n\n用塔罗作为自我探索的起点，看看自己的想法，也看看更多可能。"
+            "description": "留一点时间，给自己。带着心里的问题、创作中的停顿，或正在考虑的选择，打开 F.Tarot，从几张牌里发现新的视角。\n\n选择一个牌阵，亲手选牌、逐张翻开。探索 78 张塔罗牌、11 种牌阵，以及中英文牌义；也可以切换原版、重绘和梦幻三种牌面。\n\n用自己的话提问，让 ChatGPT 推荐牌阵，再亲手选牌、翻牌。点击「深入解读」，将完整提示词交给 ChatGPT，在对话中直接回答。点击「保存结果」，将问题、牌面及牌桌中已有的解读保存成 PNG 图片。\n\n用塔罗作为自我探索的起点，看看自己的想法，也看看更多可能。"
           }
         }
       }

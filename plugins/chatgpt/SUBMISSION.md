@@ -35,7 +35,7 @@ Use the existing F.Tarot development connection in ChatGPT, with sample question
 2. Ask: “打开 F.Tarot，我想探索如何保持创作节奏。让我自己选择牌阵和选牌，先不要解读。” Show the original inline input screen with the question filled.
 3. Choose a three-card spread, start the ritual and pick the cards. Flip only one; briefly show that the assistant has not started an interpretation. Show the remaining cards face down.
 4. Ask for the hidden identities without flipping them. Show the assistant's explanation without any automatic reveal. Then flip the remaining cards yourself.
-5. Click the interpretation button. Show the brief answer in the original table and the deeper chat response outside it. Open a card detail and switch artwork to demonstrate the original app's interaction.
+5. Click the interpretation button. Verify that the exact interpretationPrompt is sent once and answered directly in chat, without a show_tarot_result call. Open a card detail and switch artwork to demonstrate the original app's interaction.
 6. Click Save Result. Show successful file export and open the resulting PNG so the question, same cards and short reading are legible. Do not claim it was added to Outputs unless that actually happens.
 7. Click Ask Deeper, then ask a new question. Show continued discussion using the current cards, followed by the same table returning to input without an automatic draw.
 8. Briefly demonstrate English mode with the P3 prompt and the unsupported prediction/purchase prompts from N1/N3. Keep responses legible; cut pauses only, not failed behavior.
@@ -99,3 +99,5 @@ Policy preparation references: [OpenAI age and access terms](https://openai.com/
 Commit `d2f1830` is pushed to GitHub main. Vercel deployment `dpl_5Ww5nA9xQYoBWiGUEyrW3Hzhep3d` reached READY and was aliased to `tarot.songhai.site`. Anonymous checks verified exact support/privacy/terms content both with and without trailing slashes, the new favicon, an actual WebP from each of the three card styles, MCP initialization and all five tools. The live support and privacy pages were also checked in Chrome. The isolated release passed typechecking, 49 plugin tests, 2 Vercel integration tests and the full production build.
 
 Cleanup removed the obsolete Sites export/Worker pipeline, old logo and preview assets, duplicate `/cards` delivery alias and unused image-manifest generator/static-script constants. Source PNG masters and all three 78-card WebP sets were retained. Other unfinished UI/audio changes in the workspace were excluded from this release.
+
+Flow update: with an unspecified spread, verify ChatGPT lists spreads and preselects a suitable one while preserving the original question. Per-card state includes reveal order and the next position. Flips must not send user messages. Context updates do not wake the model; test per-card interpretation with an actual user turn and record this host limitation.

@@ -46,6 +46,7 @@ export interface TarotView extends TarotPayload {
   question?: string;
   spread?: string;
   revealed: number[];
+  newlyRevealed?: number[];
   interpretation?: string;
   resultIntent?: 'interpret' | 'save';
   view: "table" | "result";
@@ -56,4 +57,16 @@ export function nextAction(view: TarotView) {
   if (!view.reading) return 'choose_spread' as const;
   if (view.revealed.length === view.reading.cards.length) return 'request_interpretation' as const;
   return view.stage === 'picking' ? 'pick_cards' as const : 'reveal_cards' as const;
+}
+
+/** Position labels are public; identities and meanings of face-down cards are not. */
+export function revealGuidance(view: TarotView) {
+  const spread = view.reading?.spread ?? view.spreads.find(item => item.id === view.spread);
+  const revealOrder = spread?.labels.map((label, index) => ({position: index + 1, label})) ?? [];
+  return {
+    revealOrder,
+    nextReveal: revealOrder.find(item => !view.revealed.includes(item.position)),
+    newlyRevealed: (view.newlyRevealed ?? []).filter(position => view.revealed.includes(position)),
+    canInterpretRevealed: view.revealed.length > 0,
+  };
 }

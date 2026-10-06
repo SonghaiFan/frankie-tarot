@@ -12,7 +12,7 @@ F.Tarot is an interactive tarot table for taking a moment to reflect on a questi
 
 Choose from 11 spreads, pick and turn over your cards, and explore a 78-card deck with English and Simplified Chinese meanings. Switch between original, redrawn, and dreamy artwork as you explore the cards.
 
-When you're ready, invite ChatGPT to interpret your spread. A brief reading appears in the card table; use Ask Deeper to continue the conversation with the same cards. Save Result exports a PNG of your cards, question, and reading.
+Ask your question naturally and let ChatGPT suggest a spread. Pick and reveal the cards yourself. Explore deeper sends the complete reading prompt for a direct answer in the conversation. Save Result exports a PNG of your cards and question, including any reading already present in the table.
 
 Designed for personal reflection and exploring possibilities.
 
@@ -32,7 +32,7 @@ Designed for personal reflection and exploring possibilities.
 
 选择一个牌阵，亲手选牌、逐张翻开。探索 78 张塔罗牌、11 种牌阵，以及中英文牌义；也可以切换原版、重绘和梦幻三种牌面。
 
-准备好后，邀请 ChatGPT 一起解读。简短答案会留在牌桌里；点击「深入问问」，在聊天中继续探索同一组牌。点击「保存结果」，将问题、牌面和解读保存成一张 PNG 图片。
+用自己的话提问，让 ChatGPT 推荐牌阵，再亲手选牌、翻牌。点击「深入解读」，将完整提示词交给 ChatGPT，在对话中直接回答。点击「保存结果」，将问题、牌面及牌桌中已有的解读保存成 PNG 图片。
 
 用塔罗作为自我探索的起点，看看自己的想法，也看看更多可能。
 

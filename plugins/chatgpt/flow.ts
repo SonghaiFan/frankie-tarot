@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { localeSchema, spreadSchema, readingSchema, type TarotEngine } from './engine';
-import { nextAction, type TarotView, type Locale } from './shared';
+import { nextAction, revealGuidance, type TarotView, type Locale } from './shared';
 import { readingPrompts } from './prompts';
 
 export const flowSchema = z.object({
@@ -10,6 +10,9 @@ export const flowSchema = z.object({
   readingId: z.string().optional(), sessionToken: z.string().optional(),
   flowId: z.string().uuid().optional(),
   nextAction: z.enum(['choose_spread','pick_cards','reveal_cards','request_interpretation','read_result']),
+  revealOrder: z.array(z.object({position:z.number(),label:z.string()})),
+  nextReveal: z.object({position:z.number(),label:z.string()}).optional(),
+  newlyRevealed: z.array(z.number()), canInterpretRevealed: z.boolean(),
   revealed: z.array(z.number()), cardCount: z.number(),
   cards: readingSchema.shape.cards, canInterpret: z.boolean(),
   interpretation: z.string().optional(), cardFaceStyle: z.enum(["original","redraw","dreamy"]).optional(),
@@ -21,6 +24,7 @@ export function publicState(view: TarotView) {
     question: view.reading?.question ?? view.question ?? '', spread: view.reading?.spread.id ?? view.spread,
     readingId: view.reading?.id, sessionToken: view.sessionToken, flowId: view.flowId, revealed: view.revealed,
     nextAction: nextAction(view),
+    ...revealGuidance(view),
     cardCount: view.reading?.cards.length ?? 0,
     cards: view.reading?.cards.filter(card => view.revealed.includes(card.position)) ?? [],
     canInterpret: !!view.reading && view.revealed.length === view.reading.cards.length,
@@ -35,12 +39,10 @@ export function viewResult(view: TarotView) {
     // Only the app receives the complete draw. Never copy this into model context.
     _meta: { tarot: view, ...(view.flowId ? {'openai/widgetSessionId': view.flowId} : {}) },
     content: [{type:'text' as const, text: view.stage === 'result'
-      ? view.resultIntent === 'interpret'
-        ? 'The brief initial interpretation is now in the original interactive table. Next use followUpPrompt to give deeper analysis in the ordinary assistant response OUTSIDE the app. Do not repeat the brief paragraph, call show_tarot_result again with the deeper text, open a separate result card, or redraw.'
-        : `Updated this existing reading in its original interactive table. No image file was exported by this tool. Saving an image uses the app Save result button. Preserve its cards, artwork and any provided interpretation. Do not add an interpretation unless explicitly requested. Do not run followUpPrompt on a save request.`
-      : state.canInterpret
-      ? `All ${state.cardCount} cards are revealed. Keep this reading and its positions unchanged. Interpret only when requested: follow interpretationPrompt for one brief paragraph, call show_tarot_result with intent="interpret", then use its followUpPrompt for deeper analysis outside the app.`
-      : `Stage: ${state.stage}. ${state.revealed.length}/${state.cardCount} cards revealed. Do not interpret, name hidden cards, or infer a reading. Guide the user to select/reveal in the table. A question alone opens setup; it is not permission to skip the ritual.`}],
+      ? 'Updated the existing table. Preserve this draw. Do not add an interpretation unless explicitly requested. Do not run followUpPrompt on a save request. Further answers belong in ordinary chat; no automatic follow-up is required.'
+      : !view.reading
+      ? 'Setup is open with the question and chosen spread. Suggest the side tab / expanded view if available. Wait for the user to shuffle and pick cards. Explain revealOrder without revealing identities.'
+      : `Stage: ${state.stage}. ${state.revealed.length}/${state.cardCount} cards revealed. When responding, briefly interpret newly revealed cards using their positions and orientations, unless the user asked to wait. Do not repeat cards already discussed. Never infer hidden cards. ${state.nextReveal ? `Next position: ${state.nextReveal.position} — ${state.nextReveal.label}. Wait for the user to flip it.` : 'All cards are visible. Offer 深入解读 / Explore deeper for the full interpretationPrompt, answered directly in chat without a result-tool call.'} App context updates do not themselves start an assistant turn; never manufacture user messages to trigger one.`}],
   };
 }
 export function restoreView(engine: TarotEngine, sessionToken: string, locale?: Locale): TarotView {

@@ -22,10 +22,9 @@ The first `open_tarot` creates a `flowId`. All table and result tools share one 
 | --- | --- | --- |
 | Mention the app with a question | `open_tarot(question, flowId?)` / input | Existing original table, question filled |
 | Start shuffle and select | `draw_tarot_cards(flowId)` / picking | Same window; model cannot see hidden cards |
-| Flip cards | `reveal_tarot_cards(sessionToken)` / reveal or ready | Same table; interpretation still requires an explicit request |
-| Request interpretation | `show_tarot_result(intent="interpret")` / result | Brief reading appears in the original interactive table |
+| Flip cards | `reveal_tarot_cards(sessionToken)` / reveal or ready | Same table; context-only update, next position shown |
+| Request interpretation | Exact `interpretationPrompt` message | Direct answer in chat |
 | Save result | Shared `renderReadingImage` + host file export | PNG export; table and reading stay unchanged |
-| Ask deeper | User message with the shared follow-up prompt | Ordinary chat, result unchanged |
 | Return to table or ask a new question | `open_tarot(sessionToken)` or `open_tarot(question, flowId)` | Same interaction slot |
 
 `nextAction` makes the next human step explicit in tool output. Widget reuse is host behavior and must be verified in the target ChatGPT client. Already-posted older widgets cannot be deleted by this server. A client that ignores widget session binding may still show multiple historical widgets.
@@ -63,7 +62,7 @@ The personal ChatGPT connection is registered against the existing public Vercel
 
 Generate the account plugin package with `npm run plugin:configure -- --url https://tarot.songhai.site/mcp`. The generated package includes the registered app mapping by default, so subsequent icon or metadata updates do not accidentally restore a desktop-only package. For another ChatGPT account, register the endpoint there and supply its own verified ID with `--app-id plugin_asdk_app_…`.
 
-Open F.Tarot in ChatGPT on the web, or start a Work chat and select F.Tarot with `@`. A question should open the original input stage; cards stay hidden until the user chooses and reveals them. Only request interpretation after all selected cards are visible.
+Open F.Tarot in ChatGPT on the web, or start a Work chat and select F.Tarot with `@`. A question should open the original input stage; cards stay hidden until the user chooses and reveals them. Visible cards may be discussed individually; the full-spread prompt waits until every card is visible.
 
 ## Refresh the installed ChatGPT app after publication
 
@@ -75,4 +74,12 @@ The public website and ChatGPT widget use the same Vercel project, canonical dec
 
 “Save result / 保存结果” renders a PNG using the same `ReadingCard` component and `renderReadingImage` on both surfaces. The website downloads it directly. In an MCP host, the adapter uses advertised `ui/download-file` support, or ChatGPT's optional `window.openai.uploadFile(file, {library:true})` with a download link when available. An unsupported host reports an export failure rather than claiming a file was saved. File-library storage is not a guarantee that the conversation Outputs list will register the image; no documented direct Outputs registration API has been verified. Saving never calls `show_tarot_result`, changes the table, redraws, or generates a new interpretation.
 
-The initial interpretation uses the website's `buildTarotReadingPrompt`: one cohesive paragraph, 120–180 Chinese characters or 130–180 English words. `show_tarot_result(intent="interpret")` writes it into the original interactive reading area (`stage=result`, `view=table`) and returns the shared follow-up prompt for deeper analysis in ordinary chat. The original card details, artwork selector, Save result and Start again controls stay available. Once a brief reading exists, “深入问问 / Ask Deeper” sends that prompt instead of requesting another initial interpretation. Legacy `intent="save"` preserves supplied text without exporting a file. Prompts containing the complete spread remain withheld until every card is revealed.
+The “深入解读 / Explore deeper” button sends `interpretationPrompt` verbatim, without procedural text or a second follow-up. ChatGPT answers directly in ordinary chat. The prompt still uses the shared website builder (one cohesive paragraph, 120–180 Chinese characters or 130–180 English words). `show_tarot_result` remains optional for an explicit request to put a brief reading in the table; it is not part of the normal interpretation flow. Complete-spread prompts remain withheld until every card is visible.
+
+## Natural-question and reveal flow
+
+When a question does not specify a spread, ChatGPT lists the canonical spreads, chooses a suitable one and opens setup with the original question and that spread. An explicit user choice takes precedence. ChatGPT suggests the side tab / expanded mode; the user still shuffles, picks and reveals manually.
+
+Model-visible state includes `revealOrder`, `nextReveal`, `newlyRevealed`, and `canInterpretRevealed`. Hidden card identities remain private. On a model turn, ChatGPT may discuss newly visible cards and guide the next position unless the user asked to wait. `canInterpret` continues to gate the full-spread prompt. Duplicate reveals and session restoration do not report fresh flips.
+
+**Host limitation:** the installed MCP Apps SDK documents `updateModelContext` as context for the next model turn, not an immediate-response trigger. Selection and flips only update context; they never send fabricated user messages. Thus live per-flip assistant responses are not implemented without a real user turn. The table itself displays the next position immediately. The final explicit button is the only interpretation message send. Verify actual model behavior and expanded placement in ChatGPT; the local preview captures messages but does not run a model.
