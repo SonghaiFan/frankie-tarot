@@ -90,7 +90,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   return (
     <motion.div
       key="reading-layout"
-      className="flex w-full max-w-7xl flex-col items-center px-0 pb-8 md:min-h-[100dvh] md:justify-center md:px-8"
+      className="flex w-full max-w-7xl flex-col items-center px-0 pb-8 pt-8 md:px-8"
       layout
       animate={{
         opacity: isObscured ? 0.14 : 1,

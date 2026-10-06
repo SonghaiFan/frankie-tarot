@@ -289,6 +289,8 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
     setPickedCards(newPicked);
 
     if (newPicked.length === requiredCards) {
+      // Request expansion directly from the final user selection.
+      void host?.expand?.().catch(() => {});
       setTimeout(startRevealProcess, 1000);
     }
   };

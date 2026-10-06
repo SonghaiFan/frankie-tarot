@@ -62,7 +62,6 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
   selectedCardId,
   isMobile,
   isTablet,
-  isShortViewport,
   onCardReveal,
   onCardHover,
   onCardFocus,
@@ -82,29 +81,30 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
   const displayedCards = pickedCards.slice(0, spreadConfig.cardCount);
   const isPicking = gameState === GameState.PICKING;
   const isReading = gameState === GameState.READING || gameState === GameState.REVEAL;
-  const useCompactLayout = isMobile || isTablet || isShortViewport;
+  // Width decides whether the spatial spread fits; a short desktop is still desktop.
+  const useCompactLayout = absoluteStageSize.width < 960;
+  const useGridLayout = useCompactLayout || spreadConfig.layoutType !== "absolute";
+  const maxColumns = useCompactLayout ? 3 : Math.max(3, Math.min(6, Math.floor(absoluteStageSize.width / 190)));
   const compactCards = React.useMemo(
     () => displayedCards.map((card, index) => ({ card, index })),
     [displayedCards]
   );
   const compactRows = React.useMemo(
-    () => getBalancedRows(compactCards, 3),
-    [compactCards]
+    () => getBalancedRows(compactCards, maxColumns),
+    [compactCards, maxColumns]
   );
   const widestCompactRow = compactRows[0]?.length ?? 1;
-  const compactCardWidth = widestCompactRow === 1
-    ? "w-[clamp(8.5rem,42vw,12rem)]"
-    : widestCompactRow === 2
-    ? "w-[clamp(7rem,36vw,9rem)]"
-    : displayedCards.length > 9
-    ? "w-[clamp(4.75rem,24vw,6.25rem)]"
-    : "w-[clamp(5.5rem,26vw,7.5rem)]";
+  const gridGap = Math.min(32, absoluteStageSize.width * 0.035);
+  const gridCardWidth = Math.min(
+    widestCompactRow === 1 ? 208 : compactRows.length > 2 ? 144 : 184,
+    (absoluteStageSize.width - 32 - gridGap * (widestCompactRow - 1)) / widestCompactRow
+  );
   const allCardsRevealed =
     displayedCards.length > 0 &&
     displayedCards.every((card) => revealedCardIds.has(card.id));
 
   React.useLayoutEffect(() => {
-    if (useCompactLayout || spreadConfig.layoutType !== "absolute") return;
+    if (isPicking) return;
     const stage = absoluteStageRef.current;
     if (!stage) return;
 
@@ -117,7 +117,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
     const observer = new ResizeObserver(updateStageSize);
     observer.observe(stage);
     return () => observer.disconnect();
-  }, [spreadConfig.layoutType, useCompactLayout]);
+  }, [spreadConfig.layoutType, isPicking]);
 
   React.useEffect(() => {
     if (!isReading || useCompactLayout) return;
@@ -265,11 +265,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
     const isDetailed = selectedCardId === card.id;
     const isHovered = hoveredCardId === card.id && selectedCardId === null;
     const position = spreadConfig.positions?.[index];
-    const readingWidth = useCompactLayout
-      ? compactCardWidth
-      : spreadConfig.layoutType === "absolute"
-      ? spreadConfig.cardSize.desktop
-      : "w-[clamp(6rem,18vmin,13rem)]";
+    const readingWidth = spreadConfig.cardSize.desktop;
     const wrapperWidth = isPicking ? slotWidth : readingWidth;
     const usesScaledAbsoluteLayout =
       !isPicking && !useCompactLayout && spreadConfig.layoutType === "absolute";
@@ -289,8 +285,8 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
     return (
       <div
         key={card.id}
-        style={absoluteStyle}
-        className={`pointer-events-none ${usesScaledAbsoluteLayout ? "" : wrapperWidth} ${CARD_ASPECT_CLASS} shrink-0`}
+        style={!isPicking && useGridLayout ? {width: gridCardWidth} : absoluteStyle}
+        className={`pointer-events-none ${usesScaledAbsoluteLayout || (!isPicking && useGridLayout) ? "" : wrapperWidth} ${CARD_ASPECT_CLASS} shrink-0`}
       >
         <RitualCard
           layoutId={`card-${card.visualId ?? card.id}`}
@@ -337,25 +333,26 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
       <section
         className={isPicking
           ? "pointer-events-none absolute inset-0 z-30"
-          : useCompactLayout
-          ? "relative z-20 w-full max-w-7xl shrink-0 px-0 md:px-8"
-          : "relative z-20 flex min-h-[calc(100dvh-var(--safe-top)-1rem)] w-full max-w-7xl shrink-0 items-center justify-center px-8"}
+          : "relative z-20 flex w-full shrink-0 items-center justify-center"}
+        data-tarot-stage="cards"
+        style={isPicking ? undefined : {minHeight: useGridLayout && compactRows.length <= 2 ? "calc(100dvh - 14rem)" : useGridLayout ? undefined : "calc(100dvh - 9rem)"}}
       >
         <div
           ref={absoluteStageRef}
           className={isPicking
             ? "absolute inset-x-0 bottom-[calc(var(--safe-bottom)+1.5rem)] flex justify-center gap-[clamp(0.25rem,1vw,0.75rem)] px-4 md:bottom-10"
-            : useCompactLayout
-            ? "flex w-full flex-col items-center gap-y-[clamp(2.75rem,8vw,4rem)] px-2 py-8"
+            : useGridLayout
+            ? "flex w-full flex-col items-center gap-y-12 px-2 py-8"
             : spreadConfig.layoutType === "absolute"
-            ? "relative mx-auto h-[calc(100dvh-var(--safe-top)-4rem)] min-h-[28rem] w-full max-w-4xl lg:max-w-6xl"
+            ? "relative mx-auto h-[calc(100dvh-var(--safe-top)-4rem)] min-h-[20rem] w-full"
             : "flex flex-wrap items-center justify-center gap-6 md:gap-12"}
         >
-          {!isPicking && useCompactLayout
+          {!isPicking && useGridLayout
             ? compactRows.map((row, rowIndex) => (
                 <div
                   key={`compact-row-${rowIndex}`}
-                  className="flex w-full items-start justify-center gap-x-[clamp(0.75rem,4vw,2rem)]"
+                  className="flex w-full items-start justify-center"
+                  style={{gap: gridGap}}
                 >
                   {row.map(({ card, index }) => renderCard(card, index))}
                 </div>
