@@ -10,8 +10,6 @@
   </defs>
   <g transform="scale(1.09375 1.25)">
   <rect width="512" height="768" fill="#000"/>
-  <rect x="16" y="16" width="480" height="736" rx="10" fill="url(#weave)" stroke="#fff" stroke-width="3"/>
-  <rect x="28" y="28" width="456" height="712" rx="5" fill="none" stroke="#000" stroke-width="8"/>
-  <rect x="34" y="34" width="444" height="700" rx="3" fill="none" stroke="#fff" stroke-width="1.5"/>
+  <rect width="512" height="768" fill="url(#weave)"/>
   </g>
 </svg>

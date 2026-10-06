@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Download, RefreshCw, Volume2, Copy, Check } from "lucide-react";
+import { Download, RefreshCw, Copy, Check } from "lucide-react";
 import { SpreadType, PickedCard } from "@/features/tarot/types";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
-import buildFollowUpPrompt from "@/features/tarot/utils/buildFollowUpPrompt";
+import { buildTarotReadingPrompt } from "@/core/promptBuilder";
 import type { SavedReadingImage } from '@/host/tarotHost';
 
 interface ReadingSectionProps {
@@ -13,13 +13,8 @@ interface ReadingSectionProps {
   pickedCards: PickedCard[];
   revealedCardIds: Set<number>;
   isObscured: boolean;
-  isThinking: boolean;
-  thinkingKeywordIndex: number;
   question: string;
   readingText: string;
-  readingAudioBuffer: AudioBuffer | null;
-  isAudioPlaying: boolean;
-  onReplayAudio: () => void;
   onSaveResult: () => Promise<SavedReadingImage>;
   savesToChat?: boolean;
   onReset: () => void;
@@ -31,13 +26,8 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   pickedCards,
   revealedCardIds,
   isObscured,
-  isThinking,
-  thinkingKeywordIndex,
   question,
   readingText,
-  readingAudioBuffer,
-  isAudioPlaying,
-  onReplayAudio,
   onSaveResult,
   savesToChat = false,
   onReset,
@@ -63,13 +53,12 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
       finally { setIsSending(false); }
       return;
     }
-    const prompt = buildFollowUpPrompt(
-      displayedCards,
+    const prompt = buildTarotReadingPrompt({
+      cards: displayedCards,
       spread,
       question,
-      readingText,
-      locale
-    );
+      locale,
+    });
 
     try {
       await navigator.clipboard.writeText(prompt);
@@ -77,7 +66,10 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
       setTimeout(() => setIsCopied(false), 2000);
       window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
     } catch (err) {
-      console.error("Failed to copy:", err);
+      console.error("Failed to copy reading prompt:", err);
+      setSendError(locale === "zh-CN"
+        ? "无法复制提示词，请检查浏览器剪贴板权限后重试。"
+        : "Could not copy the prompt. Check clipboard permission and try again.");
     }
   };
 
@@ -89,11 +81,6 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
     try { setSavedImage(await onSaveResult()); }
     catch { setSendError(locale === "zh-CN" ? "保存失败，请重试。你的牌阵已保留。" : "Could not save. Your cards are preserved; please retry."); }
     finally { setIsSavingResult(false); }
-  };
-
-  const renderThinkingPhrase = () => {
-    const phrases = t("reading.thinkingPhrases", { returnObjects: true }) as string[];
-    return phrases[thinkingKeywordIndex % phrases.length];
   };
 
   return (
@@ -119,48 +106,6 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
             >
               {t("reading.revealPrompt")}
             </motion.div>
-          ) : isThinking ? (
-            <motion.div
-              key="thinking"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col gap-8 items-center w-full max-w-xl px-4"
-            >
-              <div className="h-8 flex items-center justify-center">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={thinkingKeywordIndex}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-xs tracking-[0.3em] text-neutral-400 uppercase"
-                  >
-                    {renderThinkingPhrase()}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="text-neutral-500"
-                      animate={{ opacity: [0.2, 1, 0.2] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.3,
-                      }}
-                    >
-                      .
-                    </motion.span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
           ) : (
             <motion.div
               id="reading-content"
@@ -178,7 +123,9 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 )}
                 <div className="w-12 h-px bg-white/20 mx-auto mb-6" />
                 <div className="text-base md:text-xl leading-loose text-neutral-300 font-light font-serif tracking-wide mb-12 text-center">
-                  {onInterpret && !readingText && (locale === "zh-CN" ? "先看看你的牌。准备好后，邀请 ChatGPT 一起解读。" : "Take a moment with your cards. When ready, invite ChatGPT to explore them with you.")}
+                  {!readingText && (onInterpret
+                    ? (locale === "zh-CN" ? "先看看你的牌。准备好后，邀请 ChatGPT 一起解读。" : "Take a moment with your cards. When ready, invite ChatGPT to explore them with you.")
+                    : t("reading.webPromptReady"))}
                   {readingText.split("**").map((part, idx) =>
                     idx % 2 === 1 ? (
                       <strong key={idx} className="font-bold text-white/90">
@@ -201,24 +148,6 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
               </p>}
               <div className="shrink-0 flex flex-col items-center w-full">
                 <div className="flex items-center justify-center gap-4 mb-8">
-                  {readingAudioBuffer && (
-                    <motion.button
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 2 }}
-                      onClick={onReplayAudio}
-                      disabled={isAudioPlaying}
-                      className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-neutral-600 hover:text-white transition-colors group px-4 py-2 border border-neutral-800 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={t("reading.replayTitle")}
-                    >
-                      <Volume2
-                        size={14}
-                        className={isAudioPlaying ? "animate-pulse" : ""}
-                      />
-                      {t("reading.replay")}
-                    </motion.button>
-                  )}
-
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -242,7 +171,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     title={onInterpret ? "ChatGPT" : t("reading.promptTitle")}
                   >
                     {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : readingText ? t("reading.prompt") : "请 ChatGPT 解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : readingText ? t("reading.prompt") : "Interpret with ChatGPT")) : (isCopied ? t("reading.copied") : t("reading.prompt"))}
+                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : readingText ? t("reading.prompt") : "请 ChatGPT 解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : readingText ? t("reading.prompt") : "Interpret with ChatGPT")) : (isCopied ? t("reading.copied") : t("reading.copyToChatGPT"))}
                   </motion.button>
                 </div>
 

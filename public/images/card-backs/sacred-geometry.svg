@@ -9,7 +9,6 @@
   </defs>
   <g transform="scale(1.09375 1.25)">
   <rect width="512" height="768" fill="#000"/>
-  <rect x="16" y="16" width="480" height="736" rx="10" fill="#000" stroke="#fff" stroke-width="3"/>
-  <rect x="29" y="29" width="454" height="710" rx="5" fill="url(#crackle)" stroke="#fff" stroke-width="1.5"/>
+  <rect width="512" height="768" fill="url(#crackle)"/>
   </g>
 </svg>

@@ -5,7 +5,6 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
-  const apiKey = env.GEMINI_API_KEY || env.API_KEY || "";
 
   // Dynamic base path:
   // - Respect explicit BASE_PATH or VITE_BASE_PATH
@@ -30,10 +29,6 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
     },
     plugins: [react(), tailwindcss()],
-    define: {
-      "process.env.API_KEY": JSON.stringify(apiKey),
-      "process.env.GEMINI_API_KEY": JSON.stringify(apiKey),
-    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

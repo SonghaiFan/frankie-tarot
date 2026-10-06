@@ -2,7 +2,7 @@ import { build as bundle } from "esbuild";
 import { build } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { mkdir, writeFile, copyFile, readdir } from "node:fs/promises";
+import { mkdir, writeFile, copyFile, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 const directory = fileURLToPath(new URL("./", import.meta.url));
@@ -16,10 +16,8 @@ const result = await build({
   configFile: false, root, base: base.href, publicDir: false,
   plugins: [react(), tailwindcss()],
   resolve: { alias: [
-    { find: "@/features/tarot/services/gemini", replacement: join(directory, "ui/localAudio.ts") },
     { find: "@", replacement: join(root, "src") },
   ] },
-  define: { "process.env.API_KEY": '""', "process.env.GEMINI_API_KEY": '""' },
   build: { write: false, cssCodeSplit: false, sourcemap: false,
     rollupOptions: { input: join(directory, "ui/index.tsx"), output: { format: "iife", inlineDynamicImports: true } },
   },
@@ -38,6 +36,7 @@ for (const [style, source] of [["redraw","cards"],["original","cards_rws_origina
   if(images.length!==78) throw new Error(`Expected 78 ${style} assets`);
   await Promise.all(images.map(f=>copyFile(join(sourcePath,f),join(target,f))));
 }
+await rm(join(output,"audio"),{recursive:true,force:true});
 await mkdir(join(output,"audio"),{recursive:true});
 for(const f of await readdir(join(root,"public/audio"))) if(f.endsWith(".mp3")) await copyFile(join(root,"public/audio",f),join(output,"audio",f));
 await mkdir(join(output,"card-backs"),{recursive:true});

@@ -48,12 +48,12 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
           transition={{ layout: { type: "tween", duration: 0.18, ease: [0.16, 1, 0.3, 1] } }}
           style={{ backfaceVisibility: "hidden" }}
         >
-          <div className="absolute inset-0 overflow-hidden bg-black border border-black/80">
+          <div className="absolute inset-0 overflow-hidden rounded-[1.2%] bg-black">
             <CardBackSurface cardBackId={cardBackId} />
           </div>
           <div
             aria-hidden
-            className={`pointer-events-none absolute inset-0 z-10 border transition-all duration-200 ${
+            className={`pointer-events-none absolute inset-0 z-10 rounded-[1.2%] border transition-all duration-200 ${
               isHovered
                 ? "border-white/55 shadow-[0_0_18px_rgba(255,255,255,0.26)]"
                 : "border-white/0"

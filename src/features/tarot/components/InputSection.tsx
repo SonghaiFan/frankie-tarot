@@ -6,6 +6,7 @@ import { SILKY_EASE } from "@/shared/constants/ui";
 import { getLocalizedSpread, SPREADS } from "@/features/tarot/constants/spreads";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
+import SelectionTile from "@/shared/components/SelectionTile";
 
 interface InputSectionProps {
   question: string;
@@ -288,12 +289,10 @@ const SpreadCard = ({
   const localized = getLocalizedSpread(item.id, locale);
 
   return (
-    <button
+    <SelectionTile
+      isSelected={isSelected}
       onClick={onClick}
-      className={`relative p-1 md:p-4 border transition-all duration-500 flex flex-col items-center gap-1 md:gap-4 group ${isSelected
-        ? "border-white/60 bg-white/5"
-        : "border-white/10 hover:border-white/30"
-        }`}
+      className="p-1 md:p-4 duration-500 flex flex-col items-center gap-1 md:gap-4"
     >
       <div className="flex gap-1 items-center justify-center h-6 w-6 md:h-8 md:w-8 relative">
         {item.icon(isSelected)}
@@ -316,7 +315,7 @@ const SpreadCard = ({
           </motion.div>
         )}
       </AnimatePresence>
-    </button>
+    </SelectionTile>
   );
 };
 

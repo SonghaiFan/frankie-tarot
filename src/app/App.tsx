@@ -22,12 +22,6 @@ import {
   getCardImageUrl,
 } from "@/features/tarot/constants/cards";
 import { SPREADS } from "@/features/tarot/constants/spreads";
-import {
-  generateTarotReading,
-  generateSpeech,
-  hasAiKey,
-  predictBestSpread,
-} from "@/features/tarot/services/gemini";
 import { drawCards } from "@/core/tarotEngine";
 import type { TarotHost, HostedReading } from "@/host/tarotHost";
 import Galaxy from "@/app/components/Galaxy";
@@ -53,34 +47,19 @@ import {
 const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialSetup?: {question: string; spread: SpreadType; revision: number} }> = ({ host, initialReading, initialSetup }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
-  const aiEnabled = !host && hasAiKey();
 
   const { isMobile, isTablet, isShortViewport } = useResponsive();
 
-  const staticScripts = useMemo(
-    () => ({
-      WELCOME: t("staticScripts.WELCOME"),
-      ASK: t("staticScripts.ASK"),
-      PICK: t("staticScripts.PICK"),
-      REVEAL: t("staticScripts.REVEAL"),
-    }),
-    [t]
-  );
-
   const {
     isAudioPlaying,
-    audioContextRef,
     hasPlayedIntroWelcomeRef,
     initAudio,
     stopVoice,
-    playBuffer,
     playVoice,
     waitForVoiceToFinish,
     playIntroWelcome,
     prefetchStaticAudio,
-    startDrone,
-    stopDrone,
-  } = useTarotAudio(locale, staticScripts);
+  } = useTarotAudio(locale);
 
   // --- State ---
   const [gameState, setGameState] = useState<GameState>(GameState.INTRO);
@@ -90,17 +69,14 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
 
   // Input State
   const [question, setQuestion] = useState("");
-  const [spread, setSpread] = useState<SpreadType | null>(host ? "THREE" : "AUTO");
+  const [spread, setSpread] = useState<SpreadType | null>(host ? "THREE" : "SINGLE");
 
   // Game Data
   const [pickedCards, setPickedCards] = useState<PickedCard[]>([]);
   const [readingText, setReadingText] = useState<string>("");
-  const [readingAudioBuffer, setReadingAudioBuffer] =
-    useState<AudioBuffer | null>(null);
   const [revealedCardIds, setRevealedCardIds] = useState<Set<number>>(
     new Set()
   );
-  const [hasPlayedReadingAudio, setHasPlayedReadingAudio] = useState(false);
 
   const [hostError, setHostError] = useState("");
 
@@ -108,7 +84,6 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
   const [isThinking, setIsThinking] = useState(false);
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
-  const [thinkingKeywordIndex, setThinkingKeywordIndex] = useState(0);
   const [cardBackId, setCardBackId] = useState<CardBackId>(() => {
     const savedCardBack = preferences.getItem("f-tarot-card-back");
     return savedCardBack === "celestial-compass" ||
@@ -157,16 +132,12 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
   };
 
   // --- Refs ---
-  const readingPromiseRef = useRef<Promise<string> | null>(null);
-  const readingReadyRef = useRef<boolean>(false);
-  const ritualIdRef = useRef<number>(0);
   const predeterminedCardsRef = useRef<PickedCard[]>([]);
   const predeterminedCardsIndexRef = useRef<number>(0);
   const hiddenCardIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     if (!initialReading) return;
-    ritualIdRef.current++;
     setQuestion(initialReading.question);
     setSpread(initialReading.spread);
     const picking = initialReading.stage === 'picking';
@@ -185,7 +156,6 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
 
   useEffect(() => {
     if (!initialSetup) return;
-    ritualIdRef.current++;
     setQuestion(initialSetup.question); setSpread(initialSetup.spread);
     setPickedCards([]); setRevealedCardIds(new Set()); setReadingText("");
     setSelectedCardId(null); setIsThinking(false); setGameState(GameState.INPUT);
@@ -200,14 +170,6 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     }, 150);
     return ()=>clearTimeout(timer);
   }, [host,gameState,question,spread,pickedCards.length,[...revealedCardIds].join(','),cardFaceStyle]);
-
-  useEffect(() => {
-    if (!isThinking) return;
-    const interval = setInterval(() => {
-      setThinkingKeywordIndex((prev) => prev + 1);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [isThinking]);
 
   useEffect(() => {
     preferences.setItem("f-tarot-card-back", cardBackId);
@@ -248,31 +210,13 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
       await waitForVoiceToFinish();
     }
 
-    startDrone();
   };
 
   const startRitual = async () => {
     if (isThinking) return;
     setHostError("");
-    let selectedSpread = spread;
-    if ((!selectedSpread || selectedSpread === "AUTO") && aiEnabled) {
-      setIsThinking(true);
-      try {
-        selectedSpread = await predictBestSpread(question, locale);
-        setSpread(selectedSpread);
-      } catch (e) {
-        console.error("Spread prediction failed", e);
-        selectedSpread = "SINGLE";
-        setSpread("SINGLE");
-      }
-      setIsThinking(false);
-    }
-    if ((!selectedSpread || selectedSpread === "AUTO") && !aiEnabled) {
-      selectedSpread = "SINGLE";
-      setSpread("SINGLE");
-    }
-
-    if (!selectedSpread) selectedSpread = "SINGLE";
+    const selectedSpread = !spread || spread === "AUTO" ? "SINGLE" : spread;
+    if (selectedSpread !== spread) setSpread(selectedSpread);
 
     let targets: PickedCard[];
     if (host) {
@@ -292,15 +236,8 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     setPickedCards([]);
     setSelectedCardId(null);
     setRevealedCardIds(new Set());
-    setHasPlayedReadingAudio(false);
     setReadingText("");
-    setReadingAudioBuffer(null);
     hiddenCardIdsRef.current.clear();
-    readingReadyRef.current = false;
-
-    const currentRitualId = ritualIdRef.current + 1;
-    ritualIdRef.current = currentRitualId;
-
 
     predeterminedCardsRef.current = targets;
     predeterminedCardsIndexRef.current = 0;
@@ -312,51 +249,7 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
       img.src = url;
     });
 
-    if (aiEnabled) {
-      readingPromiseRef.current = generateTarotReading(
-        targets,
-        selectedSpread,
-        question,
-        locale
-      )
-        .then((text) => {
-          if (ritualIdRef.current !== currentRitualId) return text;
-
-          readingReadyRef.current = true;
-
-          if (audioContextRef.current) {
-            const sentences = text
-              .split(/[。！？.!?]/)
-              .filter((s) => s.trim().length > 0);
-
-            const lastSentence =
-              sentences.length > 0 ? sentences[sentences.length - 1] : text;
-
-            generateSpeech(
-              lastSentence,
-              audioContextRef.current,
-              undefined,
-              locale
-            ).then((buffer) => {
-              if (ritualIdRef.current === currentRitualId && buffer) {
-                setReadingAudioBuffer(buffer);
-              }
-            });
-          }
-          return text;
-        })
-        .catch((err) => {
-          console.error("Background generation failed", err);
-          return t("errors.silentStars");
-        });
-    } else {
-      readingReadyRef.current = true;
-      readingPromiseRef.current = Promise.resolve(
-        host ? "" : t("errors.missingApiKeyReading")
-      );
-    }
-
-    playVoice(staticScripts.PICK, "PICK", "pick");
+    playVoice("PICK", "pick");
   };
 
   const handleCardSelect = async (visualCard: TarotCard) => {
@@ -384,52 +277,16 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     setPickedCards(newPicked);
 
     if (newPicked.length === requiredCards) {
-      setTimeout(() => startRevealProcess(newPicked), 1000);
+      setTimeout(startRevealProcess, 1000);
     }
   };
 
-  const startRevealProcess = async (finalCards: PickedCard[]) => {
+  const startRevealProcess = () => {
     setGameState(GameState.READING);
-    playVoice(staticScripts.REVEAL, "REVEAL", "reveal");
-    if (host) { setReadingText(""); setIsThinking(false); return; }
-
-    if (!readingReadyRef.current) {
-      setThinkingKeywordIndex(0);
-      setIsThinking(true);
-    }
-
-    let text = "";
-    if (readingPromiseRef.current) {
-      text = await readingPromiseRef.current;
-    } else {
-      text = await generateTarotReading(finalCards, spread!, question, locale);
-    }
-    setReadingText(text);
+    playVoice("REVEAL", "reveal");
+    setReadingText("");
     setIsThinking(false);
   };
-
-  // Play audio when all cards are revealed and audio is ready
-  useEffect(() => {
-    if (
-      gameState === GameState.READING &&
-      !isThinking &&
-      readingAudioBuffer &&
-      pickedCards.length > 0 &&
-      revealedCardIds.size === pickedCards.length &&
-      !hasPlayedReadingAudio
-    ) {
-      playBuffer(readingAudioBuffer);
-      setHasPlayedReadingAudio(true);
-    }
-  }, [
-    gameState,
-    isThinking,
-    readingAudioBuffer,
-    pickedCards.length,
-    revealedCardIds.size,
-    hasPlayedReadingAudio,
-    playBuffer,
-  ]);
 
   const resetRitual = () => {
     stopVoice();
@@ -437,18 +294,11 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
     setPickedCards([]);
     setSelectedCardId(null);
     setRevealedCardIds(new Set());
-    setHasPlayedReadingAudio(false);
     setReadingText("");
-    setReadingAudioBuffer(null);
     setQuestion("");
+    setIsThinking(false);
     setPreviousGameState(null);
-    playVoice(staticScripts.ASK, "ASK", "ask");
-  };
-
-  const replayAudio = () => {
-    if (readingAudioBuffer && !isAudioPlaying) {
-      playBuffer(readingAudioBuffer);
-    }
+    playVoice("ASK", "ask");
   };
 
   const saveResult = host ? async () => host.saveResult(locale, readingText, await renderReadingImage({
@@ -534,13 +384,8 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
             pickedCards={pickedCards}
             revealedCardIds={revealedCardIds}
             isObscured={selectedCardId !== null}
-            isThinking={isThinking}
-            thinkingKeywordIndex={thinkingKeywordIndex}
             question={question}
             readingText={readingText}
-            readingAudioBuffer={readingAudioBuffer}
-            isAudioPlaying={isAudioPlaying}
-            onReplayAudio={replayAudio}
             onSaveResult={saveResult}
             savesToChat={!!host}
             onReset={resetRitual}
@@ -610,7 +455,6 @@ const App: React.FC<{ host?: TarotHost; initialReading?: HostedReading; initialS
           onLibraryClick={toggleLibrary}
           onExpand={host?.expand}
           onHomeClick={() => {
-            stopDrone();
             setSelectedCardId(null);
             setGameState(GameState.INTRO);
             setPreviousGameState(null);

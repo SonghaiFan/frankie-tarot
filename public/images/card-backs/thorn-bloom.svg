@@ -10,7 +10,6 @@
   </defs>
   <g transform="scale(1.09375 1.25)">
   <rect width="512" height="768" fill="#000"/>
-  <rect x="16" y="16" width="480" height="736" rx="10" fill="#fff" stroke="#fff" stroke-width="3"/>
-  <rect x="29" y="29" width="454" height="710" rx="4" fill="url(#tiles)" stroke="#000" stroke-width="5"/>
+  <rect width="512" height="768" fill="url(#tiles)"/>
   </g>
 </svg>

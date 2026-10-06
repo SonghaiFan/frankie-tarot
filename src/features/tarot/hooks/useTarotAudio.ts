@@ -1,73 +1,11 @@
 import { useState, useRef, useCallback } from "react";
-import { generateSpeech } from "@/features/tarot/services/gemini";
+import { loadVoiceClip } from "@/features/tarot/services/audio";
 import { Locale } from "@/i18n/types";
 
-const BACKGROUND_VOLUME = 0.06;
-
-class SoundEngine {
-  private ctx: AudioContext;
-  private audioElement: HTMLAudioElement | null = null;
-  private source: MediaElementAudioSourceNode | null = null;
-  private gain: GainNode | null = null;
-
-  constructor(ctx: AudioContext) {
-    this.ctx = ctx;
-  }
-
-  async startDrone() {
-    if (this.audioElement) return; // Already playing
-
-    try {
-      const baseUrl = import.meta.env.BASE_URL;
-      this.audioElement = new Audio(`${baseUrl}audio/background.mp3`);
-      this.audioElement.crossOrigin = "anonymous";
-      this.audioElement.loop = true;
-
-      this.source = this.ctx.createMediaElementSource(this.audioElement);
-      this.gain = this.ctx.createGain();
-
-      this.gain.gain.setValueAtTime(0, this.ctx.currentTime);
-      this.source.connect(this.gain);
-      this.gain.connect(this.ctx.destination);
-
-      await this.audioElement.play();
-
-      this.gain.gain.linearRampToValueAtTime(
-        BACKGROUND_VOLUME,
-        this.ctx.currentTime + 5
-      );
-    } catch (error) {
-      console.error("Background music playback failed:", error);
-    }
-  }
-
-  stop() {
-    if (!this.gain || !this.audioElement) return;
-
-    const t = this.ctx.currentTime;
-    this.gain.gain.linearRampToValueAtTime(0.001, t + 2);
-
-    setTimeout(() => {
-      this.audioElement?.pause();
-      this.audioElement = null;
-      this.source = null;
-      this.gain = null;
-    }, 2000);
-  }
-}
-
-export interface StaticScripts {
-  WELCOME: string;
-  ASK: string;
-  PICK: string;
-  REVEAL: string;
-}
-
-export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
+export function useTarotAudio(locale: Locale) {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
-  const soundEngineRef = useRef<SoundEngine | null>(null);
   const audioCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
   const voiceSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const voicePlaybackRef = useRef<Promise<void> | null>(null);
@@ -81,7 +19,6 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
         window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new AudioContextClass();
       audioContextRef.current = ctx;
-      soundEngineRef.current = new SoundEngine(ctx);
     }
     if (audioContextRef.current.state === "suspended") {
       audioContextRef.current.resume();
@@ -143,11 +80,7 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
   );
 
   const playVoice = useCallback(
-    async (
-      text: string,
-      cacheKey?: string,
-      staticKey?: string
-    ): Promise<void> => {
+    async (cacheKey: string, staticKey: string): Promise<void> => {
       if (!audioContextRef.current) return;
 
       const localeCacheKey = cacheKey ? `${locale}:${cacheKey}` : undefined;
@@ -158,29 +91,20 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
       }
 
       try {
-        const buffer = await generateSpeech(
-          text,
-          audioContextRef.current,
-          staticKey,
-          locale
-        );
+        const buffer = await loadVoiceClip(staticKey, audioContextRef.current, locale);
         if (buffer) {
           if (localeCacheKey) audioCacheRef.current.set(localeCacheKey, buffer);
           playBuffer(buffer);
         }
       } catch (err) {
-        console.error("Voice generation exception", err);
+        console.error("Voice playback failed", err);
       }
     },
     [locale, playBuffer]
   );
 
   const playVoiceAndWait = useCallback(
-    async (
-      text: string,
-      cacheKey?: string,
-      staticKey?: string
-    ): Promise<void> => {
+    async (cacheKey: string, staticKey: string): Promise<void> => {
       if (!audioContextRef.current) return;
 
       const localeCacheKey = cacheKey ? `${locale}:${cacheKey}` : undefined;
@@ -191,18 +115,13 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
       }
 
       try {
-        const buffer = await generateSpeech(
-          text,
-          audioContextRef.current,
-          staticKey,
-          locale
-        );
+        const buffer = await loadVoiceClip(staticKey, audioContextRef.current, locale);
         if (buffer) {
           if (localeCacheKey) audioCacheRef.current.set(localeCacheKey, buffer);
           await playBufferAndWait(buffer);
         }
       } catch (err) {
-        console.error("Voice generation exception", err);
+        console.error("Voice playback failed", err);
       }
     },
     [locale, playBufferAndWait]
@@ -232,35 +151,21 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
         (Math.random() < 0.5 ? "WELCOME" : "ASK");
       introGreetingKeyRef.current = selectedKey;
 
-      const selectedScript =
-        selectedKey === "WELCOME" ? staticScripts.WELCOME : staticScripts.ASK;
-
       await playVoiceAndWait(
-        selectedScript,
         selectedKey,
         selectedKey.toLowerCase()
       );
     })();
 
     await introWelcomePromiseRef.current;
-  }, [initAudio, playVoiceAndWait, staticScripts.ASK, staticScripts.WELCOME]);
+  }, [initAudio, playVoiceAndWait]);
 
   const prefetchStaticAudio = useCallback(async () => {
     if (!audioContextRef.current) return;
-    const scripts = [
-      { k: "ASK", t: staticScripts.ASK },
-      { k: "PICK", t: staticScripts.PICK },
-      { k: "REVEAL", t: staticScripts.REVEAL },
-    ];
-    for (const s of scripts) {
-      const cacheKey = `${locale}:${s.k}`;
+    for (const key of ["ASK", "PICK", "REVEAL"]) {
+      const cacheKey = `${locale}:${key}`;
       if (!audioCacheRef.current.has(cacheKey)) {
-        generateSpeech(
-          s.t,
-          audioContextRef.current,
-          s.k.toLowerCase(),
-          locale
-        )
+        loadVoiceClip(key.toLowerCase(), audioContextRef.current, locale)
           .then((buf) => {
             if (buf) audioCacheRef.current.set(cacheKey, buf);
           })
@@ -269,15 +174,7 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
           });
       }
     }
-  }, [locale, staticScripts]);
-
-  const startDrone = useCallback(() => {
-    soundEngineRef.current?.startDrone();
-  }, []);
-
-  const stopDrone = useCallback(() => {
-    soundEngineRef.current?.stop();
-  }, []);
+  }, [locale]);
 
   return {
     isAudioPlaying,
@@ -292,7 +189,5 @@ export function useTarotAudio(locale: Locale, staticScripts: StaticScripts) {
     waitForVoiceToFinish,
     playIntroWelcome,
     prefetchStaticAudio,
-    startDrone,
-    stopDrone,
   };
 }

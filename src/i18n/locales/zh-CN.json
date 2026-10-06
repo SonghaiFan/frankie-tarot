@@ -51,10 +51,12 @@
     "saveTitle": "下载结果图片",
     "saveToChatTitle": "将当前结果导出为 PNG 图片",
     "prompt": "深入问问",
-    "promptTitle": "复制这次解读上下文，并在 ChatGPT 中继续深问",
+    "promptTitle": "复制解读提示词，然后粘贴到 ChatGPT",
+    "copyToChatGPT": "复制提示词",
     "copied": "复制成功",
     "seekAgain": "再次探索",
-    "deeperNotice": "如果你想继续深挖这次解读，点击“深入问问”后，把剪贴板中的内容粘贴到 ChatGPT 里继续追问。",
+    "webPromptReady": "牌已全部翻开。复制下方提示词，粘贴到 ChatGPT，请它为你解读。",
+    "deeperNotice": "复制下方提示词，打开 ChatGPT 并粘贴，即可请它解读这组牌。",
     "thinkingPhrases": [
       "正在向群星求问……",
       "正在编织命运的丝线……",
@@ -94,6 +96,7 @@
       "title": "主题卡包",
       "subtitle": "卡面风格与牌背纹样的精选组合，切换整套塔罗牌的视觉意境。",
       "selected": "当前卡包",
+      "apply": "应用卡包",
       "customMix": "自定义混合搭配",
       "customizePrompt": "自定义单独调整卡面与牌背",
       "hideCustomize": "收起单独调整",
@@ -138,6 +141,16 @@
         "description": "不规则开片纹理"
       }
     },
+    "backColors": {
+      "title": "牌背颜色",
+      "gradient": "渐变",
+      "solid": "纯色",
+      "reset": "恢复默认",
+      "color": "颜色 {{number}}",
+      "remove": "删除颜色 {{number}}",
+      "add": "添加颜色",
+      "hint": "点击色块修改颜色，所有牌背会同步更新。"
+    },
     "spreadsTitle": "牌阵库",
     "spreadCardCount": "{{count}} 张牌",
     "views": {
@@ -159,9 +172,9 @@
   },
   "card": {
     "diffMode": {
-      "redraw": "重绘版",
+      "current": "当前版本",
       "original": "1909原版",
-      "diff": "滑动对比",
+      "diff": "对比",
       "hint": "拖动滑块对比两版细节"
     },
     "reversedShort": "逆位",
@@ -188,7 +201,6 @@
   "errors": {
     "readingSoftFail": "迷雾太浓，我看不到前路...",
     "readingHardFail": "命运的丝线暂时纠缠不清，请静心片刻后再试。",
-    "silentStars": "星象暂时沉默，请稍后再试。",
-    "missingApiKeyReading": "当前没有连接 AI key，但你的牌已经准备好了。点击下方按钮即可复制本次牌阵内容，并前往 ChatGPT 继续解读。"
+    "silentStars": "星象暂时沉默，请稍后再试。"
   }
 }
