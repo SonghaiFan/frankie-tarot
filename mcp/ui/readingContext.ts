@@ -32,6 +32,8 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
   if (!value || typeof value !== 'object') return;
   const state = value as TarotAppSnapshot;
   if (state.version !== 1 || typeof state.question !== 'string' ||
+    (state.readingText !== undefined && (typeof state.readingText !== 'string' || state.readingText.length > 800)) ||
+    (state.summaryRequested !== undefined && typeof state.summaryRequested !== 'boolean') ||
     !Object.values(GameState).includes(state.stage) ||
     (state.spread !== null && !Object.hasOwn(SPREADS,state.spread)) ||
     !['original','redraw','dreamy'].includes(state.cardFaceStyle) ||
@@ -54,4 +56,13 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
     }
     return {...state,pickedCards,drawTargets};
   } catch { return; }
+}
+
+/** Never apply a delayed model response to another draw or an incomplete spread. */
+export function applyReadingSummary(state: TarotAppSnapshot | undefined, summary: {readingId:string;text:string}) {
+  if (!state || state.readingId !== summary.readingId || !summary.text.trim() || summary.text.length > 800 || !state.spread) {
+    throw new Error('This summary does not match the current reading.');
+  }
+  completeReadingContext({question:state.question,spread:state.spread,cards:state.pickedCards,revealedCardIds:state.revealedCardIds,locale:'en'});
+  return {...state,readingText:summary.text.trim(),summaryRequested:true};
 }

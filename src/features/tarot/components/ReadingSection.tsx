@@ -16,6 +16,8 @@ interface ReadingSectionProps {
   isObscured: boolean;
   question: string;
   readingText: string;
+  briefStatus?: 'idle'|'pending'|'error';
+  onRetryBrief?: () => Promise<void>;
   onSaveResult: () => Promise<SavedReadingImage>;
   savesToChat?: boolean;
   onReset: () => void;
@@ -28,7 +30,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   revealedCardIds,
   isObscured,
   question,
-  readingText,
+  readingText, briefStatus = 'idle', onRetryBrief,
   onSaveResult,
   savesToChat = false,
   onReset,
@@ -129,7 +131,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 )}
                 <div className="w-12 h-px bg-white/20 mx-auto mb-6" />
                 <div className="text-base md:text-xl leading-loose text-neutral-300 font-light font-serif tracking-wide mb-12 text-center">
-                  {!readingText && (onInterpret
+                  {!readingText && (briefStatus === 'pending' ? (locale === 'zh-CN' ? '正在邀请 ChatGPT，为这组牌写下几句诗意的回声…' : 'Inviting ChatGPT to write a few poetic echoes for these cards…') : briefStatus === 'error' ? (locale === 'zh-CN' ? '简短解读尚未返回，你的牌已保留。' : 'The brief reading has not returned. Your cards are preserved.') : onInterpret
                     ? (locale === "zh-CN" ? "先看看你的牌。准备好后，邀请 ChatGPT 一起解读。" : "Take a moment with your cards. When ready, invite ChatGPT to explore them with you.")
                     : t("reading.webPromptReady"))}
                   {readingText.split("**").map((part, idx) =>
@@ -143,10 +145,11 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                   )}
                 </div>
                 <p className="text-xs md:text-sm text-neutral-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-                  {onInterpret ? (readingText ? (locale === "zh-CN" ? "点击“深入解读”，在当前对话里探索这次牌阵。" : "Use Explore deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.")) : t("reading.deeperNotice")}
+                  {onInterpret ? (readingText ? (locale === "zh-CN" ? "点击“解读”，在当前对话里展开更深入的详细分析。" : "Use Explore deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.")) : t("reading.deeperNotice")}
                 </p>
               </div>
 
+              {briefStatus === 'error' && !readingText && onRetryBrief && <button onClick={()=>void onRetryBrief()} className="mb-4 text-xs text-neutral-400 underline">{locale === 'zh-CN' ? '重试简短解读' : 'Retry brief reading'}</button>}
               {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
               {savedImage && <p role="status" className="text-xs text-neutral-400 mb-4">
                 {savedImage.destination==='library' ? (locale==='zh-CN'?'图片已保存到 ChatGPT 文件库':'Image saved to the ChatGPT file library') : (locale==='zh-CN'?'结果图片已导出':'Reading image exported')}

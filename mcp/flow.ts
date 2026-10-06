@@ -18,7 +18,7 @@ export function viewResult(view: TarotView) {
   return {
     structuredContent: publicState(view),
     _meta: { tarot: view, ...(view.flowId ? {'openai/widgetSessionId': view.flowId} : {}) },
-    content: [{type:'text' as const, text:
+    content: [{type:'text' as const, text:view.summary ? 'A brief summary was sent to the existing table. Do not reopen, redraw, or repeat it in chat. The UI validates the readingId against its current private reading.' :
       'Setup data is prepared for the original interactive table. This tool result does not confirm that ChatGPT successfully rendered it or restored its private state. Wait for the user to start, select and flip in the UI. Do not track reveal progress, infer hidden cards or automatically interpret selected-card context. An explicit Interpret request is answered directly in chat.'}],
   };
 }

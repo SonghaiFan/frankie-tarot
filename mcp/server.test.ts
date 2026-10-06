@@ -45,7 +45,7 @@ test("MCP discovery exposes only launcher and smart-spread lookup", async () => 
   assert.deepEqual(tools.map(tool=>tool.name).sort(), ['list_tarot_spreads','open_tarot']);
   const launcher = tools.find(tool=>tool.name==='open_tarot')!;
   assert.equal((launcher._meta?.ui as any).resourceUri, UI_URI);
-  assert.deepEqual(Object.keys(launcher.inputSchema.properties ?? {}).sort(),['flowId','locale','question','spread']);
+  assert.deepEqual(Object.keys(launcher.inputSchema.properties ?? {}).sort(),['flowId','locale','question','spread','summary']);
   assert.deepEqual((launcher._meta?.['openai/ui'] as any).entrypoints,[{type:'global'},{type:'thread'}]);
   const opened=await client.callTool({name:'open_tarot',arguments:{}});
   assert.equal((opened.structuredContent as any).spreads.length,11);
@@ -134,4 +134,17 @@ test("MCP rejects unexpected browser origins and excessive request bodies", asyn
   assert.equal(getUiUri(widgetHtml), UI_URI);
   assert.notEqual(getUiUri(widgetHtml + "<!-- updated -->"), UI_URI);
   assert.match(UI_URI, /^ui:\/\/frankie-tarot\/app-[0-9a-f]{20}\.html$/);
+});
+
+test('brief summary writeback requires an existing flow and never starts a new reading', async () => {
+  const flowId='b4267470-4910-43ad-a2ef-20f29efec10f', readingId='8cc59a71-b4fb-4cdb-abf8-6930e45d37ba';
+  const summary={readingId,text:'风穿过旧门，新的光从缝隙里来。'};
+  const result=await client.callTool({name:'open_tarot',arguments:{flowId,summary}});
+  assert.ok(!result.isError);
+  assert.deepEqual((result._meta as any).tarot.summary,summary);
+  assert.equal((result._meta as any).tarot.question,undefined);
+  assert.equal((result.structuredContent as any).cards,undefined);
+  for (const args of [{summary},{flowId,summary,question:'new draw'},{flowId,summary,spread:'SINGLE'},{flowId,summary:{...summary,text:' '}}]) {
+    assert.equal((await client.callTool({name:'open_tarot',arguments:args})).isError,true);
+  }
 });

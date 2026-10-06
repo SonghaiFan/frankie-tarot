@@ -44,7 +44,7 @@ import {
   findPackByCombination,
 } from "@/features/tarot/constants/cardPacks";
 
-const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; initialSetup?: {question: string; spread: SpreadType; revision: number} }> = ({ host, initialSnapshot, initialSetup }) => {
+const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; briefSummary?: {readingId:string;text:string}; initialSetup?: {question: string; spread: SpreadType; revision: number; autoStart?: boolean} }> = ({ host, initialSnapshot, initialSetup, briefSummary }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
 
@@ -78,6 +78,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
     new Set()
   );
 
+  const [briefStatus,setBriefStatus] = useState<'idle'|'pending'|'error'>('idle');
   const [hostError, setHostError] = useState("");
 
   // System State
@@ -135,10 +136,12 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
   const predeterminedCardsRef = useRef<PickedCard[]>([]);
   const predeterminedCardsIndexRef = useRef<number>(0);
   const hiddenCardIdsRef = useRef<Set<number>>(new Set());
+  const summaryRequestedRef = useRef<string | undefined>(undefined);
   const readingIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!initialSetup) return;
+    summaryRequestedRef.current = undefined;setBriefStatus('idle');
     readingIdRef.current = undefined;
     predeterminedCardsRef.current = [];
     predeterminedCardsIndexRef.current = 0;
@@ -150,6 +153,8 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
 
   useEffect(() => {
     if (!initialSnapshot) return;
+    summaryRequestedRef.current = initialSnapshot.summaryRequested ? initialSnapshot.readingId : undefined;
+    setBriefStatus(initialSnapshot.summaryRequested && !initialSnapshot.readingText ? 'pending' : 'idle');
     readingIdRef.current = initialSnapshot.readingId;
     setQuestion(initialSnapshot.question);
     setSpread(initialSnapshot.spread);
@@ -159,7 +164,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
     hiddenCardIdsRef.current = new Set(initialSnapshot.pickedCards.map(card => card.visualId ?? card.id));
     setRevealedCardIds(new Set(initialSnapshot.revealedCardIds));
     setCardFaceStyle(initialSnapshot.cardFaceStyle);
-    setSelectedCardId(null); setReadingText(''); setIsThinking(false);
+    setSelectedCardId(null); setReadingText(initialSnapshot.readingText ?? ''); setIsThinking(false);
     setGameState(initialSnapshot.stage);
     if (initialSnapshot.stage === GameState.PICKING && initialSnapshot.spread &&
       initialSnapshot.pickedCards.length === SPREADS[initialSnapshot.spread].cardCount) {
@@ -172,12 +177,12 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
     const timer = setTimeout(() => {
       void host.reportState!({version:1,readingId:readingIdRef.current,
         stage:gameState === GameState.LIBRARY ? previousGameState ?? GameState.INTRO : gameState,
-        question,spread,pickedCards,drawTargets:predeterminedCardsRef.current,
+        question,spread,pickedCards,readingText,summaryRequested:!!readingIdRef.current && summaryRequestedRef.current===readingIdRef.current,drawTargets:predeterminedCardsRef.current,
         revealedCardIds:[...revealedCardIds],cardFaceStyle})
         .catch(()=>setHostError(locale === 'zh-CN' ? '牌局状态未保存，请重试。' : 'Could not save this table state. Please retry.'));
     }, 150);
     return ()=>clearTimeout(timer);
-  }, [host,gameState,previousGameState,question,spread,pickedCards,[...revealedCardIds].join(','),cardFaceStyle]);
+  }, [host,gameState,previousGameState,question,spread,pickedCards,[...revealedCardIds].join(','),cardFaceStyle,readingText,briefStatus]);
 
   const attachCardContext = (id: number) => {
     const position = pickedCards.findIndex(card => card.id === id);
@@ -264,6 +269,40 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
     playVoice("PICK", "pick");
   };
 
+
+  const autoStartedRevisionRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!initialSetup?.autoStart || autoStartedRevisionRef.current === initialSetup.revision ||
+      gameState !== GameState.INPUT || isThinking || question !== initialSetup.question || spread !== initialSetup.spread) return;
+    autoStartedRevisionRef.current = initialSetup.revision;
+    void startRitual();
+  }, [initialSetup,gameState,isThinking,question,spread]);
+
+  useEffect(() => {
+    if (briefSummary && briefSummary.readingId === readingIdRef.current) {
+      setReadingText(briefSummary.text);setBriefStatus('idle');
+    }
+  }, [briefSummary]);
+
+  const requestBriefSummary = async () => {
+    if (!host?.summarize || !spread || !readingIdRef.current) return;
+    summaryRequestedRef.current = readingIdRef.current;setBriefStatus('pending');
+    try { await host.summarize({readingId:readingIdRef.current,question,spread,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale}); }
+    catch { setBriefStatus('error'); }
+  };
+  useEffect(() => {
+    if (!host?.summarize || gameState !== GameState.READING || !spread || !pickedCards.length ||
+      pickedCards.length !== SPREADS[spread].cardCount ||
+      !pickedCards.every(card=>revealedCardIds.has(card.id)) ||
+      !readingIdRef.current || summaryRequestedRef.current === readingIdRef.current) return;
+    void requestBriefSummary();
+  }, [host,gameState,spread,pickedCards,revealedCardIds]);
+  useEffect(() => {
+    if (briefStatus !== 'pending' || readingText) return;
+    const timer=setTimeout(()=>setBriefStatus('error'),60000);
+    return ()=>clearTimeout(timer);
+  },[briefStatus,readingText]);
+
   const handleCardSelect = async (visualCard: TarotCard) => {
     if (isThinking || gameState !== GameState.PICKING) return;
 
@@ -310,6 +349,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
     setRevealedCardIds(new Set());
     setReadingText("");
     setQuestion("");
+    summaryRequestedRef.current = undefined;setBriefStatus('idle');
     readingIdRef.current = undefined;
     predeterminedCardsRef.current = [];
     setIsThinking(false);
@@ -403,6 +443,8 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; init
             isObscured={selectedCardId !== null}
             question={question}
             readingText={readingText}
+            briefStatus={briefStatus}
+            onRetryBrief={host?.summarize ? requestBriefSummary : undefined}
             onSaveResult={saveResult}
             savesToChat={!!host}
             onReset={resetRitual}

@@ -4,6 +4,8 @@ export interface SavedReadingImage { destination: 'download' | 'library'; name: 
 /** UI-only recovery data; never attach this snapshot to model context. */
 export interface TarotAppSnapshot {
   version: 1;
+  readingText?: string;
+  summaryRequested?: boolean;
   readingId?: string;
   stage: GameState;
   question: string;
@@ -14,6 +16,7 @@ export interface TarotAppSnapshot {
   cardFaceStyle: CardFaceStyle;
 }
 export interface TarotReadingRequest {
+  readingId?: string;
   question: string;
   spread: SpreadType;
   cards: PickedCard[];
@@ -30,6 +33,7 @@ export interface TarotCardContext {
 export interface TarotHost {
   expand?(): Promise<void>;
   requestSpread?(question: string, locale: Locale): Promise<void>;
+  summarize?(reading: TarotReadingRequest): Promise<void>;
   interpret(reading: TarotReadingRequest): Promise<void>;
   attachCard?(selection: TarotCardContext): Promise<void>;
   saveResult(locale: Locale, readingText: string, image: ReadingImage): Promise<SavedReadingImage>;

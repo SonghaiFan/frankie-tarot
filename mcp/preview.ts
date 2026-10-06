@@ -66,6 +66,7 @@ async function start() {
   };
   for (const [id,args] of [
     ['preview-question',()=>({question:'我这周该注意什么',spread:'THREE',locale,flowId:latestContext.flowId})],
+    ['preview-summary',()=>({locale,flowId:latestContext.flowId,summary:{readingId:latestContext.readingId,text:'风停在旧路的尽头，也替新的方向留下一盏灯。你不必立刻找到答案，先照亮脚下的一步。'}})],
     ['preview-resume',()=>({locale,flowId:latestContext.flowId})],
   ] as const) document.getElementById(id)!.onclick = async () => {
     const result = CallToolResultSchema.parse(await client.callTool({name:'open_tarot',arguments:args()}));

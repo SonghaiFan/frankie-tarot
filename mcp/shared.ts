@@ -10,6 +10,7 @@ export interface TarotSpread {
 }
 
 export interface TarotView {
+  summary?: {readingId: string; text: string};
   locale: Locale;
   spreads: TarotSpread[];
   /** Stable interaction slot within a chat; actual cards live only in the UI. */

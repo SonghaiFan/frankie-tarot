@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { FULL_DECK } from '../src/features/tarot/constants/cards';
 import { GameState } from '../src/features/tarot/types';
-import { cardContext, completeReadingContext, restoreSnapshot } from './ui/readingContext';
+import { cardContext, completeReadingContext, restoreSnapshot, applyReadingSummary } from './ui/readingContext';
 import type { TarotAppSnapshot, TarotReadingRequest } from '../src/host/tarotHost';
 
 const cards=FULL_DECK.slice(0,3).map((card,i)=>({...card,isReversed:i===1,visualId:70+i}));
@@ -46,4 +46,19 @@ test('private recovery preserves remaining draw, selected cards and orientation'
   assert.equal(restoreSnapshot({...snapshot,drawTargets:[]}),undefined);
   assert.equal(restoreSnapshot({...snapshot,stage:GameState.READING}),undefined);
   assert.equal(restoreSnapshot({...snapshot,version:99}),undefined);
+});
+
+test('summary updates only the matching completed reading and preserves the exact cards',()=>{
+  const complete={...snapshot,stage:GameState.READING,pickedCards:cards,revealedCardIds:cards.map(c=>c.id)};
+  const summary={readingId:complete.readingId!,text:'  风穿过旧门，光照见下一步。  '};
+  const updated=applyReadingSummary(complete,summary);
+  assert.equal(updated.readingText,'风穿过旧门，光照见下一步。');
+  assert.equal(updated.summaryRequested,true);
+  assert.deepEqual(updated.pickedCards,complete.pickedCards);
+  assert.deepEqual(updated.drawTargets,complete.drawTargets);
+  assert.throws(()=>applyReadingSummary(complete,{...summary,readingId:'another-draw'}));
+  assert.throws(()=>applyReadingSummary(snapshot,summary));
+  assert.throws(()=>applyReadingSummary(undefined,summary));
+  assert.throws(()=>applyReadingSummary(complete,{...summary,text:'x'.repeat(801)}));
+  assert.equal(restoreSnapshot(JSON.parse(JSON.stringify(updated)))?.readingText,updated.readingText);
 });
