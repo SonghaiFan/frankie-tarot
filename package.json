@@ -16,7 +16,8 @@
     "mcp:start": "node mcp/dist/server.mjs",
     "mcp:dev": "npm run mcp:build && npm run mcp:start",
     "mcp:test": "node --import tsx --test mcp/*.test.ts",
-    "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts"
+    "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts",
+    "dsh:test": "node --import tsx --test dsh-plugin/tests/*.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
