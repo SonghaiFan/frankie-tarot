@@ -104,7 +104,8 @@ function PluginRoot(){
       return;
     }
     setBriefSummary(undefined);
-    const resume = next.question === undefined;
+    // ChatGPT replays the original launch result on refresh, including its question.
+    const resume = next.question === undefined || (!current && !!saved);
     const savedContext = current?.flowId === next.flowId ? modelContext : stored?.modelContent;
     current=next;setView(next);setError(resume && next.restoreRequested && !saved
       ? (next.locale === 'en' ? 'This host has no saved table state. No replacement cards were drawn.' : '当前宿主没有可恢复的牌局状态，未重新抽牌。') : '');

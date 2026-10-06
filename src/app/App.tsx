@@ -1,3 +1,4 @@
+import { restoreSnapshot } from "@/host/readingSnapshot";
 import { preferences } from "@/shared/storage";
 import React, {
   useState,
@@ -61,21 +62,26 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     prefetchStaticAudio,
   } = useTarotAudio(locale);
 
+  const [savedReading] = useState(() => {
+    if (host) return initialSnapshot;
+    try { return restoreSnapshot(JSON.parse(sessionStorage.getItem('f-tarot-reading') ?? 'null')); }
+    catch { return undefined; }
+  });
   // --- State ---
-  const [gameState, setGameState] = useState<GameState>(GameState.INTRO);
+  const [gameState, setGameState] = useState<GameState>(savedReading?.stage ?? GameState.INTRO);
   const [previousGameState, setPreviousGameState] = useState<GameState | null>(
     null
   );
 
   // Input State
-  const [question, setQuestion] = useState("");
-  const [spread, setSpread] = useState<SpreadType | null>(host ? "THREE" : "SINGLE");
+  const [question, setQuestion] = useState(savedReading?.question ?? "");
+  const [spread, setSpread] = useState<SpreadType | null>(savedReading?.spread ?? (host ? "THREE" : "SINGLE"));
 
   // Game Data
-  const [pickedCards, setPickedCards] = useState<PickedCard[]>([]);
-  const [readingText, setReadingText] = useState<string>("");
+  const [pickedCards, setPickedCards] = useState<PickedCard[]>(savedReading?.pickedCards ?? []);
+  const [readingText, setReadingText] = useState<string>(savedReading?.readingText ?? "");
   const [revealedCardIds, setRevealedCardIds] = useState<Set<number>>(
-    new Set()
+    new Set(savedReading?.revealedCardIds)
   );
 
   const [briefStatus,setBriefStatus] = useState<'idle'|'pending'|'error'>('idle');
@@ -96,6 +102,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   });
 
   const [cardFaceStyle, setCardFaceStyle] = useState<CardFaceStyle>(() => {
+    if (savedReading) return savedReading.cardFaceStyle;
     const saved = preferences.getItem("f-tarot-card-face-style");
     return saved === "original" || saved === "redraw" || saved === "dreamy"
       ? saved
@@ -133,11 +140,11 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   };
 
   // --- Refs ---
-  const predeterminedCardsRef = useRef<PickedCard[]>([]);
-  const predeterminedCardsIndexRef = useRef<number>(0);
-  const hiddenCardIdsRef = useRef<Set<number>>(new Set());
-  const summaryRequestedRef = useRef<string | undefined>(undefined);
-  const readingIdRef = useRef<string | undefined>(undefined);
+  const predeterminedCardsRef = useRef<PickedCard[]>(savedReading?.drawTargets ?? []);
+  const predeterminedCardsIndexRef = useRef<number>(savedReading?.pickedCards.length ?? 0);
+  const hiddenCardIdsRef = useRef<Set<number>>(new Set(savedReading?.pickedCards.map(card => card.visualId ?? card.id)));
+  const summaryRequestedRef = useRef<string | undefined>(savedReading?.summaryRequested ? savedReading.readingId : undefined);
+  const readingIdRef = useRef<string | undefined>(savedReading?.readingId);
 
   useEffect(() => {
     if (!initialSetup) return;
@@ -173,15 +180,16 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   }, [initialSnapshot]);
 
   useEffect(() => {
-    if (!host?.reportState) return;
-    const timer = setTimeout(() => {
-      void host.reportState!({version:1,readingId:readingIdRef.current,
-        stage:gameState === GameState.LIBRARY ? previousGameState ?? GameState.INTRO : gameState,
-        question,spread,pickedCards,readingText,summaryRequested:!!readingIdRef.current && summaryRequestedRef.current===readingIdRef.current,drawTargets:predeterminedCardsRef.current,
-        revealedCardIds:[...revealedCardIds],cardFaceStyle})
-        .catch(()=>setHostError(locale === 'zh-CN' ? '牌局状态未保存，请重试。' : 'Could not save this table state. Please retry.'));
-    }, 150);
-    return ()=>clearTimeout(timer);
+    const state: TarotAppSnapshot = {version:1,readingId:readingIdRef.current,
+      stage:gameState === GameState.LIBRARY ? previousGameState ?? GameState.INTRO : gameState,
+      question,spread,pickedCards,readingText,
+      summaryRequested:!!readingIdRef.current && summaryRequestedRef.current===readingIdRef.current,
+      drawTargets:predeterminedCardsRef.current,revealedCardIds:[...revealedCardIds],cardFaceStyle};
+    if (host?.reportState) {
+      void host.reportState(state).catch(()=>setHostError(locale === 'zh-CN' ? '牌局状态未保存，请重试。' : 'Could not save this table state. Please retry.'));
+    } else if (!host) {
+      try { sessionStorage.setItem('f-tarot-reading',JSON.stringify(state)); } catch { /* Storage may be unavailable. */ }
+    }
   }, [host,gameState,previousGameState,question,spread,pickedCards,[...revealedCardIds].join(','),cardFaceStyle,readingText,briefStatus]);
 
   const attachCardContext = (id: number) => {

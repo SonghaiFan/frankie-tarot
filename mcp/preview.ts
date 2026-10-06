@@ -16,8 +16,11 @@ async function start() {
   });
   await client.connect(new StreamableHTTPClientTransport(new URL("/mcp", location.href)));
   const params = new URLSearchParams(location.search);
+  const storageKey = `f-tarot-preview:${location.pathname}${location.search}`;
+  let widgetState: any;
+  try { widgetState = JSON.parse(sessionStorage.getItem(storageKey) ?? 'null'); } catch { /* Fresh preview. */ }
   let toolName = 'open_tarot';
-  let initial = CallToolResultSchema.parse(await client.callTool({name:toolName,arguments:{locale,...(params.has('question')?{question:params.get('question')}: {})}}));
+  let initial = CallToolResultSchema.parse(await client.callTool({name:toolName,arguments:{locale,...(widgetState?.privateContent?.flowId ? {flowId:widgetState.privateContent.flowId} : params.has('question')?{question:params.get('question')}: {})}}));
   const { tools } = await client.listTools();
   const uiUri = (tools.find(tool => tool.name === toolName)?._meta?.ui as {resourceUri?: string})?.resourceUri;
   if (!uiUri) throw new Error("Missing UI resource in tool discovery");
@@ -83,7 +86,15 @@ async function start() {
   };
   const transport = new PostMessageTransport(iframe.contentWindow!, iframe.contentWindow!);
   await bridge.connect(transport);
-  iframe.srcdoc = html.text;
+  // Mimic ChatGPT's private widget persistence without giving the opaque iframe browser storage.
+  window.addEventListener('message',event=>{
+    if (event.source !== iframe.contentWindow || event.data?.type !== 'tarot-preview-widget-state') return;
+    widgetState=event.data.state;
+    try { sessionStorage.setItem(storageKey,JSON.stringify(widgetState)); } catch { /* Storage may be unavailable. */ }
+  });
+  const seed=JSON.stringify(widgetState ?? null).replaceAll('<','\\u003c');
+  const shim=`<script>window.openai={widgetState:${seed},setWidgetState(state){this.widgetState=state;parent.postMessage({type:'tarot-preview-widget-state',state},'*')}};<\/script>`;
+  iframe.srcdoc = shim + html.text;
   document.getElementById("preview-theme")!.onclick = () => {
     const dark = document.documentElement.dataset.theme !== "dark";
     document.documentElement.dataset.theme = dark ? "dark" : "light";

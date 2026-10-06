@@ -19,7 +19,7 @@ After all cards are revealed, the widget automatically sends the exact question 
 
 ## Recovery
 
-The current widget holds the original app's private snapshot, including unfinished selection and reveal state. When available, ChatGPT's optional widget-state extension saves this under `privateContent`; model-visible content contains only the selected card or a completed reading submitted for its automatic brief summary or explicit detailed analysis. `open_tarot` with the existing `flowId` and no new question resumes that snapshot. Hosts without widget persistence can resume while the same widget remains mounted; recovery after unmount or across devices is not guaranteed.
+The current widget holds the original app's private snapshot, including unfinished selection, reveal state, and the final brief reading. Refreshing a ChatGPT widget restores this table even when the host replays the original setup result with its question. The standalone page and local preview keep the current table in per-tab session storage so a reload restores the same cards and final stage. When available, ChatGPT's optional widget-state extension saves this under `privateContent`; model-visible content contains only the selected card or a completed reading submitted for its automatic brief summary or explicit detailed analysis. `open_tarot` with the existing `flowId` and no new question resumes that snapshot. Hosts without widget persistence can resume while the same widget remains mounted; recovery after unmount or across devices is not guaranteed.
 
 Recovery uses only the current widget’s private state and `flowId`. Older server-generated reading tokens are unsupported.
 

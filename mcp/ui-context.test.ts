@@ -62,3 +62,18 @@ test('summary updates only the matching completed reading and preserves the exac
   assert.throws(()=>applyReadingSummary(complete,{...summary,text:'x'.repeat(801)}));
   assert.equal(restoreSnapshot(JSON.parse(JSON.stringify(updated)))?.readingText,updated.readingText);
 });
+
+test('refresh restores the final table and completes an interrupted last-pick transition',()=>{
+  const final={...snapshot,stage:GameState.READING,pickedCards:cards,revealedCardIds:cards.map(c=>c.id),readingText:'光照见下一步。',summaryRequested:true};
+  const restored=restoreSnapshot(JSON.parse(JSON.stringify(final)))!;
+  assert.equal(restored.stage,GameState.READING);
+  assert.equal(restored.readingId,final.readingId);
+  assert.deepEqual(restored.pickedCards,final.pickedCards);
+  assert.deepEqual(restored.revealedCardIds,final.revealedCardIds);
+  assert.equal(restored.readingText,final.readingText);
+  assert.equal(restored.summaryRequested,true);
+  const interrupted=restoreSnapshot({...final,stage:GameState.PICKING,revealedCardIds:[]})!;
+  assert.equal(interrupted.stage,GameState.READING);
+  assert.deepEqual(interrupted.revealedCardIds,[]);
+  assert.deepEqual(interrupted.pickedCards,final.pickedCards);
+});
