@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { test } from "node:test";
 import handler from "../mcp/dist/vercel-handler.mjs";
 
-process.env.TAROT_SIGNING_KEY = "vercel-route-integration-test-key-32-characters";
-after(() => { delete process.env.TAROT_SIGNING_KEY; });
+// The endpoint must work even if a developer shell happens to have the old key.
+delete process.env.TAROT_SIGNING_KEY;
+
 
 async function post(message: unknown, origin = "https://chatgpt.com") {
   const response = await handler(new Request("https://tarot.songhai.site/mcp", {
@@ -27,7 +28,7 @@ test("Vercel /mcp handles preflight and rejects untrusted browser origins", asyn
   assert.equal(response.status, 403);
 });
 
-test("Vercel /mcp exposes the original staged tarot tools and same-origin card art", async () => {
+test("Vercel /mcp works without a signing key and exposes only two tools", async () => {
   const init = await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: {
     protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "vercel-test", version: "1" },
   } });
@@ -35,22 +36,16 @@ test("Vercel /mcp exposes the original staged tarot tools and same-origin card a
   assert.equal(init.body.result.serverInfo.name, "frankie-tarot");
 
   const { body } = await post({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
-  assert.deepEqual(body.result.tools.map((tool: any) => tool.name).sort(), [
-    "draw_tarot_cards", "list_tarot_spreads", "open_tarot", "reveal_tarot_cards", "show_tarot_result",
-  ]);
-
-  const open = await post({ jsonrpc: "2.0", id: 3, method: "tools/call", params: {
-    name: "open_tarot", arguments: { question: "What should I consider?", spread: "THREE" },
-  } });
-  assert.equal(open.body.result.structuredContent.stage, "input");
-
-  const draw = await post({ jsonrpc: "2.0", id: 4, method: "tools/call", params: {
-    name: "draw_tarot_cards", arguments: { question: "What should I consider?", spread: "THREE" },
-  } });
-  const view = draw.body.result.structuredContent;
-  assert.equal(view.stage, "picking");
-  assert.equal(view.canInterpret, false);
-  assert.deepEqual(view.cards, []);
-  const privateReading = draw.body.result._meta.tarot.reading;
-  assert.match(privateReading.cards[0].imageUrl, /^https:\/\/tarot\.songhai\.site\/assets\/redraw\//);
+  assert.deepEqual(body.result.tools.map((tool: any) => tool.name).sort(), ['list_tarot_spreads','open_tarot']);
+  const open = await post({ jsonrpc:'2.0',id:3,method:'tools/call',params:{
+    name:'open_tarot',arguments:{question:'What should I consider?',spread:'THREE'},
+  }});
+  assert.equal(open.body.result.structuredContent.question,'What should I consider?');
+  assert.equal(open.body.result._meta.tarot.stage,'input');
+  assert.equal(open.body.result._meta.tarot.reading,undefined);
+  assert.equal(open.body.result.structuredContent.revealed,undefined);
+  for (const name of ['draw_tarot_cards','reveal_tarot_cards','show_tarot_result']) {
+    const removed=await post({jsonrpc:'2.0',id:4,method:'tools/call',params:{name,arguments:{}}});
+    assert.equal(removed.body.result.isError,true);
+  }
 });

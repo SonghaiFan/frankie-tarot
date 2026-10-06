@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "./mcp";
-import { createTarotEngine } from "./engine";
 
 const widgetHtml = readFile(join(process.cwd(), "mcp/dist/widget.html"), "utf8");
 const allowedHeaders = "Content-Type, Accept, MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID";
@@ -39,17 +38,11 @@ export default async function handler(request: Request): Promise<Response> {
     }), { status: 405, headers });
   }
 
-  const signingKey = process.env.TAROT_SIGNING_KEY;
-  if (!signingKey || signingKey.length < 32) {
-    return new Response("TAROT_SIGNING_KEY is not configured.", { status: 503, headers });
-  }
-
   let server: ReturnType<typeof createMcpServer> | undefined;
   let transport: WebStandardStreamableHTTPServerTransport | undefined;
   try {
     const baseUrl = url.origin;
     server = createMcpServer({
-      engine: createTarotEngine({ publicBaseUrl: baseUrl, signingKey }),
       widgetHtml: await widgetHtml,
       publicBaseUrl: baseUrl,
     });

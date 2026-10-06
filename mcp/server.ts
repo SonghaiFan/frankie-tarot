@@ -2,7 +2,6 @@ import { createServer, type ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { TarotEngine } from "./engine";
 import { createMcpServer, VERSION } from "./mcp";
 export { createMcpServer, VERSION, getUiUri } from "./mcp";
 const localHost = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
@@ -12,7 +11,6 @@ function send(res: ServerResponse, status: number, type: string, body: string | 
 }
 
 export function createTarotHttpServer(options: {
-  engine: TarotEngine;
   widgetHtml: string;
   publicBaseUrl: string;
   assetDirectory: string;

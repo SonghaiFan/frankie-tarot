@@ -17,6 +17,7 @@ interface InputSectionProps {
   isMobile: boolean;
   isTablet: boolean;
   isThinking?: boolean;
+  smartSpread?: boolean;
 }
 
 const InputSection: React.FC<InputSectionProps> = ({
@@ -28,6 +29,7 @@ const InputSection: React.FC<InputSectionProps> = ({
   isMobile,
   isTablet,
   isThinking = false,
+  smartSpread = false,
 }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
@@ -232,7 +234,9 @@ const InputSection: React.FC<InputSectionProps> = ({
                 <ActionButton
                   disabled={!spread || isThinking}
                   onClick={onStartRitual}
-                  text={isThinking ? t("input.divining") : t("input.beginRitual")}
+                  text={smartSpread
+                    ? (locale === "zh-CN" ? (isThinking ? "选择牌阵中…" : "智能选择牌阵") : (isThinking ? "Choosing a spread…" : "Choose a smart spread"))
+                    : isThinking ? t("input.divining") : t("input.beginRitual")}
                 />
               </div>
             </div>

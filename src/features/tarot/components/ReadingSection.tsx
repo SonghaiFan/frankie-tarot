@@ -177,7 +177,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     title={onInterpret ? "ChatGPT" : t("reading.promptTitle")}
                   >
                     {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "深入解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : "Explore deeper")) : (isCopied ? t("reading.copied") : t("reading.copyToChatGPT"))}
+                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : "Interpret")) : (isCopied ? t("reading.copied") : t("reading.copyToChatGPT"))}
                   </motion.button>
                 </div>
 

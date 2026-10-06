@@ -1,26 +1,25 @@
 # Frank Tarot MCP server
 
-A platform-neutral MCP server with an MCP Apps card table. It is a host adapter inside the original Frank Tarot repository, not a second app. Platform listings and submission tooling live on their own branches (for example `chatgpt-plugin`).
+A thin MCP adapter around the original F.Tarot app. The website and hosted widget share `src/app/App.tsx`, components, animations, translations and artwork.
 
-- UI entry: `src/app/App.tsx` for both the website and MCP hosts.
-- Components, animations, styles, translations and card artwork: existing `src/` and `public/`.
-- Canonical card/spread data: `src/features/tarot/data/ground-truth.json`.
-- `ui/index.tsx` connects MCP to the original App through `src/host/tarotHost.ts`.
-- `mcp.ts` declares the tools and UI resource, shared by local and Vercel handlers.
-- `engine.ts` adds server-side secure draws and signed recovery tokens over canonical data.
-- UI resource URIs include a hash of the built HTML so a host cannot reuse a previous UI under the same identifier.
+## Two tools
 
-The host model supplies interpretation in the current conversation. Provider API keys are never included in the widget. Host-specific `_meta` hints (such as `openai/*`) are additive; hosts that do not understand them ignore them.
-
-## Tools
-
-| User action | Tool / stage |
+| Tool | Responsibility |
 | --- | --- |
-| Mention the app with a question | `open_tarot(question, flowId?)` / input |
-| Start shuffle and select | `draw_tarot_cards(flowId)` / picking; the model cannot see hidden cards |
-| Flip cards | `reveal_tarot_cards(sessionToken)` / reveal or ready |
-| Place a brief reading in the table | `show_tarot_result(sessionToken)` / result |
-| List spreads | `list_tarot_spreads(locale)` |
+| `open_tarot(question?, spread?, locale?, flowId?)` | Open the original UI, prefill the question and spread, or resume the same widget. |
+| `list_tarot_spreads(locale)` | List real spreads with descriptions and position labels for ChatGPT's smart selection. |
+
+For an unspecified spread, ChatGPT lists and selects a suitable actual spread, then opens the app. The app's AUTO option sends an explicit spread-selection request to the conversation; ChatGPT applies its choice through `open_tarot`. The user then starts the ritual.
+
+Starting, picking and flipping use the original frontend draw and UI. They make no MCP tool calls. A click on a drawn card attaches only that card's name, spread position and orientation as model context. It does not send a user message or trigger interpretation. Reveal progress and hidden cards stay private.
+
+After all cards are revealed, **Interpret** sends the exact question and full spread to the current conversation. ChatGPT replies directly in chat. **Save Result** exports the current image, preserving the cards without interpretation or redraw.
+
+## Recovery
+
+The current widget holds the original app's private snapshot, including unfinished selection and reveal state. When available, ChatGPT's optional widget-state extension saves this under `privateContent`; model-visible content contains only the selected card or an explicitly submitted full reading. `open_tarot` with the existing `flowId` and no new question resumes that snapshot. Hosts without widget persistence can resume while the same widget remains mounted; recovery after unmount or across devices is not guaranteed.
+
+Recovery uses only the current widget’s private state and `flowId`. Older server-generated reading tokens are unsupported.
 
 ## Local testing
 
@@ -29,16 +28,17 @@ npm ci
 npm run mcp:dev
 ```
 
-Open http://127.0.0.1:8787/preview. This uses an opaque sandbox and real MCP requests. Interpretation messages are captured in the preview, not sent to a model.
+Open http://127.0.0.1:8787/preview. The preview uses real MCP and MCP Apps messages in an opaque sandbox. Interpret and smart-spread requests are captured locally; no model is called. Its controls only simulate opening a question or resuming the existing widget.
 
 ```sh
 npm run typecheck
 npm run mcp:test
+npm run build:vercel
 npm run test:vercel
 ```
 
 ## Deployment
 
-`npm run build:vercel` builds the website, builds the widget from the same `src/` components, and places its card artwork under the website's `/assets/` path. `PUBLIC_BASE_URL` overrides the default `https://tarot.songhai.site` media origin. The Vercel project serves both the website and the MCP endpoint at `/mcp`; `vercel.json` rewrites that path to `api/mcp.ts`.
+`npm run build:vercel` builds the website, the original-app widget and Vercel handler. `PUBLIC_BASE_URL` overrides the default `https://tarot.songhai.site` asset origin. `vercel.json` serves the MCP endpoint at `/mcp` through `api/mcp.ts`.
 
-Set `TAROT_SIGNING_KEY` (at least 32 characters) in the Vercel Production environment so signed readings survive serverless cold starts and deploys. Never commit it.
+No signing key or model API key is required. The frontend draws cards locally and does not send hidden cards or reveal progress to this endpoint.

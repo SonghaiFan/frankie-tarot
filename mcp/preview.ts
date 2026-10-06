@@ -18,14 +18,6 @@ async function start() {
   const params = new URLSearchParams(location.search);
   let toolName = 'open_tarot';
   let initial = CallToolResultSchema.parse(await client.callTool({name:toolName,arguments:{locale,...(params.has('question')?{question:params.get('question')}: {})}}));
-  if (params.has('result')) {
-    toolName='draw_tarot_cards';
-    const draw=CallToolResultSchema.parse(await client.callTool({name:toolName,arguments:{question:'我这周该注意什么',spread:'THREE',locale}}));
-    const token=(draw.structuredContent as any).sessionToken;
-    const reveal=await client.callTool({name:'reveal_tarot_cards',arguments:{sessionToken:token,positions:[1,2,3]}});
-    initial=CallToolResultSchema.parse(await client.callTool({name:'show_tarot_result',arguments:{sessionToken:(reveal.structuredContent as any).sessionToken,interpretation:'本地交互验证：这段文字用于确认同一组牌显示在原版牌桌的解读区域，不是模型生成的解读。',cardFaceStyle:'dreamy'}}));
-    toolName='show_tarot_result';
-  }
   const { tools } = await client.listTools();
   const uiUri = (tools.find(tool => tool.name === toolName)?._meta?.ui as {resourceUri?: string})?.resourceUri;
   if (!uiUri) throw new Error("Missing UI resource in tool discovery");
@@ -72,12 +64,11 @@ async function start() {
     bridge.setHostContext({ displayMode: supported });
     return { mode: supported };
   };
-  for (const [id,name,args] of [
-    ['preview-reveal','reveal_tarot_cards',()=>({sessionToken:latestContext.sessionToken,positions:[1]})],
-    ['preview-result','show_tarot_result',()=>({sessionToken:latestContext.sessionToken,interpretation:'本地交互验证：这段文字用于检查同一组牌与分享图文组件，不是模型生成的解读。'})],
-    ['preview-question','open_tarot',()=>({question:'我这周该注意什么',spread:'THREE',locale})],
+  for (const [id,args] of [
+    ['preview-question',()=>({question:'我这周该注意什么',spread:'THREE',locale,flowId:latestContext.flowId})],
+    ['preview-resume',()=>({locale,flowId:latestContext.flowId})],
   ] as const) document.getElementById(id)!.onclick = async () => {
-    const result = CallToolResultSchema.parse(await client.callTool({name,arguments:args()}));
+    const result = CallToolResultSchema.parse(await client.callTool({name:'open_tarot',arguments:args()}));
     if (result.isError) {message.textContent=JSON.stringify(result.content);return;}
     await bridge.sendToolInput({arguments:args()});
     await bridge.sendToolResult(result);
