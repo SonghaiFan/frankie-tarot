@@ -37,11 +37,9 @@ frankie-tarot/
         ├── tsconfig.json
         ├── tsdown.config.ts           # clientBundle(...) 打包预设
         ├── cordis.patch.yml           # 插件行（insert 到 profile）
-        ├── data/
-        │     └── ground-truth.json    # vendored 自 src/features/tarot/data/ground-truth.json
         ├── src/
         │     ├── index.ts             # Host 半区：注册 tarot_draw / tarot_spreads 工具
-        │     ├── draw.ts              # 纯函数：抽牌 + 牌阵定位 + 本地化（无 React/import.meta）
+        │     ├── engine.ts            # 复用 main 的 mcp/engine.ts（抽牌 + 牌阵 + 本地化 + readingToken）
         │     └── client/
         │           ├── index.ts       # Client 半区：注册 tool.call.toolview
         │           ├── TarotCard.tsx  # 牌桌组件（翻牌/牌阵/含义）
@@ -63,15 +61,15 @@ frankie-tarot/
 
 **能直接复用的**：
 
-- [ground-truth.json](src/features/tarot/data/ground-truth.json) —— 唯一数据源（78 张牌 / 12 种牌阵 / 牌位几何 / 尺寸）。**直接 vendor 进插件**，Host 与 Client 共用。
-- [src/core/tarotEngine.ts](src/core/tarotEngine.ts) 的 `drawCards()` 逻辑（按牌池抽不重复牌 + 40% 逆位）——搬进 `draw.ts`，去掉 `@` 别名与 React 依赖。
+- [ground-truth.json](src/features/tarot/data/ground-truth.json) —— 唯一数据源（78 张牌 / 12 种牌阵 / 牌位几何 / 尺寸）。不再 vendor：Host 通过 `mcp/engine.ts` 读取；Client 只消费工具结果，需要牌位几何时直接 import 同一份 JSON。
+- [mcp/engine.ts](mcp/engine.ts) —— main 上与平台无关的引擎（按牌池 `crypto.randomInt` 抽不重复牌 + 默认 40% 逆位、本地化牌阵与牌位、签名 `readingToken` 可还原同一次抽牌、卡图 URL 指向 `publicBaseUrl/assets/`）。`dsh-plugin/src/engine.ts` 直接 re-export，不重写。
 - [src/core/promptBuilder.ts](src/core/promptBuilder.ts) 的"Grand Tarot Master / 一段话 / 120–180 字"指令——**写进 `tarot_draw` 的 `description`**（让 DSH 模型自行按此风格解读），而不是拼一个给 Gemini 的 prompt。
 - 卡面美术 `public/images/cards*/`（webp）——牌桌要显示牌面时作为静态资源引用。
 
 **必须重写 / 不能直接 import 的**：
 
 - `src/core` 里间接引用了 React（`spreads.ts` → `icons/SpreadIcons.tsx`）和 `import.meta.env.BASE_URL`（`cards.ts`），在 Node Cordis 插件和浏览器 bundle 里都不能用。
-- 所以：vendor JSON + 写一个 ~80 行的纯 `draw.ts`（抽牌、按 `layout.type` 定位、`zh-CN`/`en` 本地化），不碰原 `src/core` 的任何模块。
+- 所以 Host 不碰 `src/core`，改用 `mcp/engine.ts`：它只依赖 `ground-truth.json`、`node:crypto` 和 `zod`，没有 React/Vite/`import.meta`，适合 Node 侧的 Cordis 插件（不进浏览器 bundle）。
 
 **Gemini 这层去掉**：`src/core/services.ts` 的 `generateTarotReading()` 在 DSH 里冗余——DSH 的 agent 本身就是模型。`tarot_draw` 只返回"抽出的牌 + 牌义素材"，解读交给会话里的模型。
 
@@ -270,12 +268,12 @@ dsh --profile demo --dump-config      # 确认出现 # == @frankie/dsh-tarot 层
 
 | 资产 | 处理 |
 |---|---|
-| `src/features/tarot/data/ground-truth.json` | ✅ vendor 到插件 |
-| `src/core/tarotEngine.ts` 的 `drawCards` 逻辑 | ✅ 重写为纯 `draw.ts`（去 React/import.meta） |
+| `src/features/tarot/data/ground-truth.json` | ✅ 经 `mcp/engine.ts` 读取，不再 vendor |
+| `mcp/engine.ts`（抽牌 / 牌阵 / readingToken） | ✅ 直接复用（`dsh-plugin/src/engine.ts` re-export） |
 | `src/core/promptBuilder.ts` 的解读指令 | ✅ 抄进 `tarot_draw.description` |
 | `src/core/services.ts`（Gemini） | ❌ 删除（DSH 模型代劳） |
 | `src/app/App.tsx` 状态机 / `RitualCardStage` 布局 | 🔁 重写为 slot 纪律下的纯 props 组件 + CSS Modules |
-| `public/images/cards*/` 牌面 webp | ✅ 作为静态资源引用（需随 bundle 一起发布） |
+| `public/images/cards*/` 牌面 webp | ✅ 用引擎返回的 `imageUrl`（线上 `/assets/`），不随 bundle 发布 |
 | `Galaxy.tsx`(ogl) / `motion/react` / `gsap` | ❌/🔁 v1 用 CSS 替代，v2 可选私有打包 |
 | `src/i18n/*` | 🔁 换用 DSH 的 `ctx.locale.register(NS, {zh, en})` |
 | ChatGPT 插件 `plugins/chatgpt/*`（sessionToken/隐藏牌） | ❌ 不适用（DSH 无 widget 隐藏牌语义） |
@@ -284,7 +282,7 @@ dsh --profile demo --dump-config      # 确认出现 # == @frankie/dsh-tarot 层
 
 ## 9. 里程碑与验收
 
-1. **M0 — 数据 + 纯逻辑**：vendor JSON + `draw.ts`，单测覆盖"抽牌不重复、牌池规则、正逆位概率、本地化"。
+1. **M0 — 数据 + 纯逻辑**：复用 `mcp/engine.ts`（抽牌规则由 `mcp/engine.test.ts` 覆盖）；`dsh-plugin/tests` 只锁定 DSH 依赖的契约（牌阵列表、自包含的结果、`readingToken` 回放）。
    - ✅ `pnpm --filter <包> test` 绿。
 2. **M1 — Host 工具跑通**：`tarot_draw` / `tarot_spreads` 可被 agent 调用，`output.render` 文本正确，`presentationMeta` 持久化结构化结果。
    - ✅ 在 `dsh web` 里问「用 tarot_draw 抽三张牌」，模型能抽牌 + 给出一段解读。
@@ -300,8 +298,9 @@ dsh --profile demo --dump-config      # 确认出现 # == @frankie/dsh-tarot 层
 
 1. **出仓 bundle 的构建链**（最大风险）：`lib/client.js` 的懒加载 factory 格式依赖 DSH 的 `tsdown` 预设。若插件在 DSH 主仓外，需要它作为 build 依赖或复制预设——这决定"第三方可安装插件"的可行性。**建议先在 DSH 主仓内以 in-tree 包跑通，再谈抽取为独立 bundle。**
 2. **`ToolCallBlock` 的 `meta` 读取方式（已核实）**：`presentationMeta` 持久化到 `result.meta`，Client 侧从 `block.meta` 读取（`unknown` 类型，需本地校验）。已由 [web-card-model.ts](file:///Users/songhaifan/Developer/deepseek-harness/packages/client/ui-tool/src/client/tool/models/web-card-model.ts)（`block.meta`）与 [slots.ts](file:///Users/songhaifan/Developer/deepseek-harness/packages/client/ui-tool/src/client/contract/slots.ts)（`ToolCallOwnerProps.block: ToolCallBlock`）确认。
-3. **牌面图资源随 bundle 发布**：78×3 套 webp 体积可观，需决定是随插件发布、还是走 DSH 的 attachment/resource 通道。
-4. **翻牌"仪式感"的边界**：DSH 里 agent 是抽牌方，用户只翻牌。若你坚持要"用户自己抽牌决定结果"，那需要一条不同的产品路径（工具改为两段式 + 客户端回写），超出本方案范围，需单独讨论。
+3. **牌面图资源**：已改为引用线上 `https://tarot.songhai.site/assets/`（引擎的 `publicBaseUrl`），不随 bundle 发布；代价是离线不可用、依赖该站点在线。
+4. **出仓时的引擎依赖**：`dsh-plugin/src/engine.ts` 以相对路径引用 `../../mcp/engine`。在本仓内没问题；若迁入 DSH 主仓，需要让打包器把 `mcp/engine.ts` 与 `ground-truth.json` 内联进 Host 产物（或把引擎发布成独立包），不要再复制一份。
+5. **翻牌"仪式感"的边界**：DSH 里 agent 是抽牌方，用户只翻牌。若你坚持要"用户自己抽牌决定结果"，那需要一条不同的产品路径（工具改为两段式 + 客户端回写），超出本方案范围，需单独讨论。
 
 ---
 
