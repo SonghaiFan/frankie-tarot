@@ -47,10 +47,10 @@
               "expected_behavior": "Call list_tarot_spreads with locale=zh-CN. Return the 11 supported spreads with names and card counts from the response. Do not call draw_tarot_cards, reveal_tarot_cards or show_tarot_result, or fabricate a reading."
             },
             {
-              "description": "P2 — A conversational question opens setup. Start a fresh chat. The user must still choose the spread and start the ritual in the original interactive app.",
-              "prompt": "打开 F.Tarot，我想探索如何保持创作节奏。让我自己选择牌阵和选牌，先不要解读。",
-              "tools_triggered": "open_tarot",
-              "expected_behavior": "Call open_tarot with the question and locale=zh-CN; omit flowId only on the first launch. The returned stage is input, the question is prefilled, cards is empty and canInterpret=false. Open the original table inline. Do not draw, flip, or interpret from this question alone."
+              "description": "P2 — A natural question with no specified spread opens setup with an intelligently chosen spread. Start a fresh chat and verify the user's original question is preserved.",
+              "prompt": "打开 F.Tarot，我想看看下周的运势。",
+              "tools_triggered": "list_tarot_spreads, open_tarot",
+              "expected_behavior": "Call list_tarot_spreads to choose a suitable real spread, then open_tarot with the original question and selected spread. Omit flowId only on the first launch. The returned stage is input, the question is prefilled, cards is empty and canInterpret=false. Open the original table. Suggest the expanded side tab, then wait for the user to shuffle and pick cards. Do not draw, flip, or interpret from the question alone."
             },
             {
               "description": "P3 — Complete an English three-card reading. In the app select THREE, start the ritual, pick three cards and turn over all three. Observe that no synthetic messages are sent, then click Explore deeper. Use only the current session's structured data.",
