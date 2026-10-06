@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/mcp.ts": {
-      "includeFiles": "plugins/chatgpt/dist/widget.html"
+      "includeFiles": "mcp/dist/widget.html"
     }
   },
   "rewrites": [

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
-import handler from "../plugins/chatgpt/dist/vercel-handler.mjs";
+import handler from "../mcp/dist/vercel-handler.mjs";
 
 process.env.TAROT_SIGNING_KEY = "vercel-route-integration-test-key-32-characters";
 after(() => { delete process.env.TAROT_SIGNING_KEY; });

@@ -6,7 +6,7 @@ import { mkdir, writeFile, copyFile, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 const directory = fileURLToPath(new URL("./", import.meta.url));
-const root = fileURLToPath(new URL("../../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const output = join(directory, "dist");
 await mkdir(output, { recursive: true });
 const origin = process.env.PUBLIC_BASE_URL || "http://127.0.0.1:8787";

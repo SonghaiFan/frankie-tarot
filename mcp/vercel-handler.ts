@@ -4,7 +4,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createMcpServer } from "./mcp";
 import { createTarotEngine } from "./engine";
 
-const widgetHtml = readFile(join(process.cwd(), "plugins/chatgpt/dist/widget.html"), "utf8");
+const widgetHtml = readFile(join(process.cwd(), "mcp/dist/widget.html"), "utf8");
 const allowedHeaders = "Content-Type, Accept, MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID";
 
 function responseHeaders(origin?: string) {

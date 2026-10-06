@@ -1,6 +1,6 @@
-import { FULL_DECK } from '../../src/features/tarot/constants/cards';
-import { buildTarotReadingPrompt, buildTarotFollowUpPrompt } from '../../src/core/promptBuilder';
-import type { SpreadType } from '../../src/features/tarot/types';
+import { FULL_DECK } from '../src/features/tarot/constants/cards';
+import { buildTarotReadingPrompt, buildTarotFollowUpPrompt } from '../src/core/promptBuilder';
+import type { SpreadType } from '../src/features/tarot/types';
 import type { TarotView } from './shared';
 
 /** Share the website's initial reading and copied follow-up prompts. */

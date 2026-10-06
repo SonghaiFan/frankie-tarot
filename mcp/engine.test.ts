@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import test from "node:test";
-import groundTruth from "../../src/features/tarot/data/ground-truth.json";
+import groundTruth from "../src/features/tarot/data/ground-truth.json";
 import {
   createTarotEngine,
   drawInputSchema,
@@ -98,7 +98,7 @@ test("the canonical contract exposes 78 cards and 11 real bilingual spreads", ()
     const filename = card.image.replace(/\.[^.]+$/, ".webp");
     for (const directory of ["cards", "cards_rws_original"]) {
       assert.ok(
-        existsSync(new URL(`../../public/images/${directory}/${filename}`, import.meta.url)),
+        existsSync(new URL(`../public/images/${directory}/${filename}`, import.meta.url)),
         `${directory}/${filename} must be available for card ${id}.`,
       );
     }

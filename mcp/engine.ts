@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import groundTruth from "../../src/features/tarot/data/ground-truth.json";
+import groundTruth from "../src/features/tarot/data/ground-truth.json";
 import type { Locale, TarotPayload, TarotReading, TarotSpread } from "./shared";
 
 type Localized<T> = Record<Locale, T>;

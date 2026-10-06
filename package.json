@@ -12,13 +12,11 @@
     "cli": "tsx scripts/cli.ts",
     "api": "tsx scripts/server.ts",
     "generate-cards": "python3 scripts/generate_card_art.py",
-    "plugin:build": "node plugins/chatgpt/build.mjs",
-    "plugin:start": "node plugins/chatgpt/dist/server.mjs",
-    "plugin:dev": "npm run plugin:build && npm run plugin:start",
-    "plugin:test": "node --import tsx --test plugins/chatgpt/*.test.ts",
-    "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts",
-    "plugin:configure": "node plugins/chatgpt/configure.mjs",
-    "plugin:submission": "node plugins/chatgpt/prepare-submission.mjs"
+    "mcp:build": "node mcp/build.mjs",
+    "mcp:start": "node mcp/dist/server.mjs",
+    "mcp:dev": "npm run mcp:build && npm run mcp:start",
+    "mcp:test": "node --import tsx --test mcp/*.test.ts",
+    "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",

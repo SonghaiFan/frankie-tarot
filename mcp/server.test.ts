@@ -13,7 +13,7 @@ import { createTarotHttpServer, getUiUri } from "./server";
 const widgetHtml = "<!doctype html><html><body>F.Tarot test resource</body></html>";
 const UI_URI = getUiUri(widgetHtml);
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const engine = createTarotEngine({ publicBaseUrl: "http://127.0.0.1:8787", signingKey: "integration-test-signing-key-32-characters" });
 let directory: string;
 let server: ReturnType<typeof createTarotHttpServer>;

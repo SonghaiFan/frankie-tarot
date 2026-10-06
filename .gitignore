@@ -76,8 +76,7 @@ coverage/
 __pycache__/
 .DS_Store
 
-# Generated plugin outputs
-plugins/chatgpt/dist/
-plugins/chatgpt/package/
-plugins/chatgpt/submission/
+# Generated MCP outputs
+mcp/dist/
+mcp/test-results/
 .sites-runtime/
