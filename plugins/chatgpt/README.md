@@ -1,5 +1,7 @@
 # Frank Tarot in ChatGPT
 
+Public directory preparation: [listing copy](LISTING.md), [review cases, demo plan and data inventory](SUBMISSION.md). `npm run plugin:submission` produces an allowlisted public draft archive without the private app binding. Missing policies, recording and portal checks are reported separately; a generated draft is not ready for review.
+
 This is a host adapter inside the original Frank Tarot repository, not a second app.
 
 - UI entry: `src/app/App.tsx` for both the website and ChatGPT.
@@ -49,7 +51,7 @@ npm run build
 
 Set `TAROT_SIGNING_KEY` (at least 32 characters) in the Vercel Production environment so signed readings survive serverless cold starts and deploys. Keep it in Vercel's secret environment-variable store; never commit it. The MCP endpoint derives its public asset origin from the incoming request, so production cards load from the same domain as the site.
 
-The previous OpenAI Sites export and Worker scripts remain legacy tooling; they are not part of the Vercel production build. The root `.openai/hosting.json` still describes the old Sites app and does not control the Vercel deployment.
+Vercel is the production host. The former Sites export scripts, vendored bridge and Worker configuration have been removed.
 
 For local integration testing, `node --import tsx --test tests/vercel-mcp.test.ts` exercises the Vercel web handler's preflight, origin policy, MCP discovery, staged draw, and same-origin card URLs. `npm run plugin:dev` remains the browser preview against the local Node MCP server.
 

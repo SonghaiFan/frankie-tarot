@@ -18,7 +18,7 @@
     "plugin:test": "node --import tsx --test plugins/chatgpt/*.test.ts",
     "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts",
     "plugin:configure": "node plugins/chatgpt/configure.mjs",
-    "build:site": "node scripts/site/build.mjs"
+    "plugin:submission": "node plugins/chatgpt/prepare-submission.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

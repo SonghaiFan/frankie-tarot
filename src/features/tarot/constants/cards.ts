@@ -1,5 +1,4 @@
 import groundTruth from "@/features/tarot/data/ground-truth.json";
-import cardImagesManifest from "@/features/tarot/data/card-images.json";
 import { TarotCard, CardPoolType, CardFaceStyle } from "@/features/tarot/types";
 
 const baseUrl =
@@ -9,7 +8,6 @@ const baseUrl =
 const LOCAL_CDN = `${baseUrl}images/cards/`;
 const LOCAL_DREAMY_CDN = `${baseUrl}images/cards_dreamy/`;
 const LOCAL_ORIGINAL_CDN = `${baseUrl}images/cards_rws_original/`;
-const cardImageMap = cardImagesManifest as Record<string, string>;
 
 type GroundTruthCardRecord = {
   id: string;
@@ -94,14 +92,6 @@ export const getCardImageUrl = (
     baseCdn = LOCAL_DREAMY_CDN;
   }
   return `${baseCdn}${key}.webp`;
-};
-
-export const STATIC_SCRIPTS = {
-  WELCOME: "静心凝视深渊。当你的直觉苏醒时,进入命运之门。",
-  ASK: "心中的疑惑,是通往真理的钥匙。告诉我,你为何而来？",
-  SHUFFLE: "星辰正在归位,混乱中孕育着秩序。专注于你的问题。",
-  PICK: "在流动的命运中,选择你的指引。",
-  REVEAL: "这就是……命运的回响。",
 };
 
 export const getDeckForPool = (pool: CardPoolType): TarotCard[] => {

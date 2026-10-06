@@ -27,6 +27,7 @@ await writeFile(join(target, "mcp.json"), JSON.stringify({
 }, null, 2) + "\n");
 await writeFile(join(target, ".app.json"), JSON.stringify(apps, null, 2) + "\n");
 await mkdir(join(target, "assets"), { recursive: true });
-await copyFile(join(directory, "assets/tarot-icon.svg"), join(target, "assets/tarot-icon.svg"));
+await copyFile(join(directory, "assets/aura-logo.svg"), join(target, "assets/aura-logo.svg"));
+await copyFile(join(directory, "assets/aura-logo.png"), join(target, "assets/aura-logo.png"));
 await copyFile(join(directory, "README.md"), join(target, "README.md"));
 console.log(`Generated the plugin package in ${target}`);

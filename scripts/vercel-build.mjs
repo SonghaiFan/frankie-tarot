@@ -11,7 +11,6 @@ execFileSync("npm", ["run", "build"], { stdio: "inherit" });
 // The app loads card artwork as WebP. Keep source PNGs in the repository, but
 // leave them out of Vercel's deployment output. The OG teaser PNG is retained.
 for (const directory of [
-  "cards",
   "images/cards",
   "images/cards_dreamy",
   "images/cards_rws_original",

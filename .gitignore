@@ -79,4 +79,5 @@ __pycache__/
 # Generated plugin outputs
 plugins/chatgpt/dist/
 plugins/chatgpt/package/
+plugins/chatgpt/submission/
 .sites-runtime/
