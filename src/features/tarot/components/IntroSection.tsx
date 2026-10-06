@@ -4,6 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import AuraHeroCard from "./AuraHeroCard";
+import { HORIZON_FRACTION, SKY_GRADIENT_CSS } from "./introScene";
+import PlanetCanvas from "./PlanetCanvas";
 import StarTrails from "./StarTrails";
 import WaterReflection from "./WaterReflection";
 
@@ -11,8 +13,6 @@ interface IntroSectionProps {
   onEnter: () => void;
 }
 
-// Where the sky meets the water, as a fraction of the viewport height.
-const HORIZON_FRACTION = 0.58;
 const HORIZON = `${HORIZON_FRACTION * 100}%`;
 // The card's slow drift: a 10s bob and sway around a 15° lean.
 const DRIFT_PERIOD_MS = 10_000;
@@ -61,28 +61,27 @@ const IntroSection: React.FC<IntroSectionProps> = ({ onEnter }) => {
       className="fixed inset-0 z-20 overflow-hidden font-display text-white"
       exit={{ opacity: 0, filter: "blur(20px)", transition: { duration: 1 } }}
     >
-      {/* The night sky, turning about its pole. */}
+      {/* The sky, its stars turning about the pole, and the planet in front of them. */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0" style={{ height: HORIZON, background: SKY_GRADIENT_CSS }} />
       <motion.div aria-hidden="true" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2.4 }}>
         <StarTrails horizon={HORIZON_FRACTION} animated={!prefersReducedMotion} />
       </motion.div>
-
-      {/* A planet rising behind the card, lit only along its upper-right rim. */}
-      <motion.div
-        aria-hidden="true"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.4, ease: SILKY_EASE }}
-        className="absolute left-1/2 top-[40%] aspect-square w-[max(72vh,110vw)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_30%_62%,#04060c_0%,#070b17_55%,#141c36_88%,#26335c_100%)] shadow-[inset_-3px_3px_2px_-1px_rgba(255,226,206,0.85),inset_-26px_20px_48px_-10px_rgba(150,165,255,0.28),0_0_90px_rgba(110,130,255,0.12)] [mask-image:linear-gradient(to_right,transparent_8%,black_62%)] md:left-[46%] md:w-[72vh] md:-translate-x-[8%]"
-      />
+      <motion.div aria-hidden="true" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2.4, ease: SILKY_EASE }}>
+        <PlanetCanvas />
+      </motion.div>
 
       {/* The water: everything below the horizon (also the fallback without WebGL). */}
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 bg-linear-to-b from-[#05070e] to-[#010103]" style={{ top: HORIZON }} />
       <WaterReflection horizon={HORIZON_FRACTION} faceCanvasRef={faceCanvasRef} rotate={rotate} animated={!prefersReducedMotion} />
 
-      {/* The horizon line, brightest where the card's light meets it. */}
-      <div aria-hidden="true" className="absolute inset-x-0" style={{ top: HORIZON }}>
-        <div className="absolute inset-x-0 h-px -translate-y-1/2 bg-linear-to-r from-transparent via-white/45 to-transparent" />
-        <div className="absolute left-1/2 h-16 w-[min(46vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(255,226,206,0.5),rgba(255,180,140,0.12)_40%,transparent_70%)] blur-md" />
+      {/* The horizon: a haze band above it, a hairline across, and a bright
+          core under the card with a long horizontal flare. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0" style={{ top: HORIZON }}>
+        <div className="absolute inset-x-0 bottom-0 h-[12vh] bg-linear-to-b from-transparent to-[rgba(120,140,210,0.07)]" />
+        <div className="absolute inset-x-0 h-px -translate-y-1/2 bg-linear-to-r from-transparent via-white/30 to-transparent" />
+        <div className="absolute left-1/2 h-[3px] w-[min(70vw,900px)] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse,rgba(255,238,226,0.85),rgba(255,214,190,0.25)_35%,transparent_70%)] blur-[1.5px]" />
+        <div className="absolute left-1/2 h-24 w-[min(38vw,440px)] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(255,232,216,0.35),rgba(200,190,230,0.08)_45%,transparent_70%)] blur-lg" />
+        <div className="absolute left-1/2 h-3 w-40 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(255,255,255,0.95),rgba(255,236,222,0.4)_40%,transparent_72%)] blur-[2px]" />
       </div>
 
       {/* The card, floating just above the water. */}

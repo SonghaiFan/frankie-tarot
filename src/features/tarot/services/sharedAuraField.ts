@@ -18,9 +18,10 @@ const SETTINGS = {
   renderScale: 0.35,
 } as const;
 
+/** Seconds-to-shader-time factor used by the aura, for other renderers of the same field. */
+export const AURA_TIME_SPEED = SETTINGS.timeSpeed;
+
 const subscribers = new Set<HTMLCanvasElement>();
-/** Card height (px) the aura pattern is sized to, for windows much larger than a deck card. */
-const scaleReferences = new WeakMap<HTMLCanvasElement, number>();
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const maxDpr = 2;
 
@@ -39,7 +40,8 @@ let startedAt = 0;
 let fieldScale = SETTINGS.renderScale;
 
 const value = (number: number) => Number(number).toFixed(4);
-const createShaders = () => {
+/** The aura's GLSL (uniforms uRes, uTime, uScale, uColors[11]), for other renderers of the same field. */
+export const createAuraShaderSources = () => {
   const { bands: b } = SETTINGS;
   const vertex = `
 attribute vec2 position;
@@ -150,7 +152,7 @@ const initializeWebGL = (canvas: HTMLCanvasElement) => {
   });
   if (!context) return false;
 
-  const { vertex, fragment } = createShaders();
+  const { vertex, fragment } = createAuraShaderSources();
   const vertexShader = compileShader(context, context.VERTEX_SHADER, vertex);
   const fragmentShader = compileShader(context, context.FRAGMENT_SHADER, fragment);
   if (!vertexShader || !fragmentShader) return false;
@@ -234,8 +236,7 @@ const paintField = (time: number) => {
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
   fieldScale = activeSource.width / Math.max(1, window.innerWidth);
   const firstCard = subscribers.values().next().value as HTMLCanvasElement | undefined;
-  const reference = Array.from(subscribers, (canvas) => scaleReferences.get(canvas)).find(Boolean);
-  const cardHeight = reference ?? firstCard?.getBoundingClientRect().height ?? 160;
+  const cardHeight = firstCard?.getBoundingClientRect().height ?? 160;
 
   if (gl && program && canvas) {
     const width = Math.max(1, Math.ceil(window.innerWidth * SETTINGS.renderScale * dpr));
@@ -330,9 +331,8 @@ if (typeof window !== "undefined") {
   reducedMotion.addEventListener("change", invalidate);
 }
 
-export const registerAuraWindow = (canvas: HTMLCanvasElement, scaleReference?: number) => {
+export const registerAuraWindow = (canvas: HTMLCanvasElement) => {
   subscribers.add(canvas);
-  if (scaleReference) scaleReferences.set(canvas, scaleReference);
   invalidate();
   return () => {
     subscribers.delete(canvas);

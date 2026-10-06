@@ -62,13 +62,12 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       {/* Left: Logo / Home */}
       <div className="flex items-center gap-3 md:gap-6 pointer-events-auto">
         <button onClick={onHomeClick} className="flex flex-col gap-1 group">
-          <div className="flex items-center gap-2 text-white/80 group-hover:text-white transition-colors">
-            <FrankSignature className="h-5 w-auto" />
-            <h1 className="hidden sm:block text-xs font-cinzel tracking-[0.4em] font-bold">
+          <div className="flex items-center gap-3 text-white/85 group-hover:text-white transition-colors md:gap-4">
+            <FrankSignature className="h-6 w-auto md:h-8" />
+            <h1 className="hidden sm:block pt-1 font-display text-[13px] font-light tracking-[0.5em] md:text-[15px]">
               TAROT
             </h1>
           </div>
-          <div className="w-full h-px bg-white/10 group-hover:bg-white/30 transition-colors" />
         </button>
 
         {/* State Breadcrumb */}

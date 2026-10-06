@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import type { MotionValue } from "motion/react";
+import { paintPlanet, paintSkyGradient } from "./introScene";
 
 interface WaterReflectionProps {
   /** Horizon as a fraction of the viewport height; the water fills everything below. */
@@ -25,15 +26,18 @@ void main() {
   gl_Position = vec4(position, 0.0, 1.0);
 }`;
 
-// The sky above the horizon is mirrored below it. Ripples are compressed near
-// the horizon (far away) and grow toward the viewer; the reflection is smeared
-// into vertical streaks and broken into wavy horizontal slices, with glints.
+// A height field of travelling waves, seen in perspective: each water pixel is
+// mapped to a point on the surface, so waves are tiny near the horizon and grow
+// toward the viewer. Their slopes bend the mirrored sky — breaking the card's
+// reflection into long wavy streaks — and the whole surface carries the sky's
+// navy sheen, brighter at grazing angles (fresnel), with glints on the crests.
 const FRAGMENT = `
 precision mediump float;
 varying vec2 vUv;
 uniform sampler2D uSky;
 uniform float uTime;
 uniform float uSkyToWater;
+uniform float uAspect;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -42,30 +46,58 @@ float noise(vec2 p) {
              mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
+// The surface under a water pixel: x spreads and z recedes toward the horizon.
+vec2 surface(vec2 uv) {
+  float z = 1.0 / (uv.y + 0.035);
+  return vec2((uv.x - 0.5) * uAspect * z * 0.9, z);
+}
+
+float waveHeight(vec2 uv, float t) {
+  vec2 p = surface(uv);
+  // Long swells running across, then finer chop; all drift toward the viewer.
+  float h = noise(vec2(p.x * 0.55 + t * 0.03, p.y * 1.6 - t * 0.45)) * 0.6;
+  h += noise(vec2(p.x * 1.4 - t * 0.05, p.y * 3.6 - t * 0.8)) * 0.28;
+  h += noise(vec2(p.x * 3.4 + t * 0.07, p.y * 8.0 - t * 1.25)) * 0.12;
+  return h;
+}
+
 void main() {
   float d = vUv.y;
-  float depth = 1.0 / (d + 0.04);
   float t = uTime;
-  float slices = noise(vec2(vUv.x * 3.0 + t * 0.04, depth * 1.4 - t * 0.55));
-  float chop = noise(vec2(vUv.x * 11.0 - t * 0.07, depth * 3.4 - t * 0.9));
-  float wave = slices * 0.65 + chop * 0.35 - 0.5;
+  vec2 e = vec2(0.0025, 0.0);
+  float h = waveHeight(vUv, t);
+  float slopeX = (waveHeight(vUv + e.xy, t) - waveHeight(vUv - e.xy, t)) / (2.0 * e.x);
+  float slopeY = (waveHeight(vUv + e.yx, t) - waveHeight(vUv - e.yx, t)) / (2.0 * e.x);
 
-  float dx = wave * (0.006 + d * 0.16);
-  float skyY = 1.0 - d * uSkyToWater + wave * d * 0.05;
+  // Slopes bend the reflected ray: sideways shimmer and up/down reach, both
+  // growing toward the viewer where the waves are larger on screen.
+  float near = 0.15 + d;
+  float bendX = clamp(slopeX * 0.009 * near, -0.12, 0.12);
+  float bendY = clamp(slopeY * 0.006 * near, -0.12, 0.12);
+  float skyY = 1.0 - d * uSkyToWater * 0.82 - bendY;
 
+  // Average along the reflected column: ripples smear reflections vertically.
   vec3 reflection = vec3(0.0);
   for (int i = 0; i < 7; i++) {
     float o = float(i) / 6.0 - 0.5;
-    vec2 uv = vec2(vUv.x + dx, skyY + o * (0.012 + d * 0.06));
-    reflection += texture2D(uSky, clamp(uv, 0.0, 1.0)).rgb * step(0.0, uv.y);
+    vec2 uv = vec2(vUv.x + bendX, skyY + o * (0.01 + d * 0.07));
+    reflection += texture2D(uSky, clamp(uv, vec2(0.0), vec2(1.0))).rgb;
   }
   reflection /= 7.0;
 
-  // Bright slices with dark gaps between them, fading toward the viewer.
-  float strength = mix(0.85, 0.3, d) * smoothstep(0.22, 0.78, slices) * 1.5;
-  float glint = pow(max(chop - 0.62, 0.0) * 2.6, 3.0) * dot(reflection, vec3(0.5)) * 2.4;
-  vec3 water = mix(vec3(0.02, 0.026, 0.05), vec3(0.004, 0.005, 0.012), smoothstep(0.0, 0.8, d));
-  gl_FragColor = vec4(water + reflection * strength + glint, 1.0);
+  // Water reflects most at grazing angles, near the horizon.
+  float fresnel = mix(0.95, 0.42, smoothstep(0.0, 1.0, d));
+  // Faces tilted toward the viewer catch more sky; backs of waves less.
+  float facing = clamp(0.75 + slopeY * 0.004, 0.35, 1.25);
+  vec3 deep = vec3(0.003, 0.004, 0.009);
+  // The night sky's own light on the ripples: a blue-grey sheen over the whole
+  // surface, strongest toward the horizon, patterned by the wave slopes.
+  float sheenPattern = smoothstep(-40.0, 120.0, slopeY) * (0.6 + 0.4 * h);
+  vec3 sheen = vec3(0.07, 0.09, 0.16) * sheenPattern * mix(1.0, 0.35, d);
+  vec3 color = deep + sheen + reflection * fresnel * facing;
+
+  float glint = pow(clamp(h - 0.55, 0.0, 1.0) * 2.2, 4.0) * dot(reflection, vec3(0.33)) * 3.0;
+  gl_FragColor = vec4(color + glint, 1.0);
 }`;
 
 const compile = (gl: WebGLRenderingContext, type: number, source: string) => {
@@ -112,25 +144,41 @@ const WaterReflection: React.FC<WaterReflectionProps> = ({ horizon, faceCanvasRe
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     const uTime = gl.getUniformLocation(program, "uTime");
     const uSkyToWater = gl.getUniformLocation(program, "uSkyToWater");
+    const uAspect = gl.getUniformLocation(program, "uAspect");
 
     // The sky: what stands above the water, redrawn each frame in screen space.
     const sky = document.createElement("canvas");
     const skyContext = sky.getContext("2d");
     if (!skyContext) return;
+    // The planet is static: painted once per size into its own layer.
+    const planetLayer = document.createElement("canvas");
+    let planetDirty = true;
 
     let frame = 0;
     const startedAt = performance.now();
 
     const paintSky = (scale: number, horizonY: number) => {
       const width = window.innerWidth;
+      const height = window.innerHeight;
       skyContext.setTransform(scale, 0, 0, scale, 0, 0);
-      skyContext.clearRect(0, 0, width, horizonY);
+      paintSkyGradient(skyContext, width, height);
+      const planetContext = planetDirty ? planetLayer.getContext("2d") : null;
+      if (planetContext) {
+        planetContext.setTransform(scale, 0, 0, scale, 0, 0);
+        planetContext.clearRect(0, 0, width, horizonY);
+        paintPlanet(planetContext, width, height);
+        planetDirty = false;
+      }
+      skyContext.save();
+      skyContext.setTransform(1, 0, 0, 1, 0, 0);
+      skyContext.drawImage(planetLayer, 0, 0);
+      skyContext.restore();
 
-      // The bright seam where the card's light meets the horizon.
-      const glow = skyContext.createRadialGradient(width / 2, horizonY, 0, width / 2, horizonY, Math.min(width * 0.28, 320));
-      glow.addColorStop(0, "rgba(255,226,206,0.55)");
-      glow.addColorStop(0.45, "rgba(255,180,140,0.12)");
-      glow.addColorStop(1, "rgba(255,180,140,0)");
+      // The bright core where the card's light meets the horizon.
+      const glow = skyContext.createRadialGradient(width / 2, horizonY, 0, width / 2, horizonY, Math.min(width * 0.22, 260));
+      glow.addColorStop(0, "rgba(255,236,222,0.75)");
+      glow.addColorStop(0.3, "rgba(255,214,190,0.18)");
+      glow.addColorStop(1, "rgba(255,214,190,0)");
       skyContext.fillStyle = glow;
       skyContext.fillRect(0, 0, width, horizonY);
 
@@ -170,12 +218,16 @@ const WaterReflection: React.FC<WaterReflectionProps> = ({ horizon, faceCanvasRe
       if (sky.width !== width || sky.height !== skyHeight) {
         sky.width = width;
         sky.height = skyHeight;
+        planetLayer.width = width;
+        planetLayer.height = skyHeight;
+        planetDirty = true;
       }
 
       paintSky(dpr, horizonY);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sky);
       gl.uniform1f(uTime, (now - startedAt) / 1000);
       gl.uniform1f(uSkyToWater, waterHeight / horizonY);
+      gl.uniform1f(uAspect, window.innerWidth / waterHeight);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
       frame = animated && !document.hidden ? requestAnimationFrame(render) : 0;
