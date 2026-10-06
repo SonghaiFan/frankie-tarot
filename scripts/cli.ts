@@ -11,7 +11,7 @@ async function main() {
 
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`
-🔮 Mystic Tarot CLI - Headless Tarot Prediction Tool
+🔮 Mystic Tarot CLI - Headless Tarot Spread & Prompt Tool
 
 用法:
   npx tsx scripts/cli.ts [问题] [选项]
@@ -19,7 +19,6 @@ async function main() {
 选项:
   --spread <ID>      指定牌阵 (例如: SINGLE, THREE, FOUR, TIMELINE, RELATION, CELTIC 等，默认 AUTO)
   --locale <LANG>    语言设置 (zh-CN 或 en，默认 zh-CN)
-  --dry-run          仅抽取卡牌并生成 Prompt，不消耗 API Key 调用大模型生成解读
   --json             以完整 JSON 格式输出结果
   --list-spreads     列出所有支持的牌阵列表
   -h, --help         显示帮助信息
@@ -27,7 +26,7 @@ async function main() {
 示例:
   npx tsx scripts/cli.ts "我下半年的事业发展趋势如何？"
   npx tsx scripts/cli.ts "我们要不要开始合作？" --spread RELATION
-  npx tsx scripts/cli.ts "How will my next project go?" --locale en --dry-run
+  npx tsx scripts/cli.ts "How will my next project go?" --locale en --json
     `);
     process.exit(0);
   }
@@ -46,7 +45,6 @@ async function main() {
   // Parse arguments
   let spreadArg: SpreadType | "AUTO" = "AUTO";
   let localeArg: Locale = "zh-CN";
-  let isDryRun = false;
   let isJson = false;
   const positionalArgs: string[] = [];
 
@@ -56,8 +54,6 @@ async function main() {
       spreadArg = args[++i].toUpperCase() as SpreadType;
     } else if (arg === "--locale" && args[i + 1]) {
       localeArg = args[++i] as Locale;
-    } else if (arg === "--dry-run") {
-      isDryRun = true;
     } else if (arg === "--json") {
       isJson = true;
     } else if (!arg.startsWith("--")) {
@@ -75,7 +71,6 @@ async function main() {
     question,
     spread: spreadArg,
     locale: localeArg,
-    generateReading: !isDryRun,
   });
 
   if (isJson) {
@@ -98,20 +93,8 @@ async function main() {
   });
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
-  if (result.reading) {
-    console.log(`🔮 大师解读:`);
-    console.log(`\n  ${result.reading}\n`);
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  }
-
   console.log(`📜 生成的 Reading Prompt:`);
   console.log(`\n${result.prompts.readingPrompt}\n`);
-
-  if (result.prompts.followUpPrompt) {
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`💬 多轮追问 Context Prompt:`);
-    console.log(`\n${result.prompts.followUpPrompt}\n`);
-  }
 }
 
 main().catch((err) => {

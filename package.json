@@ -21,7 +21,9 @@
     "plugin:submission": "node plugins/chatgpt/prepare-submission.mjs"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@openai/mcp-extensions": "^0.1.0",
     "gsap": "^3.13.0",
     "html-to-image": "^1.11.13",
     "i18next": "^25.8.20",
@@ -31,9 +33,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^16.5.8",
-    "@modelcontextprotocol/ext-apps": "^1.7.5",
-    "@modelcontextprotocol/sdk": "^1.32.0",
-    "@openai/mcp-extensions": "^0.1.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -41,10 +40,10 @@
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.6",
     "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.25.12",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.20.6",
     "typescript": "~5.8.2",
-    "vite": "^7.2.4",
-    "esbuild": "^0.25.12"
+    "vite": "^7.2.4"
   }
 }

@@ -42,6 +42,5 @@ for(const f of await readdir(join(root,"public/audio"))) if(f.endsWith(".mp3")) 
 await mkdir(join(output,"card-backs"),{recursive:true});
 for(const f of await readdir(join(root,"public/images/card-backs"))) if(f.endsWith(".svg")) await copyFile(join(root,"public/images/card-backs",f),join(output,"card-backs",f));
 const modules=files.filter(f=>f.type==='chunk').flatMap(f=>Object.keys(f.modules));
-if(modules.some(p=>p.includes('@google/genai') || p.endsWith('/core/services.ts'))) throw new Error("Plugin imported model-provider code");
 await writeFile(join(output,"build-info.json"),JSON.stringify({sourceEntry:"src/app/App.tsx",assetOrigin:base.href,sourceInputs:modules,widgetBytes:Buffer.byteLength(js)+Buffer.byteLength(css)},null,2));
 console.log("Built plugin from the original App, shared components, styles, data and artwork.");

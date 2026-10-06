@@ -38,7 +38,6 @@ https://songhaifan.github.io/frank-tarot/
 ## Notes
 
 - The app is configured for GitHub Pages under `/frank-tarot/`.
-- If you run it locally with your own AI key, add `GEMINI_API_KEY=your_api_key_here` to `.env.local`.
 - The source text and imagery referenced in this project are drawn from public-domain material published in 1911.
 
 ---
@@ -76,7 +75,6 @@ https://songhaifan.github.io/frank-tarot/
 ## 说明
 
 - 当前 GitHub Pages 部署路径为 `/frank-tarot/`。
-- 如果你要在本地启用 AI 功能，请在 `.env.local` 中添加 `GEMINI_API_KEY=your_api_key_here`。
 - 项目中引用的原典文字与图像素材来自 1911 年出版、现已进入公有领域的资料。
 
 ## License

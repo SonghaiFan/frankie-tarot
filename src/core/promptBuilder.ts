@@ -17,7 +17,7 @@ export interface TarotFollowUpPromptOptions {
 }
 
 /**
- * 组装给大模型（如 Gemini / OpenAI / Claude）的主解读 System + User Prompt
+ * 组装给外部大模型（如 ChatGPT / OpenAI / Claude）的主解读 System + User Prompt
  */
 export function buildTarotReadingPrompt({
   cards,

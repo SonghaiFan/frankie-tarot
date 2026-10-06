@@ -60,7 +60,7 @@ The existing MCP tools declare no authentication and the Vercel handler has no u
 | Browser preferences | `src/shared/storage.ts`, `App.tsx`, language setup and card-back appearance store language/artwork preferences when localStorage is permitted | Explain how to clear these preferences; do not describe this as a reading-history store |
 | Network requests | Public pages/artwork/audio are served from the app host; embedded fonts reference Google Fonts | Actual Vercel/Cloudflare logging, enabled analytics, their retention and recipients |
 | Support contact | Creator approved `songhai.fan2022@gmail.com`; support messages and attachments would be received through Gmail | Contact mail is used only to handle the request, with deletion available on request; no fixed retention period or automatic mailbox deletion is configured |
-| Model provider | The ChatGPT adapter excludes Gemini provider code from its build and uses the current conversation | Confirm ordinary website provider behavior for the exact deployed version before covering both surfaces in one policy |
+| Model provider | The ChatGPT adapter contains no model-provider code and uses the current conversation | Confirm ordinary website provider behavior for the exact deployed version before covering both surfaces in one policy |
 
 No claim of “zero data collection,” automatic deletion, a fixed hosting-log retention period, or no third-party processing is supported by this inspection alone.
 

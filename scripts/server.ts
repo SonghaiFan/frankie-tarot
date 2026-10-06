@@ -54,16 +54,11 @@ const server = http.createServer(async (req, res) => {
     req.on("end", async () => {
       try {
         const body = bodyStr ? JSON.parse(bodyStr) : {};
-        const headerApiKey =
-          (req.headers["x-api-key"] as string) ||
-          (req.headers["authorization"]?.replace(/^Bearer\s+/i, "") as string);
 
         const requestOptions: TarotRequest = {
           question: body.question || "",
           spread: body.spread || "AUTO",
           locale: body.locale || "zh-CN",
-          apiKey: body.apiKey || headerApiKey,
-          generateReading: body.generateReading !== false,
           reversedProbability: body.reversedProbability,
           customCards: body.customCards,
         };

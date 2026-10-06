@@ -151,7 +151,7 @@ for (const locale of ["en", "zh-CN"] as const) {
   }
 }
 
-test("draw input defaults are explicit and unsupported/provider-controlled inputs are rejected", () => {
+test("draw input defaults are explicit and unsupported inputs are rejected", () => {
   assert.deepEqual(drawInputSchema.parse({}), {
     question: "", spread: "SINGLE", locale: "zh-CN", reversedProbability: 0.4,
   });
@@ -165,10 +165,6 @@ test("draw input defaults are explicit and unsupported/provider-controlled input
     ["infinite probability", { reversedProbability: Number.POSITIVE_INFINITY }],
     ["oversized question", { question: "x".repeat(2001) }],
     ["caller-selected cards", { customCards: [{ id: 0, isReversed: false }] }],
-    ["custom API key", { apiKey: "must-not-be-accepted" }],
-    ["API_KEY field", { API_KEY: "must-not-be-accepted" }],
-    ["GEMINI_API_KEY field", { GEMINI_API_KEY: "must-not-be-accepted" }],
-    ["legacy generation option", { generateReading: false }],
   ];
   const engine = makeEngine();
   for (const [label, input] of invalidInputs) {
@@ -246,14 +242,10 @@ test("restore accepts the seven-day boundary and rejects expired or implausibly 
   assert.throws(() => engine.restore(original.readingToken!), /cannot be restored/);
 });
 
-test("existing API_KEY and GEMINI_API_KEY environment values cannot trigger provider requests", () => {
-  const previousApiKey = process.env.API_KEY;
-  const previousGeminiKey = process.env.GEMINI_API_KEY;
+test("the draw engine performs no network requests", () => {
   const originalFetch = globalThis.fetch;
   let networkCalls = 0;
   try {
-    process.env.API_KEY = "test-sentinel-no-provider-use";
-    process.env.GEMINI_API_KEY = "test-sentinel-no-provider-use";
     globalThis.fetch = async () => {
       networkCalls += 1;
       throw new Error("The tarot draw engine must not perform network requests.");
@@ -261,7 +253,6 @@ test("existing API_KEY and GEMINI_API_KEY environment values cannot trigger prov
     const engine = makeEngine();
     const setup = engine.setup("en");
     assert.equal(setup.spreads.length, 11);
-    // Omitted spread must stay SINGLE even with a question and legacy environment keys.
     const drawn = engine.draw({ question: "How can I reflect on my next step?", locale: "en" });
     const reading = requireReading(drawn);
     assert.equal(reading.spread.id, "SINGLE");
@@ -270,9 +261,5 @@ test("existing API_KEY and GEMINI_API_KEY environment values cannot trigger prov
     assert.equal(networkCalls, 0);
   } finally {
     globalThis.fetch = originalFetch;
-    if (previousApiKey === undefined) delete process.env.API_KEY;
-    else process.env.API_KEY = previousApiKey;
-    if (previousGeminiKey === undefined) delete process.env.GEMINI_API_KEY;
-    else process.env.GEMINI_API_KEY = previousGeminiKey;
   }
 });
