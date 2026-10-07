@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
-import type { OpenAIUiToolMetadata } from "@openai/mcp-extensions/server";
 import { z } from "zod";
 import { localeSchema, SPREAD_IDS, spreadSchema, listSpreads } from "./catalog";
 import { flowSchema, viewResult } from "./flow";
@@ -11,7 +10,7 @@ import type { TarotView } from "./shared";
 export function getUiUri(html: string) {
   return `ui://frankie-tarot/app-${createHash("sha256").update(html).digest("hex").slice(0,20)}.html`;
 }
-export const VERSION = "0.5.0";
+export const VERSION = "0.5.1";
 const noauth = { securitySchemes: [{ type: "noauth" }] };
 const annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
@@ -51,7 +50,7 @@ export function createMcpServer(options: {
     description: "Open the original app. For an unspecified spread, first list_tarot_spreads and intelligently choose a suitable spread. Pass the user's exact question and chosen spread to enter INPUT with that question already filled; no cards are drawn. Empty arguments open the welcome screen. Reuse the current flowId for a new question in the same conversation. With flowId and no question, resume the same widget using its private saved state. Starting and flipping remain in the UI. Never interpret concealed cards. For the app’s brief-summary request, use summary with the exact readingId and flowId to update the existing table; omit question and spread.",
     inputSchema: z.object({question:z.string().max(2000).optional(), spread:z.enum(SPREAD_IDS).optional(), locale:localeSchema.optional(),flowId:flowIdSchema,summary:z.object({readingId:z.string().uuid(),text:z.string().trim().min(1).max(800)}).strict().optional()}).strict(),
     outputSchema: flowSchema, annotations:{...annotations,idempotentHint:true},
-    _meta:{...tableMeta,"openai/ui":{entrypoints:[{type:"global"},{type:"thread"}]} satisfies OpenAIUiToolMetadata},
+    _meta:tableMeta,
   }, async ({question,spread,locale = 'zh-CN',flowId,summary}) => guarded(() => {
     if (summary && (!flowId || question !== undefined || spread !== undefined)) throw new Error('Summary requires the current flowId and no new question or spread.');
     return ({

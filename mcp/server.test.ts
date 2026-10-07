@@ -46,7 +46,7 @@ test("MCP discovery exposes only launcher and smart-spread lookup", async () => 
   const launcher = tools.find(tool=>tool.name==='open_tarot')!;
   assert.equal((launcher._meta?.ui as any).resourceUri, UI_URI);
   assert.deepEqual(Object.keys(launcher.inputSchema.properties ?? {}).sort(),['flowId','locale','question','spread','summary']);
-  assert.deepEqual((launcher._meta?.['openai/ui'] as any).entrypoints,[{type:'global'},{type:'thread'}]);
+  assert.equal(launcher._meta?.['openai/ui'],undefined,'tool result is the only interaction entrypoint');
   const opened=await client.callTool({name:'open_tarot',arguments:{}});
   assert.equal((opened.structuredContent as any).spreads.length,11);
   assert.equal((opened._meta as any).tarot.stage,'intro');

@@ -11,6 +11,8 @@ A thin MCP adapter around the original F.Tarot app. The website and hosted widge
 
 For an unspecified spread, ChatGPT lists and selects a suitable actual spread, then opens the app. The app's AUTO option sends an explicit spread-selection request to the conversation; ChatGPT applies its choice through `open_tarot`. The widget immediately enters manual card picking after applying that choice.
 
+`open_tarot` renders its UI inline in the conversation. It does not register separate global or thread-panel launchers, because those start a second, empty table rather than following the active reading. The user can expand the inline table to fullscreen within the same widget.
+
 Starting, picking and flipping use the original frontend draw and UI. They make no MCP tool calls. A click on a drawn card attaches only that card's name, spread position and orientation as model context. It does not send a user message or trigger interpretation. Reveal progress and hidden cards stay private.
 
 After all cards are revealed, the widget automatically sends the exact question and complete spread to ChatGPT for a brief poetic interpretation. ChatGPT writes 2–4 sentences back through `open_tarot({flowId, locale, summary: {readingId, text}})`. The UI accepts the summary only for the matching, fully revealed reading, preserves the cards, and remembers the request to prevent duplicate automatic requests on recovery. No new question or spread may accompany a summary.
