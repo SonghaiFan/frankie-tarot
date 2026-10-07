@@ -18,7 +18,12 @@ const AuraHeroCard: React.FC<AuraHeroCardProps> = ({ className = "", faceCanvasR
   const glowRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const cleanups = [faceRef, glowRef].map(({ current }) => current && registerAuraWindow(current));
+    const face = faceRef.current && registerAuraWindow(faceRef.current);
+    // The glow is a soft halo under a 36px CSS blur, which the browser redoes
+    // whenever the canvas changes: a few low-resolution updates a second look
+    // the same and cost a fraction.
+    const glow = glowRef.current && registerAuraWindow(glowRef.current, { maxFps: 10, resolution: 0.25 });
+    const cleanups = [face, glow];
     return () => cleanups.forEach((cleanup) => cleanup?.());
   }, []);
 

@@ -258,16 +258,84 @@ const paintField = (time: number) => {
   }
 };
 
-const drawWindows = () => {
+// Small windows (a deck of cards in a cloud) are many and tiny: the aura is a
+// soft gradient, so they repaint together on a shared 15-per-second tick at one
+// pixel per CSS pixel, and look the same. Together, because each tick costs
+// one GPU→CPU readback of the field (see cpuField) however many windows paint.
+const SMALL_WINDOW_PX = 200;
+const SMALL_WINDOW_FPS = 15;
+let lastSmallTick = -Infinity;
+// Asking an animated card where it is forces the page's styles and layout to
+// be worked out early — the dominant cost with dozens of cards. Small windows
+// sample a slow, soft gradient, so they re-measure together twice a second and
+// reuse those boxes in between; a drifting card is off by a few pixels at most.
+const SMALL_RECT_REFRESH_MS = 500;
+let lastSmallSweep = -Infinity;
+const cachedRects = new WeakMap<HTMLCanvasElement, DOMRect>();
+
+export interface AuraWindowOptions {
+  /** Repaints per second at most (default: every frame, or 20 for small windows). */
+  maxFps?: number;
+  /** Backing-store pixels per CSS pixel (default: the device ratio, or 1 for small windows). */
+  resolution?: number;
+}
+
+const windowOptions = new WeakMap<HTMLCanvasElement, AuraWindowOptions>();
+const lastPainted = new WeakMap<HTMLCanvasElement, number>();
+const smallWindows = new WeakMap<HTMLCanvasElement, boolean>();
+
+// Small canvases live in CPU memory, so each copy from the GPU-rendered field
+// into one is a GPU→CPU readback. Read the field back once per frame into this
+// CPU-side copy and paint the small windows from it instead.
+let fieldCopy: HTMLCanvasElement | undefined;
+let fieldCopyFrame = -1;
+const cpuField = (field: HTMLCanvasElement, now: number) => {
+  fieldCopy ??= document.createElement("canvas");
+  if (fieldCopyFrame !== now) {
+    if (fieldCopy.width !== field.width || fieldCopy.height !== field.height) {
+      fieldCopy.width = field.width;
+      fieldCopy.height = field.height;
+    }
+    const context = fieldCopy.getContext("2d", { willReadFrequently: true });
+    context?.clearRect(0, 0, fieldCopy.width, fieldCopy.height);
+    context?.drawImage(field, 0, 0);
+    fieldCopyFrame = now;
+  }
+  return fieldCopy;
+};
+
+const drawWindows = (now: number) => {
   const appearance = getCardBackAppearance();
   const field = source ?? fallbackSource;
   if (!field && appearance.mode !== "solid") return;
-  const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+  const deviceRatio = Math.min(window.devicePixelRatio || 1, maxDpr);
+  const smallTick = now - lastSmallTick >= 1000 / SMALL_WINDOW_FPS;
+  if (smallTick) lastSmallTick = now;
+  const smallSweep = smallTick && now - lastSmallSweep >= SMALL_RECT_REFRESH_MS;
+  if (smallSweep) lastSmallSweep = now;
 
   subscribers.forEach((target) => {
-    const rect = target.getBoundingClientRect();
+    // Throttle before measuring: reading dozens of on-screen boxes every frame
+    // is itself a cost. Whether a window is small is known from its last paint;
+    // a window not yet painted paints at once.
+    const options = windowOptions.get(target);
+    if (appearance.mode === "gradient" && lastPainted.has(target)) {
+      if (options?.maxFps) {
+        if (now - lastPainted.get(target)! < 1000 / options.maxFps) return;
+      } else if (smallWindows.get(target) && !smallTick) {
+        return;
+      }
+    }
+    lastPainted.set(target, now);
+
+    const cached = cachedRects.get(target);
+    const rect = cached && smallWindows.get(target) && !smallSweep ? cached : target.getBoundingClientRect();
+    cachedRects.set(target, rect);
     if (rect.width < 1 || rect.height < 1) return;
+    const small = rect.height < SMALL_WINDOW_PX;
+    smallWindows.set(target, small);
     if (appearance.mode === "gradient" && (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth)) return;
+    const dpr = options?.resolution ?? (small ? 1 : deviceRatio);
 
     const width = Math.max(1, Math.round(rect.width * dpr));
     const height = Math.max(1, Math.round(rect.height * dpr));
@@ -298,14 +366,14 @@ const drawWindows = () => {
     const dh = (bottom - top) * dpr;
 
     context.clearRect(0, 0, width, height);
-    context.drawImage(field!, sx, sy, sw, sh, dx, dy, dw, dh);
+    context.drawImage(small ? cpuField(field!, now) : field!, sx, sy, sw, sh, dx, dy, dw, dh);
   });
 };
 
 const render = (now: number) => {
   if (!startedAt) startedAt = now;
   paintField(reducedMotion.matches ? 20 : (now - startedAt) / 1000);
-  drawWindows();
+  drawWindows(now);
   if (getCardBackAppearance().mode === "gradient" && !reducedMotion.matches && subscribers.size > 0 && !document.hidden) {
     frameId = requestAnimationFrame(render);
   } else {
@@ -331,8 +399,9 @@ if (typeof window !== "undefined") {
   reducedMotion.addEventListener("change", invalidate);
 }
 
-export const registerAuraWindow = (canvas: HTMLCanvasElement) => {
+export const registerAuraWindow = (canvas: HTMLCanvasElement, options?: AuraWindowOptions) => {
   subscribers.add(canvas);
+  if (options) windowOptions.set(canvas, options);
   invalidate();
   return () => {
     subscribers.delete(canvas);

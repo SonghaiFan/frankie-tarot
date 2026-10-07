@@ -12,10 +12,7 @@ import FrankSignature from "@/app/components/FrankSignature";
 import { useTranslation } from "react-i18next";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import AuraHeroCard from "./AuraHeroCard";
-import { HORIZON_FRACTION, SKY_GRADIENT_CSS } from "./introScene";
-import PlanetCanvas from "./PlanetCanvas";
-import StarField from "./StarField";
-import WaterReflection from "./WaterReflection";
+import { setReflectionSubject } from "../scene/reflection";
 
 interface IntroSectionProps {
   onEnter: () => void;
@@ -27,7 +24,6 @@ interface IntroSectionProps {
 const SIDE_BUTTON =
   "grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/[0.04] text-white/70 backdrop-blur-md transition-colors hover:border-white/50 hover:text-white focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white/70 md:hidden";
 
-const HORIZON = `${HORIZON_FRACTION * 100}%`;
 // The card's slow drift: a 10s bob and sway around a 15° lean.
 const DRIFT_PERIOD_MS = 10_000;
 const LEAN = 15;
@@ -37,7 +33,9 @@ const tiltSpring = { stiffness: 110, damping: 18, mass: 0.8 };
 const fadeIn = (delay: number) => ({
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
-  transition: { delay, duration: 1.4, ease: SILKY_EASE },
+  // On leaving, the words and buttons fade quickly; the card flies on its own.
+  exit: { opacity: 0, transition: { duration: 0.25, ease: "easeIn" as const } },
+  transition: { delay, duration: 0.9, ease: SILKY_EASE },
 });
 
 /** The home page: one card floating over still water, and a single way in. */
@@ -59,6 +57,14 @@ const IntroSection: React.FC<IntroSectionProps> = ({
   const driftY = useTransform(phase, (p) => p * -6);
   const rotate = useTransform(phase, (p) => LEAN + p);
 
+  // The sea mirrors this card while it floats over it.
+  useEffect(() => {
+    const canvas = faceCanvasRef.current;
+    if (!canvas) return;
+    setReflectionSubject({ canvas, rotate });
+    return () => setReflectionSubject(null);
+  }, [rotate]);
+
   useEffect(() => {
     if (prefersReducedMotion) return;
     const handlePointer = (event: PointerEvent) => {
@@ -79,75 +85,23 @@ const IntroSection: React.FC<IntroSectionProps> = ({
   }, [prefersReducedMotion, tiltX, tiltY]);
 
   return (
+    // The sky, planet and sea behind this page are the shared SkyScene; on
+    // leaving, the card flies straight up off the screen and the scene stays.
     <motion.div
       key="intro"
       className="fixed inset-0 z-20 overflow-hidden font-display text-white"
-      exit={{ opacity: 0, filter: "blur(20px)", transition: { duration: 1 } }}
     >
-      {/* The sky, its stars turning about the pole, and the planet in front of them. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0"
-        style={{ height: HORIZON, background: SKY_GRADIENT_CSS }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="absolute inset-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.4 }}
-      >
-        <StarField
-          horizon={HORIZON_FRACTION}
-          animated={!prefersReducedMotion}
-        />
-      </motion.div>
-      <motion.div
-        aria-hidden="true"
-        className="absolute inset-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.4, ease: SILKY_EASE }}
-      >
-        <PlanetCanvas />
-      </motion.div>
-
-      {/* The water: everything below the horizon (also the fallback without WebGL). */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 bg-linear-to-b from-[#05070e] to-[#010103]"
-        style={{ top: HORIZON }}
-      />
-      <WaterReflection
-        horizon={HORIZON_FRACTION}
-        faceCanvasRef={faceCanvasRef}
-        rotate={rotate}
-        animated={!prefersReducedMotion}
-      />
-
-      {/* The horizon: a haze band above it, a hairline across, and a bright
-          core under the card with a long horizontal flare. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0"
-        style={{ top: HORIZON }}
-      >
-        <div className="absolute inset-x-0 bottom-0 h-[12vh] bg-linear-to-b from-transparent to-[rgba(120,140,210,0.07)]" />
-        <div className="absolute inset-x-0 h-px -translate-y-1/2 bg-linear-to-r from-transparent via-white/30 to-transparent" />
-        <div className="absolute left-1/2 h-[3px] w-[min(70vw,900px)] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse,rgba(255,238,226,0.85),rgba(255,214,190,0.25)_35%,transparent_70%)] blur-[1.5px]" />
-        <div className="absolute left-1/2 h-24 w-[min(38vw,440px)] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(255,232,216,0.35),rgba(200,190,230,0.08)_45%,transparent_70%)] blur-lg" />
-        <div className="absolute left-1/2 h-3 w-40 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(255,255,255,0.95),rgba(255,236,222,0.4)_40%,transparent_72%)] blur-[2px]" />
-      </div>
-
       {/* The card, floating just above the water. */}
       {/* On phones the card sits midway between the title block (which ends
           5.5rem below its top) and the horizon at 58%, sized to fit that gap,
           so a notch or a host's bar above never pushes the title into it. */}
       <div className="absolute left-1/2 top-[calc((max(calc(var(--safe-top)+2.5rem),15%)+5.5rem+58%)/2)] -translate-x-1/2 -translate-y-1/2 [perspective:1200px] md:top-[40%]">
         <motion.div
-          initial={{ opacity: 0, y: 30, filter: "blur(14px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.8, ease: SILKY_EASE }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          // Straight up and out of the top of the screen, whole and unfaded.
+          exit={{ y: "-100vh", transition: { duration: 0.65, ease: [0.55, 0, 1, 0.45] } }}
+          transition={{ duration: 1, ease: SILKY_EASE }}
         >
           <motion.div style={{ y: driftY, rotate }}>
             <motion.div style={{ rotateX: tiltX, rotateY: tiltY }}>

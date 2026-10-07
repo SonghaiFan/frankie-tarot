@@ -25,7 +25,8 @@ import {
 import { SPREADS } from "@/features/tarot/constants/spreads";
 import { drawCards } from "@/core/tarotEngine";
 import type { TarotHost, TarotAppSnapshot } from "@/host/tarotHost";
-import Galaxy from "@/app/components/Galaxy";
+import SkyScene from "@/features/tarot/scene/SkyScene";
+import type { SceneStage } from "@/features/tarot/scene/camera";
 import HeaderBar from "@/app/components/HeaderBar";
 import IntroSection from "@/features/tarot/components/IntroSection";
 import InputSection from "@/features/tarot/components/InputSection";
@@ -338,7 +339,8 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     if (newPicked.length === requiredCards) {
       // Request expansion directly from the final user selection.
       void host?.expand?.().catch(() => {});
-      setTimeout(startRevealProcess, 1000);
+      // Long enough for the last card to land in its slot (0.45s), then a beat.
+      setTimeout(startRevealProcess, 600);
     }
   };
 
@@ -392,12 +394,21 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   };
 
   // The intro draws its own turning night sky, so the galaxy rests there.
-  const bgOpacity = gameState === GameState.INTRO ? 0 : 0.3;
+  // Where the camera over the night world stands for each stage: the home
+  // page's full view (the question keeps it, without the card), closer in
+  // for the draw, and among the stars for the reading and the library.
+  const sceneStage: SceneStage =
+    gameState === GameState.INTRO ? "intro"
+    : gameState === GameState.INPUT ? "input"
+    : gameState === GameState.PICKING ? "picking"
+    : "reading";
 
   const renderPhase = () => {
     switch (gameState) {
       case GameState.INTRO:
-        return <IntroSection onEnter={enterInputPhase} onLibraryClick={toggleLibrary} />;
+        // Keyed so AnimatePresence plays its exit (the card flying off) while
+        // the next stage appears; the other stages still swap as before.
+        return <IntroSection key="intro" onEnter={enterInputPhase} onLibraryClick={toggleLibrary} />;
       case GameState.LIBRARY:
         return (
           <DeckLibrary
@@ -467,42 +478,10 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
 
   return (
     <div className="fixed inset-0 h-[100dvh] bg-black text-neutral-200 font-serif select-none cursor-default overflow-hidden">
-      {/* Galaxy Background (Persistent) */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: bgOpacity }}
-        transition={{ duration: 2 }}
-        className="absolute inset-0 z-0 pointer-events-none"
-      >
-        <Galaxy
-          speed={
-            gameState === GameState.PICKING
-              ? 0.2
-              : gameState === GameState.READING
-              ? 0.15
-              : gameState === GameState.REVEAL
-              ? 0.8
-              : 1.0
-          }
-          hueShift={260}
-          saturation={
-            hoveredCardId !== null && gameState === GameState.READING
-              ? 0.9
-              : 0.15
-          }
-          density={1.05}
-          glowIntensity={
-            hoveredCardId !== null && gameState === GameState.READING
-              ? 0.5
-              : 0.22
-          }
-          twinkleIntensity={0.18}
-          rotationSpeed={0.08}
-          mouseRepulsion={false}
-          mouseInteraction={false}
-          transparent={true}
-        />
-      </motion.div>
+      {/* One night world behind every stage; each stage frames part of it. */}
+      <div className="absolute inset-0 z-0">
+        <SkyScene stage={sceneStage} />
+      </div>
 
       {/* Header */}
       <motion.div

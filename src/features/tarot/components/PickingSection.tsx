@@ -1,7 +1,11 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { SpreadType, TarotCard as TarotCardType, PickedCard } from "@/features/tarot/types";
 import { SILKY_EASE } from "@/shared/constants/ui";
+import { SCENE_MOVE } from "@/features/tarot/scene/camera";
+
+/** Seconds over which the deck's cards set off, so they arrive as a stream within the camera's move. */
+const DECK_ARRIVAL_SPREAD = 0.35;
 import { CARD_ASPECT_CLASS } from "@/features/tarot/constants/cards";
 import { CardBackId } from "@/features/tarot/constants/cardBacks";
 import CardBackSurface from "./CardBackSurface";
@@ -108,6 +112,15 @@ const PickingSection: React.FC<PickingSectionProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  const prefersReducedMotion = useReducedMotion();
+  // Just above the top centre of the screen, where the home page's card flew
+  // off, relative to the cloud's centre (the middle of the screen). Read
+  // once: the deck arrives once.
+  const [flyFrom] = React.useState(() => ({
+    x: 0,
+    y: -(typeof window === "undefined" ? 400 : window.innerHeight / 2) - 120,
+  }));
+
   const pickedIdSet = React.useMemo(() => {
     return new Set(pickedCards.map((c) => c.visualId ?? c.id));
   }, [pickedCards]);
@@ -163,25 +176,35 @@ const PickingSection: React.FC<PickingSectionProps> = ({
         className="absolute inset-x-0 top-[calc(var(--safe-top)+6rem)] bottom-[calc(var(--safe-bottom)+5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
       >
         <div className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2">
-          {cloudCards.map(({ card, x, y, randomRotate, cardWidth }) => (
-            <PickingCloudCard
+          {cloudCards.map(({ card, x, y, randomRotate, cardWidth }, index) => (
+            // The deck comes down from the top centre, where the home page's
+            // card flew off, while the camera moves into the sky.
+            <motion.div
               key={card.id}
-              layoutId={`card-${card.id}`}
-              card={card}
-              isHovered={hoveredCardId === card.id}
-              onHover={onCardHover}
-              width={cardWidth}
-              height={CARD_ASPECT_CLASS}
-              style={{
-                position: "absolute",
-                left: x,
-                top: y,
-                transform: "translate(-50%, -50%)",
-                rotate: `${randomRotate}deg`,
-              }}
-              onClick={() => onCardSelect(card)}
-              cardBackId={cardBackId}
-            />
+              className="absolute"
+              style={{ left: x, top: y }}
+              initial={prefersReducedMotion ? false : { x: flyFrom.x - x, y: flyFrom.y - y, opacity: 0 }}
+              animate={{ x: 0, y: 0, opacity: 1 }}
+              transition={{ ...SCENE_MOVE, delay: (index / Math.max(1, cloudCards.length)) * DECK_ARRIVAL_SPREAD }}
+            >
+              <PickingCloudCard
+                layoutId={`card-${card.id}`}
+                card={card}
+                isHovered={hoveredCardId === card.id}
+                onHover={onCardHover}
+                width={cardWidth}
+                height={CARD_ASPECT_CLASS}
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  transform: "translate(-50%, -50%)",
+                  rotate: `${randomRotate}deg`,
+                }}
+                onClick={() => onCardSelect(card)}
+                cardBackId={cardBackId}
+              />
+            </motion.div>
           ))}
         </div>
       </div>

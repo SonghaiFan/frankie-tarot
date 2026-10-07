@@ -120,7 +120,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
               key="text-content"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease: SILKY_EASE }}
+              transition={{ duration: 0.6, ease: SILKY_EASE }}
               className="relative px-4 md:px-0 w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto flex flex-col items-center"
             >
               <div className="w-full overflow-y-auto overscroll-y-auto mb-8 pr-4 ">

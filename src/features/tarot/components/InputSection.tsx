@@ -7,6 +7,7 @@ import { getLocalizedSpread, SPREADS } from "@/features/tarot/constants/spreads"
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
 import SelectionTile from "@/shared/components/SelectionTile";
+import CircleActionButton from "@/shared/components/CircleActionButton";
 
 interface InputSectionProps {
   question: string;
@@ -58,23 +59,21 @@ const InputSection: React.FC<InputSectionProps> = ({
   };
 
   // -- 核心动效变体 (滚动飞出效果) --
+  // Page changes slide and fade only — no blur — and settle quickly.
   const pageVariants = {
     enter: (dir: number) => ({
-      y: dir > 0 ? 100 : -100, // 前进时从下入，后退时从上入
+      y: dir > 0 ? 40 : -40, // 前进时从下入，后退时从上入
       opacity: 0,
-      filter: "blur(4px)",
     }),
     center: {
       y: 0,
       opacity: 1,
-      filter: "blur(0px)",
-      transition: { duration: 0.8, ease: SILKY_EASE },
+      transition: { duration: 0.45, ease: SILKY_EASE },
     },
     exit: (dir: number) => ({
-      y: dir > 0 ? -100 : 100, // 前进时向上出，后退时向下出
+      y: dir > 0 ? -40 : 40, // 前进时向上出，后退时向下出
       opacity: 0,
-      filter: "blur(4px)",
-      transition: { duration: 0.6, ease: SILKY_EASE },
+      transition: { duration: 0.3, ease: SILKY_EASE },
     }),
   };
 
@@ -206,10 +205,10 @@ const InputSection: React.FC<InputSectionProps> = ({
                   {!question && !isFocused && (
                     <motion.div
                       key={getPlaceholder()}
-                      initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                      exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.45, ease: SILKY_EASE }}
                       className="absolute inset-0 flex items-center justify-center pointer-events-none"
                     >
                       <span className="text-lg md:text-4xl lg:text-5xl text-white/10 font-serif tracking-wide text-center px-4 whitespace-nowrap overflow-hidden text-ellipsis">
@@ -323,27 +322,9 @@ const SpreadCard = ({
   );
 };
 
-const ActionButton = ({
-  disabled,
-  onClick,
-  text,
-}: {
-  disabled: boolean;
-  onClick: () => void;
-  text: string;
-}) => (
-  <motion.button
-    onClick={onClick}
-    disabled={disabled}
-    whileHover={!disabled ? { scale: 1.05 } : {}}
-    whileTap={!disabled ? { scale: 0.95 } : {}}
-    className={`block mx-auto mt-[clamp(2rem,7dvh,4rem)] px-6 py-2 border text-xs tracking-[0.3em] transition-all ${!disabled
-      ? "bg-white/5 hover:bg-white/10 border-white/20 text-white cursor-pointer"
-      : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"
-      }`}
-  >
-    {text}
-  </motion.button>
+// Primary actions use the app's round glass button, as on the home page.
+const ActionButton = ({ disabled, onClick, text }: { disabled: boolean; onClick: () => void; text: string }) => (
+  <CircleActionButton label={text} onClick={onClick} disabled={disabled} className="mx-auto mt-[clamp(2rem,7dvh,4rem)]" />
 );
 
 export default InputSection;
