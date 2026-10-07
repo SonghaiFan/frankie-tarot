@@ -82,6 +82,28 @@ const host:TarotHost={
   },
   async saveResult(_locale,_text,image){ return saveReadingImage(bridge,image); },
 };
+// ── What the host's own chrome covers ─────────────────────────
+// In fullscreen on a phone, ChatGPT lays its top bar and message box over
+// the app, and the iframe's env(safe-area-inset-*) knows nothing of either.
+// The host reports them (MCP Apps host context; ChatGPT's own window.openai
+// too), and they become --host-inset-*, which index.css folds into --safe-*.
+type Insets = {top:number;right:number;bottom:number;left:number};
+type OpenAiGlobals = {safeArea?:{insets?:Insets}};
+// When a touch host in fullscreen reports nothing, keep clear of the bar and
+// composer we can see it draw, rather than put the title under them.
+const ASSUMED_FULLSCREEN_TOUCH_INSETS: Insets = {top:112,right:0,bottom:120,left:0};
+function applyHostInsets(){
+  const context = bridge.getHostContext();
+  const reported = context?.safeAreaInsets ?? (window as unknown as {openai?:OpenAiGlobals}).openai?.safeArea?.insets;
+  const touch = context?.deviceCapabilities?.touch ?? window.matchMedia('(pointer: coarse)').matches;
+  const insets = reported ?? (context?.displayMode === 'fullscreen' && touch ? ASSUMED_FULLSCREEN_TOUCH_INSETS : undefined);
+  const root = document.documentElement.style;
+  for (const side of ['top','right','bottom','left'] as const) {
+    if (insets) root.setProperty(`--host-inset-${side}`, `${Math.max(0, insets[side] ?? 0)}px`);
+    else root.removeProperty(`--host-inset-${side}`);
+  }
+}
+
 function PluginRoot(){
   const [displayMode,setDisplayMode]=useState<'inline'|'fullscreen'|'pip'>('inline');
   const [view,setView]=useState<TarotView>();
@@ -127,10 +149,12 @@ function PluginRoot(){
       if(value.isError || !value._meta?.tarot) {setError(value.content?.[0]?.text ?? 'Tarot could not open');return;}
       receive(value._meta.tarot);
     };
-    const updateDisplayMode=()=>setDisplayMode(bridge.getHostContext()?.displayMode ?? 'inline');
+    const updateDisplayMode=()=>{setDisplayMode(bridge.getHostContext()?.displayMode ?? 'inline');applyHostInsets();};
     bridge.onhostcontextchanged=updateDisplayMode;
+    // ChatGPT announces changes to window.openai (safeArea among them) this way.
+    window.addEventListener('openai:set_globals',applyHostInsets);
     void bridge.connect().then(updateDisplayMode).catch(()=>setError('暂时无法连接对话，请重新打开 Frank Tarot。'));
-    return ()=>{void bridge.close();};
+    return ()=>{window.removeEventListener('openai:set_globals',applyHostInsets);void bridge.close();};
   },[]);
   return <I18nProvider>
     {view ? <div style={{height:displayMode==='inline'?640:'100dvh'}}><OriginalApp key={view.flowId} host={appHost} initialSnapshot={initialSnapshot} initialSetup={setup} briefSummary={briefSummary}/></div> : <p className="p-6 text-neutral-400">Connecting Frank Tarot…</p>}

@@ -58,7 +58,10 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   };
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-40 flex min-h-12 items-center justify-between bg-linear-to-b from-black/90 via-black/35 to-transparent pl-[calc(var(--safe-left)+1rem)] pr-[calc(var(--safe-right)+1rem)] pt-[var(--safe-top)] pointer-events-none md:min-h-16 md:px-8">
+    // On phones the top edge belongs to the notch or a host's bar and the
+    // bottom to the thumb, so the header docks at the bottom, above the safe
+    // area. The home page carries these controls itself there.
+    <header className={`${gameState === GameState.INTRO ? "max-md:hidden " : ""}fixed left-0 right-0 z-40 flex min-h-12 items-center justify-between from-black/90 via-black/35 to-transparent pl-[calc(var(--safe-left)+1rem)] pr-[calc(var(--safe-right)+1rem)] pointer-events-none max-md:bottom-0 max-md:bg-linear-to-t max-md:pb-[calc(var(--safe-bottom)+0.5rem)] max-md:pt-6 md:top-0 md:min-h-16 md:bg-linear-to-b md:px-8 md:pt-[var(--safe-top)]`}>
       {/* Left: Logo / Home */}
       <div className="flex items-center gap-3 md:gap-6 pointer-events-auto">
         <button onClick={onHomeClick} className="flex flex-col gap-1 group">
@@ -80,7 +83,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       </div>
 
       {gameState === GameState.PICKING && pickingCount > 0 && (
-        <div className="pointer-events-none absolute left-1/2 top-[calc(var(--safe-top)+4rem)] flex -translate-x-1/2 flex-col items-center gap-1 text-center md:top-[calc(var(--safe-top)+4.5rem)]">
+        <div className="pointer-events-none fixed left-1/2 top-[calc(var(--safe-top)+1rem)] flex -translate-x-1/2 flex-col items-center gap-1 text-center md:top-[calc(var(--safe-top)+4.5rem)]">
           <p className="whitespace-nowrap text-[10px] text-neutral-300 md:text-xs">
             {t("picking.instruction", { count: pickingCount })}
           </p>

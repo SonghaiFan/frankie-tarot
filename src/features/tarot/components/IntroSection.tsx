@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTime, useTransform } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Languages, Library } from "lucide-react";
+import FrankSignature from "@/app/components/FrankSignature";
 import { useTranslation } from "react-i18next";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import AuraHeroCard from "./AuraHeroCard";
@@ -11,7 +12,12 @@ import WaterReflection from "./WaterReflection";
 
 interface IntroSectionProps {
   onEnter: () => void;
+  /** Opens the card library (on phones, from beside the Start button). */
+  onLibraryClick: () => void;
 }
+
+// On phones the header steps aside on this page; its controls sit beside Start.
+const SIDE_BUTTON = "grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/[0.04] text-white/70 backdrop-blur-md transition-colors hover:border-white/50 hover:text-white focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white/70 md:hidden";
 
 const HORIZON = `${HORIZON_FRACTION * 100}%`;
 // The card's slow drift: a 10s bob and sway around a 15° lean.
@@ -27,8 +33,9 @@ const fadeIn = (delay: number) => ({
 });
 
 /** The home page: one card floating over still water, and a single way in. */
-const IntroSection: React.FC<IntroSectionProps> = ({ onEnter }) => {
-  const { t } = useTranslation();
+const IntroSection: React.FC<IntroSectionProps> = ({ onEnter, onLibraryClick }) => {
+  const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language === "en";
   const prefersReducedMotion = useReducedMotion();
   const tiltX = useSpring(useMotionValue(0), tiltSpring);
   const tiltY = useSpring(useMotionValue(0), tiltSpring);
@@ -100,7 +107,7 @@ const IntroSection: React.FC<IntroSectionProps> = ({ onEnter }) => {
       </div>
 
       {/* Left: the name and the promise. */}
-      <motion.div {...fadeIn(0.6)} className="absolute left-1/2 top-[calc(var(--safe-top)+4.5rem)] -translate-x-1/2 text-center md:left-[8%] md:top-[42%] md:translate-x-0 md:text-left">
+      <motion.div {...fadeIn(0.6)} className="absolute left-1/2 top-[max(calc(var(--safe-top)+2.5rem),15%)] -translate-x-1/2 text-center md:left-[8%] md:top-[42%] md:translate-x-0 md:text-left">
         <h2 className="pl-[0.9em] text-2xl font-light tracking-[0.9em] md:pl-0 md:text-[28px]">{t("intro.title")}</h2>
         <p className="mt-3 whitespace-nowrap text-[9px] font-light leading-[2.2] tracking-[0.3em] text-white/60 md:mt-7 md:text-[11px] md:leading-[2.4] md:tracking-[0.42em]">
           {t("intro.tagline1")}<br />{t("intro.tagline2")}
@@ -117,14 +124,27 @@ const IntroSection: React.FC<IntroSectionProps> = ({ onEnter }) => {
 
       {/* The one way in. */}
       <motion.div {...fadeIn(1.2)} className="absolute left-1/2 top-[73%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-6">
-        <button
-          type="button"
-          onClick={onEnter}
-          aria-label={t("intro.enter")}
-          className="group grid size-20 place-items-center rounded-full border border-white/45 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,0.16),rgba(255,255,255,0.03)_60%)] backdrop-blur-md shadow-[0_0_40px_rgba(255,200,170,0.12)] transition-[border-color,box-shadow,transform] duration-500 hover:scale-105 hover:border-white/80 hover:shadow-[0_0_60px_rgba(255,200,170,0.28)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:ring-offset-4 focus-visible:ring-offset-black md:size-[88px]"
-        >
-          <ArrowRight size={22} strokeWidth={1} className="transition-transform duration-500 group-hover:translate-x-0.5" />
-        </button>
+        <div className="flex items-center gap-8">
+          <button
+            type="button"
+            onClick={() => void i18n.changeLanguage(isEnglish ? "zh-CN" : "en")}
+            className={SIDE_BUTTON}
+            aria-label={isEnglish ? t("header.switchToChinese") : t("header.switchToEnglish")}
+          >
+            <Languages size={17} strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            onClick={onEnter}
+            aria-label={t("intro.enter")}
+            className="group grid size-20 place-items-center rounded-full border border-white/45 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,0.16),rgba(255,255,255,0.03)_60%)] backdrop-blur-md shadow-[0_0_40px_rgba(255,200,170,0.12)] transition-[border-color,box-shadow,transform] duration-500 hover:scale-105 hover:border-white/80 hover:shadow-[0_0_60px_rgba(255,200,170,0.28)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:ring-offset-4 focus-visible:ring-offset-black md:size-[88px]"
+          >
+            <ArrowRight size={22} strokeWidth={1} className="transition-transform duration-500 group-hover:translate-x-0.5" />
+          </button>
+          <button type="button" onClick={onLibraryClick} className={SIDE_BUTTON} aria-label={t("header.openLibraryTitle")}>
+            <Library size={17} strokeWidth={1.5} />
+          </button>
+        </div>
         <span aria-hidden="true" className="pl-[0.42em] text-[11px] font-light tracking-[0.42em] text-white/80">{t("intro.enter")}</span>
       </motion.div>
 
@@ -132,10 +152,14 @@ const IntroSection: React.FC<IntroSectionProps> = ({ onEnter }) => {
       <motion.p {...fadeIn(1.4)} className="absolute bottom-[calc(var(--safe-bottom)+3.5%)] left-[calc(var(--safe-left)+4%)] hidden text-[10px] font-light leading-[2] tracking-[0.42em] text-white/45 md:block">
         {t("intro.footnote1")}<br />{t("intro.footnote2")}
       </motion.p>
-      <motion.p {...fadeIn(1.4)} className="absolute bottom-[calc(var(--safe-bottom)+4%)] right-[calc(var(--safe-right)+4%)] flex items-center gap-7 text-[9px] font-light tracking-[0.42em] text-white/45 md:text-[10px]">
-        {t("intro.madeBy")}
-        <span aria-hidden="true" className="h-px w-8 bg-white/35" />
-      </motion.p>
+      <motion.div {...fadeIn(1.4)} className="absolute bottom-[calc(var(--safe-bottom)+4%)] right-[calc(var(--safe-right)+4%)] flex flex-col items-end gap-4">
+        {/* On phones the logo comes down from the header to sign the page. */}
+        <FrankSignature className="h-7 w-auto text-white/80 md:hidden" />
+        <p className="flex items-center gap-7 text-[9px] font-light tracking-[0.42em] text-white/45 md:text-[10px]">
+          {t("intro.madeBy")}
+          <span aria-hidden="true" className="h-px w-8 bg-white/35" />
+        </p>
+      </motion.div>
     </motion.div>
   );
 };

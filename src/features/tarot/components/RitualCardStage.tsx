@@ -340,11 +340,11 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
         <div
           ref={absoluteStageRef}
           className={isPicking
-            ? "absolute inset-x-0 bottom-[calc(var(--safe-bottom)+1.5rem)] flex justify-center gap-[clamp(0.25rem,1vw,0.75rem)] px-4 md:bottom-10"
+            ? "absolute inset-x-0 bottom-[calc(var(--safe-bottom)+4.5rem)] flex justify-center gap-[clamp(0.25rem,1vw,0.75rem)] px-4 md:bottom-10"
             : useGridLayout
             ? "flex w-full flex-col items-center gap-y-12 px-2 py-8"
             : spreadConfig.layoutType === "absolute"
-            ? "relative mx-auto h-[calc(100dvh-var(--safe-top)-4rem)] min-h-[20rem] w-full"
+            ? "relative mx-auto h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-4rem)] min-h-[20rem] w-full"
             : "flex flex-wrap items-center justify-center gap-6 md:gap-12"}
         >
           {!isPicking && useGridLayout
@@ -361,7 +361,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
         </div>
 
         {!useCompactLayout && isReading && allCardsRevealed && selectedCardId === null && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--safe-bottom)+0.75rem)] flex justify-center text-white/40">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--safe-bottom)+4.25rem)] flex justify-center text-white/40 md:bottom-[calc(var(--safe-bottom)+0.75rem)]">
             <ChevronsDown className="h-5 w-5" aria-hidden="true" strokeWidth={1.25} />
             <span className="sr-only">
               {i18n.t("reading.scrollForReading")}

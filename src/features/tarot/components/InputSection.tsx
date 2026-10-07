@@ -93,7 +93,7 @@ const InputSection: React.FC<InputSectionProps> = ({
     // 1. min-h-[80vh] + justify-center: 实现垂直居中
     // 2. items-center: 实现水平居中
     // 3. overflow-hidden: 保持动画边界整洁
-    <div className="w-full max-w-3xl px-0 sm:px-4 flex flex-col justify-center items-center min-h-[calc(100dvh-var(--safe-top)-7.5rem)] py-4 md:py-8 relative">
+    <div className="w-full max-w-3xl px-0 sm:px-4 flex flex-col justify-center items-center min-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-7.5rem)] py-4 md:py-8 relative">
       <AnimatePresence mode="wait" custom={direction}>
         {/* === PHASE 1: SPREAD SELECTION (选牌阵) === */}
         {!isSpreadConfirmed ? (
