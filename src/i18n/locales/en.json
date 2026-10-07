@@ -147,6 +147,13 @@
         "description": "Crackle pattern"
       }
     },
+    "frame": {
+      "title": "White border",
+      "none": "None",
+      "thin": "Thin",
+      "standard": "Standard",
+      "wide": "Wide"
+    },
     "backColors": {
       "title": "Back colors",
       "gradient": "Gradient",

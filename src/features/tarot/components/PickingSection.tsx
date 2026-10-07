@@ -1,11 +1,10 @@
+import { CARD_CORNER_CLASS } from "@/features/tarot/constants/cardDimensions";
 import React from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useTransform } from "motion/react";
 import { SpreadType, TarotCard as TarotCardType, PickedCard } from "@/features/tarot/types";
+import { camera, SHOTS } from "@/features/tarot/scene/camera";
 import { SILKY_EASE } from "@/shared/constants/ui";
-import { SCENE_MOVE } from "@/features/tarot/scene/camera";
 
-/** Seconds over which the deck's cards set off, so they arrive as a stream within the camera's move. */
-const DECK_ARRIVAL_SPREAD = 0.35;
 import { CARD_ASPECT_CLASS } from "@/features/tarot/constants/cards";
 import { CardBackId } from "@/features/tarot/constants/cardBacks";
 import CardBackSurface from "./CardBackSurface";
@@ -14,7 +13,7 @@ interface CloudCardRenderData {
   card: TarotCardType;
   x: number;
   y: number;
-  randomRotate: number;
+  rotation: number;
   cardWidth: string;
 }
 
@@ -42,7 +41,7 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
         onMouseEnter={() => onHover(card.id)}
         onMouseLeave={() => onHover(null)}
         onClick={onClick}
-        initial={{ scale: 0, opacity: 0 }}
+        initial={false}
         animate={{ scale: isHovered ? 1.04 : 1, opacity: 1 }}
         transition={{ scale: { duration: 0.22, ease: SILKY_EASE }, opacity: { duration: 0.4 } }}
       >
@@ -52,12 +51,12 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
           transition={{ layout: { type: "tween", duration: 0.18, ease: [0.16, 1, 0.3, 1] } }}
           style={{ backfaceVisibility: "hidden" }}
         >
-          <div className="absolute inset-0 overflow-hidden rounded-[1.2%] bg-black">
+          <div className={`absolute inset-0 overflow-hidden ${CARD_CORNER_CLASS} bg-black`}>
             <CardBackSurface cardBackId={cardBackId} />
           </div>
           <div
             aria-hidden
-            className={`pointer-events-none absolute inset-0 z-10 rounded-[1.2%] border transition-all duration-200 ${
+            className={`pointer-events-none absolute inset-0 z-10 ${CARD_CORNER_CLASS} border transition-all duration-200 ${
               isHovered
                 ? "border-white/55 shadow-[0_0_18px_rgba(255,255,255,0.26)]"
                 : "border-white/0"
@@ -112,14 +111,12 @@ const PickingSection: React.FC<PickingSectionProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const prefersReducedMotion = useReducedMotion();
-  // Just above the top centre of the screen, where the home page's card flew
-  // off, relative to the cloud's centre (the middle of the screen). Read
-  // once: the deck arrives once.
-  const [flyFrom] = React.useState(() => ({
-    x: 0,
-    y: -(typeof window === "undefined" ? 400 : window.innerHeight / 2) - 120,
-  }));
+  // The laid-out deck follows the same camera as the stars.
+  const cloudScale = useTransform(camera.zoom, (zoom) => zoom / SHOTS.picking.zoom);
+  const cloudX = useTransform(() =>
+    (SHOTS.picking.x - camera.x.get()) * window.innerWidth * camera.zoom.get());
+  const cloudY = useTransform(() =>
+    (SHOTS.picking.y - camera.y.get()) * window.innerHeight * camera.zoom.get());
 
   const pickedIdSet = React.useMemo(() => {
     return new Set(pickedCards.map((c) => c.visualId ?? c.id));
@@ -142,8 +139,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
         const seed = card.id * 123.45;
         const r1 = Math.sin(seed) * 10000 - Math.floor(Math.sin(seed) * 10000);
         const r2 = Math.cos(seed) * 10000 - Math.floor(Math.cos(seed) * 10000);
-        const r3 =
-          Math.sin(seed * 2) * 10000 - Math.floor(Math.sin(seed * 2) * 10000);
+        const r3 = Math.sin(seed * 2) * 10000 - Math.floor(Math.sin(seed * 2) * 10000);
 
         const radius = 0.2 + Math.sqrt(r1) * 0.8;
         const angle = r2 * 2 * Math.PI;
@@ -152,7 +148,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
           card,
           x: Math.cos(angle) * radiusX * radius,
           y: Math.sin(angle) * radiusY * radius,
-          randomRotate: r3 * 360,
+          rotation: r3 * 360,
           cardWidth,
         };
       });
@@ -166,7 +162,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
     {/* Background Elements - Fade out on exit */}
     <motion.div
       className="absolute inset-0 w-full h-full"
-      initial={{ opacity: 0 }}
+      initial={false}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
@@ -175,18 +171,9 @@ const PickingSection: React.FC<PickingSectionProps> = ({
         ref={stageRef}
         className="absolute inset-x-0 top-[calc(var(--safe-top)+6rem)] bottom-[calc(var(--safe-bottom)+5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
       >
-        <div className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2">
-          {cloudCards.map(({ card, x, y, randomRotate, cardWidth }, index) => (
-            // The deck comes down from the top centre, where the home page's
-            // card flew off, while the camera moves into the sky.
-            <motion.div
-              key={card.id}
-              className="absolute"
-              style={{ left: x, top: y }}
-              initial={prefersReducedMotion ? false : { x: flyFrom.x - x, y: flyFrom.y - y, opacity: 0 }}
-              animate={{ x: 0, y: 0, opacity: 1 }}
-              transition={{ ...SCENE_MOVE, delay: (index / Math.max(1, cloudCards.length)) * DECK_ARRIVAL_SPREAD }}
-            >
+        <motion.div className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2" style={{ x: cloudX, y: cloudY, scale: cloudScale }}>
+          {cloudCards.map(({ card, x, y, rotation, cardWidth }) => (
+            <div key={card.id} className="absolute" style={{ left: x, top: y }}>
               <PickingCloudCard
                 layoutId={`card-${card.id}`}
                 card={card}
@@ -199,14 +186,14 @@ const PickingSection: React.FC<PickingSectionProps> = ({
                   left: 0,
                   top: 0,
                   transform: "translate(-50%, -50%)",
-                  rotate: `${randomRotate}deg`,
+                  rotate: `${rotation}deg`,
                 }}
                 onClick={() => onCardSelect(card)}
                 cardBackId={cardBackId}
               />
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </motion.div>
 

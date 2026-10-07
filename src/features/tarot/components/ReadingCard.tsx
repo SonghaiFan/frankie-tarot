@@ -1,3 +1,6 @@
+import { useCardFrame } from '../hooks/useCardFrame';
+import type { CardBackId } from '../constants/cardBacks';
+import { CARD_BORDER_RADIUS } from '../constants/cardDimensions';
 import React from 'react';
 import FrankSignature from '@/app/components/FrankSignature';
 import { getCardImageUrl } from '../constants/cards';
@@ -8,6 +11,7 @@ import type { PickedCard, SpreadType, Locale, CardFaceStyle } from '../types';
 export interface ReadingCardProps {
   question: string; spread: SpreadType; pickedCards: PickedCard[];
   readingText: string; locale: Locale; cardFaceStyle?: CardFaceStyle;
+  cardBackId?: CardBackId;
   onCardClick?: (position: number) => void;
 }
 
@@ -42,7 +46,8 @@ function columnsFor(count: number, maxPerRow: number) {
   return Math.ceil(count / Math.ceil(count / maxPerRow));
 }
 
-export default function ReadingCard({question,spread,pickedCards,readingText,locale,cardFaceStyle='dreamy',onCardClick}:ReadingCardProps) {
+export default function ReadingCard({question,spread,pickedCards,readingText,locale,cardFaceStyle='dreamy',cardBackId,onCardClick}:ReadingCardProps) {
+  const frame = useCardFrame(cardBackId ?? (cardFaceStyle === 'dreamy' ? 'eclipse-nocturne' : cardFaceStyle === 'original' ? 'thorn-bloom' : 'celestial-compass'));
   const config = getLocalizedSpread(spread,locale);
   const zh = locale === 'zh-CN';
   const hasReading = !!readingText.trim();
@@ -64,8 +69,8 @@ export default function ReadingCard({question,spread,pickedCards,readingText,loc
           <span style={{color:MUTED}}>{pad2(index + 1)}</span>{label && <> · {label}</>}
         </div>
         <button type="button" disabled={!onCardClick} onClick={()=>onCardClick?.(index+1)} aria-label={`${zh ? '讨论' : 'Discuss'} ${name}`} style={{display:'block',border:0,background:'none',padding:0,width:'100%',cursor:onCardClick?'pointer':'default'}}>
-          <div style={{padding:6,borderRadius:14,border:`1px solid ${HAIRLINE}`,background:'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',boxShadow:'0 30px 60px -20px rgba(0,0,0,0.85), 0 0 48px rgba(150,140,255,0.07)'}}>
-            <img crossOrigin="anonymous" src={getCardImageUrl(card.image,cardFaceStyle)} alt={name} style={{display:'block',width:'100%',aspectRatio:'2 / 3.4',objectFit:'cover',borderRadius:9,transform:card.isReversed?'rotate(180deg)':undefined}} />
+          <div style={{padding:frame.padding,borderRadius:CARD_BORDER_RADIUS,background:'#fff',boxShadow:'0 30px 60px -20px rgba(0,0,0,0.85), 0 0 48px rgba(150,140,255,0.07)'}}>
+            <img crossOrigin="anonymous" src={getCardImageUrl(card.image,cardFaceStyle)} alt={name} style={{display:'block',width:'100%',aspectRatio:'2 / 3.4',objectFit:'cover',borderRadius:frame.innerRadius,transform:card.isReversed?'rotate(180deg)':undefined}} />
           </div>
         </button>
         <figcaption style={{marginTop:18}}>

@@ -1,3 +1,4 @@
+import type { CardBackId } from '../constants/cardBacks';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
@@ -61,9 +62,9 @@ export async function renderReadingImage(props: ReadingCardProps): Promise<Readi
     } finally {root.unmount();container.remove();}
 }
 
-export default function printTheReading(question:string,spread:SpreadType,pickedCards:PickedCard[],readingText:string,locale:Locale,cardFaceStyle?:CardFaceStyle) {
+export default function printTheReading(question:string,spread:SpreadType,pickedCards:PickedCard[],readingText:string,locale:Locale,cardFaceStyle?:CardFaceStyle,cardBackId?:CardBackId) {
   return async () => {
-    const image=await renderReadingImage({question,spread,pickedCards,readingText,locale,cardFaceStyle});
+    const image=await renderReadingImage({question,spread,pickedCards,readingText,locale,cardFaceStyle,cardBackId});
     const link=document.createElement('a');
     link.download=image.name; link.href=image.dataUrl; link.click();
     return {destination:'download' as const,name:image.name};

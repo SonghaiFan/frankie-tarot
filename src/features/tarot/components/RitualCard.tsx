@@ -1,3 +1,5 @@
+import { useCardFrame } from "../hooks/useCardFrame";
+import { CARD_CORNER_CLASS } from "@/features/tarot/constants/cardDimensions";
 import React from "react";
 import {
   HTMLMotionProps,
@@ -74,6 +76,7 @@ const RitualCard: React.FC<RitualCardProps> = ({
   ...motionProps
 }) => {
   const { t, i18n } = useTranslation();
+  const frame = useCardFrame(cardBackId);
   const prefersReducedMotion = useReducedMotion();
   const isEnglish = i18n.language === "en";
   const artworkRef = React.useRef<HTMLDivElement>(null);
@@ -471,10 +474,10 @@ const RitualCard: React.FC<RitualCardProps> = ({
           style={{ transformStyle: "preserve-3d", willChange: "transform" }}
         >
           <div
-            className="absolute inset-0 overflow-hidden rounded-[1.2%] bg-white p-[2%] shadow-[0_28px_60px_rgba(0,0,0,0.55)]"
-            style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+            className={`absolute inset-0 overflow-hidden ${CARD_CORNER_CLASS} bg-white shadow-[0_28px_60px_rgba(0,0,0,0.55)]`}
+            style={{ padding: frame.padding, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
           >
-            <div className="relative h-full w-full overflow-hidden bg-neutral-950">
+            <div className="relative h-full w-full overflow-hidden bg-neutral-950" style={{ borderRadius: frame.innerRadius }}>
               {canCompare ? (
                 <div
                   ref={sliderContainerRef}
@@ -606,7 +609,7 @@ const RitualCard: React.FC<RitualCardProps> = ({
           </div>
 
           <div
-            className="absolute inset-0 overflow-hidden rounded-[1.2%] bg-black"
+            className={`absolute inset-0 overflow-hidden ${CARD_CORNER_CLASS} bg-black`}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -618,7 +621,7 @@ const RitualCard: React.FC<RitualCardProps> = ({
           {!isDetailed && (
             <div
               aria-hidden
-              className={`pointer-events-none absolute inset-0 z-10 rounded-[1.2%] border transition-all duration-300 ${
+              className={`pointer-events-none absolute inset-0 z-10 ${CARD_CORNER_CLASS} border transition-all duration-300 ${
                 isHovered
                   ? "border-white/55 shadow-[0_0_24px_rgba(255,255,255,0.3),0_0_42px_rgba(255,255,255,0.12),inset_0_0_18px_rgba(255,255,255,0.08)]"
                   : "border-white/0 shadow-none group-hover:border-white/55 group-hover:shadow-[0_0_24px_rgba(255,255,255,0.3),0_0_42px_rgba(255,255,255,0.12),inset_0_0_18px_rgba(255,255,255,0.08)]"

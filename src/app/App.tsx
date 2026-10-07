@@ -368,14 +368,15 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   };
 
   const saveResult = host ? async () => host.saveResult(locale, readingText, await renderReadingImage({
-    question, spread:spread!, pickedCards, readingText, locale, cardFaceStyle
+    question, spread:spread!, pickedCards, readingText, locale, cardFaceStyle, cardBackId
   })) : printTheReading(
     question,
     spread!,
     pickedCards,
     readingText,
     locale,
-    cardFaceStyle
+    cardFaceStyle,
+    cardBackId
   );
 
   const toggleLibrary = () => {
@@ -397,10 +398,14 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   // Where the camera over the night world stands for each stage: the home
   // page's full view (the question keeps it, without the card), closer in
   // for the draw, and among the stars for the reading and the library.
+  // The library overlays the current scene without moving its camera.
+  const sceneGameState = gameState === GameState.LIBRARY
+    ? previousGameState ?? GameState.INTRO
+    : gameState;
   const sceneStage: SceneStage =
-    gameState === GameState.INTRO ? "intro"
-    : gameState === GameState.INPUT ? "input"
-    : gameState === GameState.PICKING ? "picking"
+    sceneGameState === GameState.INTRO ? "intro"
+    : sceneGameState === GameState.INPUT ? "input"
+    : sceneGameState === GameState.PICKING ? "picking"
     : "reading";
 
   const renderPhase = () => {
@@ -427,6 +432,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       case GameState.INPUT:
         return (
           <InputSection
+            key="input"
             question={question}
             spread={spread}
             onQuestionChange={setQuestion}
@@ -480,7 +486,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     <div className="fixed inset-0 h-[100dvh] bg-black text-neutral-200 font-serif select-none cursor-default overflow-hidden">
       {/* One night world behind every stage; each stage frames part of it. */}
       <div className="absolute inset-0 z-0">
-        <SkyScene stage={sceneStage} />
+        <SkyScene stage={sceneStage} starsOnly={gameState === GameState.LIBRARY} />
       </div>
 
       {/* Header */}
@@ -565,7 +571,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
                   cardFaceStyle={cardFaceStyle}
                 />
               )}
-            <AnimatePresence mode="sync">{renderPhase()}</AnimatePresence>
+            <AnimatePresence mode={gameState === GameState.INPUT ? "wait" : "sync"}>{renderPhase()}</AnimatePresence>
           </LayoutGroup>
         </div>
       </motion.main>

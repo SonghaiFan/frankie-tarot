@@ -1,3 +1,4 @@
+import { camera } from "../scene/camera";
 import {
   getCardBackAppearance,
   getAuraColorChannels,
@@ -326,7 +327,6 @@ const drawWindows = (now: number) => {
         return;
       }
     }
-    lastPainted.set(target, now);
 
     const cached = cachedRects.get(target);
     const rect = cached && smallWindows.get(target) && !smallSweep ? cached : target.getBoundingClientRect();
@@ -334,7 +334,7 @@ const drawWindows = (now: number) => {
     if (rect.width < 1 || rect.height < 1) return;
     const small = rect.height < SMALL_WINDOW_PX;
     smallWindows.set(target, small);
-    if (appearance.mode === "gradient" && (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth)) return;
+    if (lastPainted.has(target) && appearance.mode === "gradient" && (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth)) return;
     const dpr = options?.resolution ?? (small ? 1 : deviceRatio);
 
     const width = Math.max(1, Math.round(rect.width * dpr));
@@ -346,27 +346,21 @@ const drawWindows = (now: number) => {
 
     const context = target.getContext("2d");
     if (!context) return;
+    lastPainted.set(target, now);
     if (appearance.mode === "solid") {
       context.fillStyle = appearance.solidColor;
       context.fillRect(0, 0, width, height);
       return;
     }
 
-    const left = Math.max(0, rect.left);
-    const top = Math.max(0, rect.top);
-    const right = Math.min(window.innerWidth, rect.right);
-    const bottom = Math.min(window.innerHeight, rect.bottom);
-    const sx = left * fieldScale;
-    const sy = top * fieldScale;
-    const sw = Math.max(1, (right - left) * fieldScale);
-    const sh = Math.max(1, (bottom - top) * fieldScale);
-    const dx = (left - rect.left) * dpr;
-    const dy = (top - rect.top) * dpr;
-    const dw = (right - left) * dpr;
-    const dh = (bottom - top) * dpr;
+    // Fill the entire card even at the viewport edge; clipping a rotated
+    // bounding box leaves transparent (black) patches inside the visible card.
+    const sw = Math.min(field!.width, Math.max(1, rect.width * fieldScale));
+    const sh = Math.min(field!.height, Math.max(1, rect.height * fieldScale));
+    const sx = Math.max(0, Math.min(field!.width - sw, rect.left * fieldScale));
+    const sy = Math.max(0, Math.min(field!.height - sh, rect.top * fieldScale));
+    context.drawImage(small ? cpuField(field!, now) : field!, sx, sy, sw, sh, 0, 0, width, height);
 
-    context.clearRect(0, 0, width, height);
-    context.drawImage(small ? cpuField(field!, now) : field!, sx, sy, sw, sh, dx, dy, dw, dh);
   });
 };
 
@@ -386,6 +380,14 @@ const invalidate = () => {
 };
 
 subscribeCardBackAppearance(invalidate);
+
+// Camera travel moves cards much faster than the idle position cache expects.
+for (const value of [camera.x, camera.y, camera.zoom]) {
+  value.on("change", () => {
+    lastSmallSweep = -Infinity;
+    invalidate();
+  });
+}
 
 if (typeof window !== "undefined") {
   window.addEventListener("resize", invalidate, { passive: true });

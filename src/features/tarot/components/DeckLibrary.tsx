@@ -1,3 +1,4 @@
+import CardFrameEditor from "./CardFrameEditor";
 import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CardPoolType, CardFaceStyle } from "@/features/tarot/types";
@@ -95,7 +96,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
   };
 
   return (
-    <div className="w-full pb-12 pt-24">
+    <motion.div className="w-full pb-12 pt-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
           animate={{
@@ -285,13 +286,14 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                     })}
                   </div>
                   <CardBackColorEditor />
+                  <CardFrameEditor cardBackId={cardBackId} />
                 </section>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* ═══════════ Card Filter Category Tabs ═══════════ */}
-          <div className="-mx-4 mb-8 flex flex-wrap justify-center gap-2 border-b border-white/5 bg-black/80 px-4 py-4 backdrop-blur-md">
+          <div className="-mx-4 mb-8 flex flex-wrap justify-center gap-2 px-4 py-4">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -360,7 +362,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
           })}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

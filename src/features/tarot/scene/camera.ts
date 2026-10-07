@@ -33,12 +33,10 @@ export const SHOTS: Record<SceneStage, Shot> = {
   intro: { zoom: 1, x: 0.5, y: 0.5, cardLight: 1, veil: 0 },
   // The same view: only the card has flown off, taking its light with it.
   input: { zoom: 1, x: 0.5, y: 0.5, cardLight: 0, veil: 0.12 },
-  // As the deck streams in, the camera rises toward the upper left: the sea
-  // leaves the frame, the planet's lit limb arcs across the upper right, and
-  // open sky with stars fills the top left.
-  picking: { zoom: 1.6, x: 0.42, y: 0.16, cardLight: 0, veil: 0.2 },
-  // Further up the same way, clear of the planet: only sky and stars.
-  reading: { zoom: 2.4, x: 0.3, y: -0.36, cardLight: 0, veil: 0.3 },
+  // The deck is already laid out in open sky; the camera frames it in place.
+  picking: { zoom: 2.4, x: 0.5, y: -0.36, cardLight: 0, veil: 0.2 },
+  // Keep the same centred sky framing while the cards are read.
+  reading: { zoom: 2.4, x: 0.5, y: -0.36, cardLight: 0, veil: 0.3 },
 };
 
 /** The camera's live values, shared by everything that draws the world. */

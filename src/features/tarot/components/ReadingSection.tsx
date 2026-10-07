@@ -125,7 +125,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
             >
               <div className="w-full overflow-y-auto overscroll-y-auto mb-8 pr-4 ">
                 {question && (
-                  <p className="text-xs text-neutral-600 mb-4 tracking-widest uppercase text-center sticky top-0 bg-black/90 backdrop-blur-sm py-2 z-10">
+                  <p className="text-xs text-neutral-600 mb-4 tracking-widest uppercase text-center py-2">
                     {t("reading.questionPrefix")} "{question}"
                   </p>
                 )}

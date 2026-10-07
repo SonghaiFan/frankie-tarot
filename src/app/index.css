@@ -60,30 +60,6 @@ body::after {
   scrollbar-width: none;
 }
 
-/* The whole deck orbits as one compositor layer. Promoting every card made
-   mobile GPUs allocate dozens of layers and was the source of the stutter. */
-@keyframes tarot-card-cloud-orbit {
-  from {
-    transform: translateZ(0) rotate(0deg);
-  }
-
-  to {
-    transform: translateZ(0) rotate(360deg);
-  }
-}
-
-.tarot-card-cloud {
-  animation: tarot-card-cloud-orbit 180s linear infinite;
-  backface-visibility: hidden;
-  will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tarot-card-cloud {
-    animation: none;
-  }
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -147,4 +123,3 @@ body::after {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;}
-

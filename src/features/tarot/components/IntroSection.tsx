@@ -86,7 +86,7 @@ const IntroSection: React.FC<IntroSectionProps> = ({
 
   return (
     // The sky, planet and sea behind this page are the shared SkyScene; on
-    // leaving, the card flies straight up off the screen and the scene stays.
+    // leaving, the card fades out while the scene stays.
     <motion.div
       key="intro"
       className="fixed inset-0 z-20 overflow-hidden font-display text-white"
@@ -99,8 +99,8 @@ const IntroSection: React.FC<IntroSectionProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          // Straight up and out of the top of the screen, whole and unfaded.
-          exit={{ y: "-100vh", transition: { duration: 0.65, ease: [0.55, 0, 1, 0.45] } }}
+          // Fade away before the next screen appears.
+          exit={{ opacity: 0, transition: { duration: 0.3, ease: SILKY_EASE } }}
           transition={{ duration: 1, ease: SILKY_EASE }}
         >
           <motion.div style={{ y: driftY, rotate }}>

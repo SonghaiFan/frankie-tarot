@@ -21,14 +21,13 @@ const sameView = (a: View, b: View) => a.zoom === b.zoom && a.x === b.x && a.y =
  * change of stage moves the camera, so the background travels with the user
  * instead of being swapped.
  */
-const SkyScene: React.FC<{ stage: SceneStage }> = ({ stage }) => {
+const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage, starsOnly = false }) => {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const backdropRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<HTMLCanvasElement>(null);
   const planetRef = useRef<HTMLCanvasElement>(null);
   const seaRef = useRef<HTMLCanvasElement>(null);
 
-  // A new stage moves the camera; the first frame is set, not travelled to.
   const framedOnce = useRef(false);
   useEffect(() => {
     const stop = frameStage(stage, prefersReducedMotion || !framedOnce.current);
@@ -157,14 +156,16 @@ const SkyScene: React.FC<{ stage: SceneStage }> = ({ stage }) => {
   }, [prefersReducedMotion]);
 
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden bg-[#020308]">
+    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden bg-[#020308]">
       <canvas ref={backdropRef} className="absolute inset-0 h-full w-full" />
       <canvas ref={starsRef} className="absolute inset-0 h-full w-full" />
-      <canvas ref={planetRef} className="absolute inset-0 h-full w-full" />
-      <canvas ref={seaRef} className="absolute inset-0 h-full w-full" />
+      <motion.div className="absolute inset-0" animate={{ opacity: starsOnly ? 0 : 1 }} transition={{ duration: 0.3 }}>
+        <canvas ref={planetRef} className="absolute inset-0 h-full w-full" />
+        <canvas ref={seaRef} className="absolute inset-0 h-full w-full" />
+      </motion.div>
       {/* Darker behind text-heavy stages, so what's in front stays easy to read. */}
       <motion.div className="absolute inset-0 bg-[#020308]" style={{ opacity: camera.veil }} />
-    </div>
+    </motion.div>
   );
 };
 

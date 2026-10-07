@@ -1,3 +1,5 @@
+import { useCardFrame } from "../hooks/useCardFrame";
+import { CARD_CORNER_CLASS } from "@/features/tarot/constants/cardDimensions";
 import React, { useEffect, useRef } from "react";
 import { CardBackId, getCardBackImageUrl } from "@/features/tarot/constants/cardBacks";
 import { useCardBackAppearance } from "@/features/tarot/hooks/useCardBackAppearance";
@@ -15,6 +17,7 @@ const CardBackSurface: React.FC<CardBackSurfaceProps> = ({
   patternOpacity = "opacity-10",
 }) => {
   const { mode } = useCardBackAppearance();
+  const frame = useCardFrame(cardBackId);
   const auraRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -24,10 +27,11 @@ const CardBackSurface: React.FC<CardBackSurfaceProps> = ({
 
   return (
     <div
+      style={{ padding: frame.padding }}
       aria-hidden="true"
-      className={`relative h-full w-full overflow-hidden rounded-[1.2%] bg-white p-[2%] ${className}`}
+      className={`relative h-full w-full overflow-hidden ${CARD_CORNER_CLASS} bg-white ${className}`}
     >
-      <div className="relative h-full w-full overflow-hidden bg-neutral-950">
+      <div className="relative h-full w-full overflow-hidden bg-neutral-950" style={{ borderRadius: frame.innerRadius }}>
         <canvas ref={auraRef} className="absolute inset-0 h-full w-full" />
         <img
           src={getCardBackImageUrl(cardBackId)}

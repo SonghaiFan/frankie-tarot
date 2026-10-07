@@ -1,3 +1,4 @@
+import { CARD_CORNER_CLASS } from "@/features/tarot/constants/cardDimensions";
 import React, { useEffect, useRef } from "react";
 import { CARD_ASPECT_CLASS } from "@/features/tarot/constants/cards";
 import { registerAuraWindow } from "@/features/tarot/services/sharedAuraField";
@@ -32,7 +33,7 @@ const AuraHeroCard: React.FC<AuraHeroCardProps> = ({ className = "", faceCanvasR
       {/* The card's own colour bleeding into the dark around it. A canvas does not
           stretch between insets, so it is sized explicitly. */}
       <canvas ref={glowRef} className="absolute left-[10%] top-[10%] h-[80%] w-[80%] rounded-[8%] opacity-35 blur-[36px]" />
-      <div className="absolute inset-0 overflow-hidden rounded-[7%/4.1%] border-[1.5px] border-[rgba(255,214,184,0.8)] bg-neutral-950 shadow-[0_0_0_1px_rgba(0,0,0,0.6),0_0_28px_rgba(255,190,150,0.18),0_30px_80px_-20px_rgba(0,0,0,0.9)]">
+      <div className={`absolute inset-0 overflow-hidden ${CARD_CORNER_CLASS} border-[1.5px] border-[rgba(255,214,184,0.8)] bg-neutral-950 shadow-[0_0_0_1px_rgba(0,0,0,0.6),0_0_28px_rgba(255,190,150,0.18),0_30px_80px_-20px_rgba(0,0,0,0.9)]`}>
         <canvas ref={faceRef} className="absolute inset-0 h-full w-full" />
         {/* Glass: a soft sheen from the top-left and a hairline inner bevel. */}
         <div className="absolute inset-0 bg-linear-to-br from-white/[0.14] via-transparent to-black/20" />

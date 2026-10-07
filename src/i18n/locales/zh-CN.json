@@ -147,6 +147,13 @@
         "description": "不规则开片纹理"
       }
     },
+    "frame": {
+      "title": "白边",
+      "none": "无白边",
+      "thin": "细",
+      "standard": "标准",
+      "wide": "宽"
+    },
     "backColors": {
       "title": "牌背颜色",
       "gradient": "渐变",
