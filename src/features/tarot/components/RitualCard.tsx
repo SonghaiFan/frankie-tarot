@@ -175,8 +175,9 @@ const RitualCard: React.FC<RitualCardProps> = ({
   }, []);
 
   const scrollProgress = useMotionValue(0);
-  const artworkScale = useTransform(scrollProgress, [0, 1], [1, 0.76]);
-  const artworkY = useTransform(scrollProgress, [0, 1], [0, -72]);
+  // On phones the art stays pinned while the text scrolls over it: it only
+  // recedes a touch, fades and blurs in place, rather than rising away.
+  const artworkScale = useTransform(scrollProgress, [0, 1], [1, 0.94]);
   const artworkOpacity = useTransform(scrollProgress, [0, 1], [1, 0.16]);
   const blurAmount = useTransform(scrollProgress, [0, 1], [0, 18]);
   const artworkFilter = useMotionTemplate`blur(${blurAmount}px)`;
@@ -409,7 +410,6 @@ const RitualCard: React.FC<RitualCardProps> = ({
               }
             : {
                 scale: artworkScale,
-                y: artworkY,
                 opacity: artworkOpacity,
                 filter: artworkFilter,
               }
@@ -680,7 +680,7 @@ const RitualCard: React.FC<RitualCardProps> = ({
           tabIndex={0}
           style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
         >
-          <div className={isDesktopDetail ? "hidden" : "relative flex h-[100dvh] w-full items-center justify-center pointer-events-none"}>
+          <div className={isDesktopDetail ? "hidden" : "sticky top-0 flex h-[100dvh] w-full items-center justify-center pointer-events-none"}>
             {!isDesktopDetail && artwork}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40" />
             <motion.div

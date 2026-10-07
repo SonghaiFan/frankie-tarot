@@ -1,24 +1,20 @@
 import React, { useEffect, useRef } from "react";
 
-interface StarTrailsProps {
+interface StarFieldProps {
   /** Horizon as a fraction of the viewport height; stars set below it. */
   horizon: number;
   animated: boolean;
 }
 
-// The sky turns around the celestial pole, placed high on the left so the
-// concentric arcs read as star trails, and stars further out rise and set at
-// the horizon. Real time is 15°/hour; this is a time-lapse of one turn in 30
-// minutes, with each trail a long faint exposure of the path just travelled.
+// The sky turns around the celestial pole, placed high on the left, so stars
+// further out rise and set at the horizon. Real time is 15°/hour; this is a
+// gentle time-lapse of one turn in 30 minutes.
 const POLE = { x: 0.2, y: 0.14 };
 const TURN_SECONDS = 1800;
-const TRAIL_DEGREES = 18;
 const STAR_COUNT = 900;
 const MAX_DPR = 2;
 // The sky moves a fraction of a degree a second, so 30 redraws a second is plenty.
 const FRAME_MS = 1000 / 30;
-// Below this brightness a star is a point; its trail would be invisible anyway.
-const MIN_TRAIL_BRIGHTNESS = 0.24;
 
 interface Star {
   radius: number;
@@ -48,7 +44,7 @@ const createStars = () => {
 };
 
 /** The night sky behind the home page, turning about its pole. */
-const StarTrails: React.FC<StarTrailsProps> = ({ horizon, animated }) => {
+const StarField: React.FC<StarFieldProps> = ({ horizon, animated }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -58,7 +54,6 @@ const StarTrails: React.FC<StarTrailsProps> = ({ horizon, animated }) => {
 
     const stars = createStars();
     const startedAt = performance.now();
-    const trail = (TRAIL_DEGREES * Math.PI) / 180;
     let frame = 0;
     let lastDrawn = -Infinity;
 
@@ -91,33 +86,18 @@ const StarTrails: React.FC<StarTrailsProps> = ({ horizon, animated }) => {
       context.beginPath();
       context.rect(0, 0, width, horizonY);
       context.clip();
-      context.lineCap = "round";
 
       for (const star of stars) {
         const radius = star.radius * reach;
-        const head = star.angle + turn;
-        const x = poleX + Math.cos(head) * radius;
-        const y = poleY + Math.sin(head) * radius;
+        const angle = star.angle + turn;
+        const x = poleX + Math.cos(angle) * radius;
+        const y = poleY + Math.sin(angle) * radius;
         if (x < -40 || x > width + 40 || y < -40 || y > horizonY + 4) continue;
 
         // Dimmed by thicker air near the horizon, with a slow shimmer.
         const extinction = Math.min(1, Math.max(0, (horizonY - y) / (height * 0.18)));
         const shimmer = animated ? 0.85 + 0.15 * Math.sin(seconds * 1.7 + star.twinkle) : 1;
         const alpha = star.brightness * shimmer * (0.25 + 0.75 * extinction);
-
-        if (alpha >= MIN_TRAIL_BRIGHTNESS) {
-          const tailAngle = head + trail;
-          const tailX = poleX + Math.cos(tailAngle) * radius;
-          const tailY = poleY + Math.sin(tailAngle) * radius;
-          const gradient = context.createLinearGradient(tailX, tailY, x, y);
-          gradient.addColorStop(0, `rgba(${star.color},0)`);
-          gradient.addColorStop(1, `rgba(${star.color},${alpha * 0.32})`);
-          context.strokeStyle = gradient;
-          context.lineWidth = Math.max(0.5, star.size * 0.7);
-          context.beginPath();
-          context.arc(poleX, poleY, radius, tailAngle, head, true);
-          context.stroke();
-        }
 
         context.fillStyle = `rgba(${star.color},${alpha})`;
         context.beginPath();
@@ -145,4 +125,4 @@ const StarTrails: React.FC<StarTrailsProps> = ({ horizon, animated }) => {
   return <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full" />;
 };
 
-export default StarTrails;
+export default StarField;

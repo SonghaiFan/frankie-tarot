@@ -551,11 +551,11 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
           className={`relative w-full flex flex-col items-center px-4 ${
             gameState === GameState.READING ||
             gameState === GameState.REVEAL
-              ? "min-h-full pt-[calc(var(--safe-top)+1rem)] pb-[calc(var(--safe-bottom)+5rem)] justify-start md:pb-[calc(var(--safe-bottom)+3rem)]"
+              ? "min-h-full pt-[calc(var(--safe-top)+1rem)] pb-[calc(var(--safe-bottom)+3rem)] justify-start"
               : gameState === GameState.INPUT ||
                 gameState === GameState.LIBRARY
-              ? "min-h-full pt-[calc(var(--safe-top)+1.5rem)] pb-[calc(var(--safe-bottom)+5rem)] justify-start md:justify-center md:pt-[calc(var(--safe-top)+4.5rem)] md:pb-[calc(var(--safe-bottom)+3rem)]"
-              : "h-full justify-center pt-[calc(var(--safe-top)+1rem)] pb-[calc(var(--safe-bottom)+4.5rem)] md:pt-[calc(var(--safe-top)+4rem)] md:pb-[calc(var(--safe-bottom)+2rem)]"
+              ? "min-h-full pt-[calc(var(--safe-top)+4.5rem)] pb-[calc(var(--safe-bottom)+3rem)] justify-start md:justify-center"
+              : "h-full justify-center pt-[calc(var(--safe-top)+4rem)] pb-[calc(var(--safe-bottom)+2rem)]"
           }`}
         >
           <LayoutGroup id="ritual-cards">
@@ -593,7 +593,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
 
       {hostError && <div role="alert" className="fixed bottom-12 inset-x-4 z-[200] text-center text-sm text-red-200">{hostError}</div>}
       {/* Creator Credit (the intro carries its own) */}
-      {gameState !== GameState.INTRO && <div className="max-md:hidden fixed bottom-[calc(var(--safe-bottom)+0.75rem)] right-[calc(var(--safe-right)+1rem)] md:right-6 z-50 text-[9px] text-neutral-600 font-sans tracking-widest opacity-50 select-none pointer-events-none mix-blend-difference">
+      {gameState !== GameState.INTRO && <div className="fixed bottom-[calc(var(--safe-bottom)+0.75rem)] right-[calc(var(--safe-right)+1rem)] md:right-6 z-50 text-[9px] text-neutral-600 font-sans tracking-widest opacity-50 select-none pointer-events-none mix-blend-difference">
         Created by 范松海frank
       </div>}
     </div>

@@ -160,7 +160,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
     >
       <div
         ref={stageRef}
-        className="absolute inset-x-0 top-[calc(var(--safe-top)+3.5rem)] bottom-[calc(var(--safe-bottom)+8.5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
+        className="absolute inset-x-0 top-[calc(var(--safe-top)+6rem)] bottom-[calc(var(--safe-bottom)+5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
       >
         <div className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2">
           {cloudCards.map(({ card, x, y, randomRotate, cardWidth }) => (

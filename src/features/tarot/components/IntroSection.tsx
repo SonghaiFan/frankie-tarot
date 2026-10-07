@@ -14,7 +14,7 @@ import { SILKY_EASE } from "@/shared/constants/ui";
 import AuraHeroCard from "./AuraHeroCard";
 import { HORIZON_FRACTION, SKY_GRADIENT_CSS } from "./introScene";
 import PlanetCanvas from "./PlanetCanvas";
-import StarTrails from "./StarTrails";
+import StarField from "./StarField";
 import WaterReflection from "./WaterReflection";
 
 interface IntroSectionProps {
@@ -97,7 +97,7 @@ const IntroSection: React.FC<IntroSectionProps> = ({
         animate={{ opacity: 1 }}
         transition={{ duration: 2.4 }}
       >
-        <StarTrails
+        <StarField
           horizon={HORIZON_FRACTION}
           animated={!prefersReducedMotion}
         />

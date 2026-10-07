@@ -100,10 +100,10 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
     (absoluteStageSize.width - 32 - gridGap * (widestCompactRow - 1)) / widestCompactRow
   );
   // On a phone a single row of cards must also fit the height left between a
-  // notch or a host's bar, its message box and the bottom dock, with room for
-  // the label and the prompt below. Taller spreads scroll instead.
+  // notch or a host's bar (and the header under it) and the host's message
+  // box, with room for the label and the prompt below. Taller spreads scroll.
   const gridCardSize = isMobile && compactRows.length === 1
-    ? `min(${gridCardWidth}px, calc((100dvh - var(--safe-top) - var(--safe-bottom) - 11rem) / ${CARD_ASPECT_RATIO}))`
+    ? `min(${gridCardWidth}px, calc((100dvh - var(--safe-top) - var(--safe-bottom) - 14rem) / ${CARD_ASPECT_RATIO}))`
     : gridCardWidth;
   const allCardsRevealed =
     displayedCards.length > 0 &&
@@ -341,12 +341,14 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
           ? "pointer-events-none absolute inset-0 z-30"
           : "relative z-20 flex w-full shrink-0 items-center justify-center"}
         data-tarot-stage="cards"
-        style={isPicking ? undefined : {minHeight: useGridLayout && compactRows.length <= 2 ? "calc(100dvh - 14rem)" : useGridLayout ? undefined : "calc(100dvh - 9rem)"}}
+        // Room for the cards is what is left once a notch or a host's bar and
+        // message box are taken off, so the prompt below stays in view.
+        style={isPicking ? undefined : {minHeight: useGridLayout && compactRows.length <= 2 ? "calc(100dvh - var(--safe-top) - var(--safe-bottom) - 14rem)" : useGridLayout ? undefined : "calc(100dvh - var(--safe-top) - var(--safe-bottom) - 9rem)"}}
       >
         <div
           ref={absoluteStageRef}
           className={isPicking
-            ? "absolute inset-x-0 bottom-[calc(var(--safe-bottom)+4.5rem)] flex justify-center gap-[clamp(0.25rem,1vw,0.75rem)] px-4 md:bottom-10"
+            ? "absolute inset-x-0 bottom-[calc(var(--safe-bottom)+1.5rem)] flex justify-center gap-[clamp(0.25rem,1vw,0.75rem)] px-4 md:bottom-10"
             : useGridLayout
             ? "flex w-full flex-col items-center gap-y-12 px-2 py-8"
             : spreadConfig.layoutType === "absolute"
@@ -367,7 +369,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
         </div>
 
         {!useCompactLayout && isReading && allCardsRevealed && selectedCardId === null && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--safe-bottom)+4.25rem)] flex justify-center text-white/40 md:bottom-[calc(var(--safe-bottom)+0.75rem)]">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--safe-bottom)+0.75rem)] flex justify-center text-white/40">
             <ChevronsDown className="h-5 w-5" aria-hidden="true" strokeWidth={1.25} />
             <span className="sr-only">
               {i18n.t("reading.scrollForReading")}
