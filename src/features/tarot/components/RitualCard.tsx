@@ -400,25 +400,10 @@ const RitualCard: React.FC<RitualCardProps> = ({
         transition={{ layout: layoutTransition }}
         onPointerMove={isDetailed && isDesktopDetail ? handleDetailPointerMove : undefined}
         onPointerLeave={isDetailed && isDesktopDetail ? resetDetailTilt : undefined}
-        style={!prefersReducedMotion
-          ? isDetailed && isDesktopDetail
-            ? {
-                scale: 1,
-                y: 0,
-                opacity: 1,
-                filter: "none",
-              }
-            : {
-                scale: artworkScale,
-                opacity: artworkOpacity,
-                filter: artworkFilter,
-              }
-          : {
-              scale: 1,
-              y: 0,
-              opacity: 1,
-              filter: "blur(0px)",
-            }}
+        // Plain styles only: this element flies between the slot and the detail
+        // view by layout animation, and a scroll-driven scale on it would throw
+        // that measurement off. The phone's scroll fade lives on its wrapper.
+        style={{ scale: 1, y: 0, opacity: 1, filter: "none" }}
       >
         {canCompare && (
           <motion.div
@@ -645,6 +630,80 @@ const RitualCard: React.FC<RitualCardProps> = ({
       </motion.div>
   );
 
+  // The card's name, keywords and meanings, shared by the phone and desktop detail views.
+  const detailText = (
+    <div className={isDesktopDetail
+      ? "relative z-30 flex min-h-full flex-col items-start justify-center bg-transparent py-[clamp(5rem,10vh,8rem)] pl-[clamp(2rem,4vw,5rem)] pr-[max(3rem,6vw)]"
+      : "relative z-30 -mt-16 bg-linear-to-b from-transparent to-black"}>
+      <div data-card-detail-content className={isDesktopDetail
+        ? "w-full max-w-2xl text-left"
+        : "px-6 pb-7 pt-24 text-center md:px-12 md:pb-10"}>
+        {romanNumeral && (
+          <div className="mb-2 text-sm text-amber-50/60 font-cinzel tracking-[0.2em] md:text-base">
+            {romanNumeral}
+          </div>
+        )}
+        <h2 className="mb-3 text-3xl text-amber-50/90 font-cinzel tracking-widest md:text-5xl">
+          {primaryName}
+        </h2>
+        {(secondaryName || isReversed) && (
+          <p className="mb-5 text-sm text-neutral-400 font-serif tracking-wide md:text-lg">
+            {secondaryName}
+            {secondaryName && isReversed ? " " : ""}
+            {isReversed && (
+              <span className="ml-2 italic text-red-400/80">({t("card.reversedLong")})</span>
+            )}
+          </p>
+        )}
+        {keywords.length > 0 && (
+          <div className={`flex flex-wrap gap-2 md:gap-3 ${isDesktopDetail ? "justify-start" : "justify-center"}`}>
+            {keywords.map((keyword) => (
+              <span key={keyword} className="rounded-sm border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-neutral-300 tracking-[0.15em] uppercase md:px-3 md:text-xs">
+                {keyword}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+        <div data-card-detail-content className={isDesktopDetail
+          ? "mt-10 w-full max-w-2xl space-y-8"
+          : "px-6 pb-[calc(var(--safe-bottom)+5rem)] pt-2 md:px-12 md:pb-20 lg:px-14"}>
+        <div className={isDesktopDetail ? "space-y-8" : "mx-auto max-w-2xl space-y-8"}>
+          {(positiveMeaning || negativeMeaning) && (
+            <div>
+              <h4 className={`mb-4 text-[10px] text-neutral-500 uppercase tracking-[0.3em] ${isDesktopDetail ? "text-left" : "text-center"}`}>
+                {t("card.interpretationTitle")}
+              </h4>
+              <p className="text-sm text-neutral-300 font-light leading-relaxed text-justify tracking-wide md:text-base md:leading-loose">
+                {positiveMeaning && (
+                  <span className="mb-2 block text-neutral-200">
+                    <span className="mr-2 text-xs text-neutral-400">＋</span>{positiveMeaning}
+                  </span>
+                )}
+                {negativeMeaning && (
+                  <span className="block text-neutral-400">
+                    <span className="mr-2 text-xs text-neutral-500">－</span>{negativeMeaning}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+          {description && (
+            <div className="border-t border-white/5 pt-8">
+              <h4 className={`mb-4 text-[10px] text-neutral-500 uppercase tracking-[0.3em] ${isDesktopDetail ? "text-left" : "text-center"}`}>
+                {t("card.arcanaWisdom")}
+              </h4>
+              <p className={`text-sm text-neutral-300 font-light leading-relaxed text-justify tracking-wide md:text-base md:leading-loose ${isEnglish ? "italic" : ""}`}>
+                {description}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <motion.div
       className={`${
@@ -671,101 +730,59 @@ const RitualCard: React.FC<RitualCardProps> = ({
       }}
       {...motionProps}
     >
-      {isDetailed && (
+      {/* The art stays at one place in the tree in every mode, so React keeps
+          the same element and its flight between the slot and the detail view
+          is a plain layout animation. (Remounting it elsewhere left Framer
+          Motion to hand over between two elements, which measured the old one
+          off by the page's scroll.) On phones it lives inside the detail
+          scroller; when the card is closed those wrappers are display:contents. */}
+      {!isDesktopDetail ? (
         <div
-          className={isDesktopDetail
-            ? "absolute inset-y-0 right-0 z-30 w-[52%] overflow-y-auto overscroll-y-contain bg-transparent outline-none"
-            : "absolute inset-0 z-30 overflow-y-auto overscroll-y-contain bg-transparent outline-none touch-pan-y"}
-          onScroll={handleScroll}
-          tabIndex={0}
-          style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+          className={isDetailed
+            ? "absolute inset-0 z-30 overflow-y-auto overscroll-y-contain bg-transparent outline-none touch-pan-y"
+            : "contents"}
+          onScroll={isDetailed ? handleScroll : undefined}
+          tabIndex={isDetailed ? 0 : undefined}
+          style={isDetailed ? { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } : undefined}
         >
-          <div className={isDesktopDetail ? "hidden" : "sticky top-0 flex h-[100dvh] w-full items-center justify-center pointer-events-none"}>
-            {!isDesktopDetail && artwork}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40" />
+          {/* Pinned while the text scrolls over it: it recedes a touch, fades and blurs in place. */}
+          <div className={isDetailed ? "sticky top-0 h-[100dvh] w-full pointer-events-none" : "contents"}>
             <motion.div
-              className="pointer-events-none absolute bottom-[calc(var(--safe-bottom)+1.75rem)] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-white/55"
-              style={{ opacity: hintOpacity }}
+              className={isDetailed ? "flex h-full w-full items-center justify-center" : "contents"}
+              style={isDetailed && !prefersReducedMotion ? { scale: artworkScale, opacity: artworkOpacity, filter: artworkFilter } : undefined}
             >
-              <span className="h-8 w-px bg-linear-to-b from-white/0 to-white/65" />
-              <span className="text-[9px] uppercase tracking-[0.28em]">{t("card.scrollToRead")}</span>
+              {artwork}
             </motion.div>
+            {isDetailed && (
+              <>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40" />
+                <motion.div
+                  className="pointer-events-none absolute bottom-[calc(var(--safe-bottom)+1.75rem)] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-white/55"
+                  style={{ opacity: hintOpacity }}
+                >
+                  <span className="h-8 w-px bg-linear-to-b from-white/0 to-white/65" />
+                  <span className="text-[9px] uppercase tracking-[0.28em]">{t("card.scrollToRead")}</span>
+                </motion.div>
+              </>
+            )}
           </div>
 
-          <div className={isDesktopDetail
-            ? "relative z-30 flex min-h-full flex-col items-start justify-center bg-transparent py-[clamp(5rem,10vh,8rem)] pl-[clamp(2rem,4vw,5rem)] pr-[max(3rem,6vw)]"
-            : "relative z-30 -mt-16 bg-linear-to-b from-transparent to-black"}>
-            <div data-card-detail-content className={isDesktopDetail
-              ? "w-full max-w-2xl text-left"
-              : "px-6 pb-7 pt-24 text-center md:px-12 md:pb-10"}>
-              {romanNumeral && (
-                <div className="mb-2 text-sm text-amber-50/60 font-cinzel tracking-[0.2em] md:text-base">
-                  {romanNumeral}
-                </div>
-              )}
-              <h2 className="mb-3 text-3xl text-amber-50/90 font-cinzel tracking-widest md:text-5xl">
-                {primaryName}
-              </h2>
-              {(secondaryName || isReversed) && (
-                <p className="mb-5 text-sm text-neutral-400 font-serif tracking-wide md:text-lg">
-                  {secondaryName}
-                  {secondaryName && isReversed ? " " : ""}
-                  {isReversed && (
-                    <span className="ml-2 italic text-red-400/80">({t("card.reversedLong")})</span>
-                  )}
-                </p>
-              )}
-              {keywords.length > 0 && (
-                <div className={`flex flex-wrap gap-2 md:gap-3 ${isDesktopDetail ? "justify-start" : "justify-center"}`}>
-                  {keywords.map((keyword) => (
-                    <span key={keyword} className="rounded-sm border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-neutral-300 tracking-[0.15em] uppercase md:px-3 md:text-xs">
-                      {keyword}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-              <div data-card-detail-content className={isDesktopDetail
-                ? "mt-10 w-full max-w-2xl space-y-8"
-                : "px-6 pb-[calc(var(--safe-bottom)+5rem)] pt-2 md:px-12 md:pb-20 lg:px-14"}>
-              <div className={isDesktopDetail ? "space-y-8" : "mx-auto max-w-2xl space-y-8"}>
-                {(positiveMeaning || negativeMeaning) && (
-                  <div>
-                    <h4 className={`mb-4 text-[10px] text-neutral-500 uppercase tracking-[0.3em] ${isDesktopDetail ? "text-left" : "text-center"}`}>
-                      {t("card.interpretationTitle")}
-                    </h4>
-                    <p className="text-sm text-neutral-300 font-light leading-relaxed text-justify tracking-wide md:text-base md:leading-loose">
-                      {positiveMeaning && (
-                        <span className="mb-2 block text-neutral-200">
-                          <span className="mr-2 text-xs text-neutral-400">＋</span>{positiveMeaning}
-                        </span>
-                      )}
-                      {negativeMeaning && (
-                        <span className="block text-neutral-400">
-                          <span className="mr-2 text-xs text-neutral-500">－</span>{negativeMeaning}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                )}
-                {description && (
-                  <div className="border-t border-white/5 pt-8">
-                    <h4 className={`mb-4 text-[10px] text-neutral-500 uppercase tracking-[0.3em] ${isDesktopDetail ? "text-left" : "text-center"}`}>
-                      {t("card.arcanaWisdom")}
-                    </h4>
-                    <p className={`text-sm text-neutral-300 font-light leading-relaxed text-justify tracking-wide md:text-base md:leading-loose ${isEnglish ? "italic" : ""}`}>
-                      {description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {isDetailed && detailText}
         </div>
+      ) : (
+        <>
+          {isDetailed && (
+            <div
+              className="absolute inset-y-0 right-0 z-30 w-[52%] overflow-y-auto overscroll-y-contain bg-transparent outline-none"
+              tabIndex={0}
+              style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+            >
+              {detailText}
+            </div>
+          )}
+          {artwork}
+        </>
       )}
-
-      {(!isDetailed || isDesktopDetail) && artwork}
 
       {isDetailed && onDetailClose && (
         <motion.button
