@@ -99,6 +99,12 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
     widestCompactRow === 1 ? 208 : compactRows.length > 2 ? 144 : 184,
     (absoluteStageSize.width - 32 - gridGap * (widestCompactRow - 1)) / widestCompactRow
   );
+  // On a phone a single row of cards must also fit the height left between a
+  // notch or a host's bar, its message box and the bottom dock, with room for
+  // the label and the prompt below. Taller spreads scroll instead.
+  const gridCardSize = isMobile && compactRows.length === 1
+    ? `min(${gridCardWidth}px, calc((100dvh - var(--safe-top) - var(--safe-bottom) - 11rem) / ${CARD_ASPECT_RATIO}))`
+    : gridCardWidth;
   const allCardsRevealed =
     displayedCards.length > 0 &&
     displayedCards.every((card) => revealedCardIds.has(card.id));
@@ -285,7 +291,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
     return (
       <div
         key={card.id}
-        style={!isPicking && useGridLayout ? {width: gridCardWidth} : absoluteStyle}
+        style={!isPicking && useGridLayout ? {width: gridCardSize} : absoluteStyle}
         className={`pointer-events-none ${usesScaledAbsoluteLayout || (!isPicking && useGridLayout) ? "" : wrapperWidth} ${CARD_ASPECT_CLASS} shrink-0`}
       >
         <RitualCard

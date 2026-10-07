@@ -100,7 +100,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
       }}
       transition={{ duration: 0.42, ease: SILKY_EASE }}
     >
-      <div className="flex min-h-[150px] w-full max-w-4xl flex-col items-center justify-center pb-[calc(var(--safe-bottom)+2rem)] text-center">
+      <div className="flex min-h-[96px] w-full max-w-4xl flex-col items-center justify-center pb-[calc(var(--safe-bottom)+2rem)] text-center md:min-h-[150px]">
         <AnimatePresence mode="wait">
           {!allCardsRevealed ? (
             <motion.div
