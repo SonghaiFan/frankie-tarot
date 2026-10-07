@@ -1,3 +1,5 @@
+import CircleActionButton from "@/shared/components/CircleActionButton";
+import { Languages, Library } from "lucide-react";
 import { restoreSnapshot } from "@/host/readingSnapshot";
 import { preferences } from "@/shared/storage";
 import React, {
@@ -379,7 +381,11 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     cardBackId
   );
 
+  const primaryActionRef = useRef<(() => void) | null>(null);
+  const [inputConfirmed, setInputConfirmed] = useState(false);
+  const [returningFromLibrary, setReturningFromLibrary] = useState(false);
   const toggleLibrary = () => {
+    setReturningFromLibrary(gameState === GameState.LIBRARY);
     setSelectedCardId(null);
     if (gameState === GameState.LIBRARY) {
       if (previousGameState) {
@@ -413,7 +419,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       case GameState.INTRO:
         // Keyed so AnimatePresence plays its exit (the card flying off) while
         // the next stage appears; the other stages still swap as before.
-        return <IntroSection key="intro" onEnter={enterInputPhase} onLibraryClick={toggleLibrary} />;
+        return <IntroSection quietEntrance={returningFromLibrary} key="intro" />;
       case GameState.LIBRARY:
         return (
           <DeckLibrary
@@ -432,6 +438,8 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       case GameState.INPUT:
         return (
           <InputSection
+            primaryActionRef={primaryActionRef}
+            onConfirmationChange={setInputConfirmed}
             key="input"
             question={question}
             spread={spread}
@@ -441,7 +449,6 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
             isMobile={isMobile}
             isTablet={isTablet}
             isThinking={isThinking}
-            smartSpread={spread === "AUTO" && !!host?.requestSpread}
           />
         );
       case GameState.PICKING:
@@ -575,6 +582,31 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
           </LayoutGroup>
         </div>
       </motion.main>
+
+      <AnimatePresence>
+        {(gameState === GameState.INTRO || gameState === GameState.INPUT) && (
+          <motion.div key="primary-draw-action"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed left-1/2 top-[calc((58%+100%-var(--safe-bottom)-4.5rem)/2)] z-50 -translate-x-1/2 -translate-y-1/2 md:top-[73%]"
+          >
+            <CircleActionButton
+              label={gameState === GameState.INPUT && !inputConfirmed
+                ? (spread ? t("input.confirmSpread") : t("input.selectSpread"))
+                : isThinking ? t("input.divining") : t("actions.startDrawing")}
+              disabled={gameState === GameState.INPUT && (!spread || isThinking)}
+              onClick={gameState === GameState.INTRO ? enterInputPhase : () => primaryActionRef.current?.()}
+            />
+            {gameState === GameState.INTRO && <>
+              <button type="button" onClick={() => void i18n.changeLanguage(locale === "en" ? "zh-CN" : "en")}
+                aria-label={locale === "en" ? t("header.switchToChinese") : t("header.switchToEnglish")}
+                className="absolute right-[calc(100%+2rem)] top-3 grid size-10 place-items-center rounded-full border border-white/20 text-white/70 md:hidden"><Languages size={17} strokeWidth={1.5} /></button>
+              <button type="button" onClick={toggleLibrary} aria-label={t("header.openLibraryTitle")}
+                className="absolute left-[calc(100%+2rem)] top-3 grid size-10 place-items-center rounded-full border border-white/20 text-white/70 md:hidden"><Library size={17} strokeWidth={1.5} /></button>
+            </>}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {hostError && <div role="alert" className="fixed bottom-12 inset-x-4 z-[200] text-center text-sm text-red-200">{hostError}</div>}
       {/* Creator Credit (the intro carries its own) */}

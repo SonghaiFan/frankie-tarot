@@ -23,6 +23,10 @@ const sameView = (a: View, b: View) => a.zoom === b.zoom && a.x === b.x && a.y =
  */
 const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage, starsOnly = false }) => {
   const prefersReducedMotion = useReducedMotion() ?? false;
+  const restartSceneRef = useRef<(() => void) | null>(null);
+  useEffect(() => { restartSceneRef.current?.(); }, [starsOnly]);
+  const fullSkyRef = useRef(starsOnly);
+  fullSkyRef.current = starsOnly;
   const backdropRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<HTMLCanvasElement>(null);
   const planetRef = useRef<HTMLCanvasElement>(null);
@@ -52,6 +56,7 @@ const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage,
     let lastStars = -Infinity;
     let lastView: View | null = null;
     let lastLight = -1;
+    let lastFullSky: boolean | null = null;
     let size = { width: 0, height: 0, dpr: 1 };
 
     const resize = () => {
@@ -107,18 +112,20 @@ const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage,
       const light = camera.cardLight.get();
       const seconds = (now - startedAt) / 1000;
 
+      const fullSky = fullSkyRef.current;
       // Sky, sea colour, planet and horizon only change with the camera.
-      if (!lastView || !sameView(view, lastView) || light !== lastLight) {
-        paintBackdrop(backdrop, width, height, view, dpr);
+      if (!lastView || !sameView(view, lastView) || light !== lastLight || fullSky !== lastFullSky) {
+        paintBackdrop(backdrop, width, height, view, dpr, fullSky);
         planet.setTransform(1, 0, 0, 1, 0, 0);
         planet.clearRect(0, 0, planet.canvas.width, planet.canvas.height);
         paintPlanet(planet, planetLayer, width, height, view, dpr);
         paintHorizon(planet, width, height, view, dpr, light);
         lastView = view;
         lastLight = light;
+        lastFullSky = fullSky;
       }
       if (now - lastStars >= STAR_FRAME_MS || !animated) {
-        paintStars(starsContext, width, height, view, dpr, seconds, animated);
+        paintStars(starsContext, width, height, view, dpr, seconds, animated, fullSky);
         lastStars = now;
       }
       if (sea) {
@@ -132,6 +139,7 @@ const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage,
     const restart = () => {
       if (!frame) frame = requestAnimationFrame(render);
     };
+    restartSceneRef.current = () => { lastView = null; restart(); };
     resize();
     frame = requestAnimationFrame(render);
     const onResize = () => {
@@ -146,6 +154,7 @@ const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage,
     const settle = animated ? undefined : setTimeout(restart, 600);
 
     return () => {
+      restartSceneRef.current = null;
       cancelAnimationFrame(frame);
       clearTimeout(settle);
       unsubscribe.forEach((stop) => stop());

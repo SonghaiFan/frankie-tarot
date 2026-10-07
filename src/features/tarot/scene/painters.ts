@@ -20,12 +20,12 @@ const applyView = (context: CanvasRenderingContext2D, width: number, height: num
 };
 
 /** Sky above the horizon, the sea's base colour below it. */
-export const paintBackdrop = (context: CanvasRenderingContext2D, width: number, height: number, view: View, dpr: number) => {
+export const paintBackdrop = (context: CanvasRenderingContext2D, width: number, height: number, view: View, dpr: number, fullSky = false) => {
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, context.canvas.width, context.canvas.height);
   applyView(context, width, height, view, dpr);
   const area = visibleWorld(width, height, view);
-  const horizonY = height * HORIZON_FRACTION;
+  const horizonY = fullSky ? Math.max(height, area.bottom) : height * HORIZON_FRACTION;
 
   const sky = context.createLinearGradient(0, 0, 0, horizonY);
   for (const [at, color] of SKY_STOPS) sky.addColorStop(at, color);

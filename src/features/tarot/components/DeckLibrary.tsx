@@ -1,5 +1,6 @@
+import { CARD_CORNER_CLASS } from "../constants/cardDimensions";
 import CardFrameEditor from "./CardFrameEditor";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CardPoolType, CardFaceStyle } from "@/features/tarot/types";
 import { CARD_BACKS, CardBackId } from "@/features/tarot/constants/cardBacks";
@@ -28,6 +29,38 @@ interface DeckLibraryProps {
   cardPackId?: string;
   onSelectPack?: (pack: CardPack) => void;
 }
+
+// One observer for the entire grid. Reveal once and retain mounted cards so
+// scrolling back and opening details preserve their layout identity.
+const pendingSlots = new Map<Element, () => void>();
+let slotObserver: IntersectionObserver | undefined;
+const LibraryCardSlot: React.FC<{ children: React.ReactNode; selected: boolean }> = ({ children, selected }) => {
+  const slot = useRef<HTMLDivElement>(null);
+  const [nearby, setNearby] = useState(false);
+  useEffect(() => {
+    const element = slot.current;
+    if (!element || nearby) return;
+    if (typeof IntersectionObserver === "undefined") { setNearby(true); return; }
+    slotObserver ??= new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        pendingSlots.get(entry.target)?.();
+        pendingSlots.delete(entry.target);
+        slotObserver?.unobserve(entry.target);
+      }
+    }, { rootMargin: "350px 0px" });
+    pendingSlots.set(element, () => setNearby(true));
+    slotObserver.observe(element);
+    return () => {
+      pendingSlots.delete(element);
+      slotObserver?.unobserve(element);
+      if (!pendingSlots.size) { slotObserver?.disconnect(); slotObserver = undefined; }
+    };
+  }, [nearby]);
+  return <div ref={slot} className={`relative flex justify-center ${CARD_ASPECT_CLASS}`}>
+    {nearby || selected ? children : <div aria-hidden="true" className={`absolute inset-0 ${CARD_CORNER_CLASS} border border-white/10 bg-white/[0.025]`} />}
+  </div>;
+};
 
 const LibraryCardPreview: React.FC<{
   image: string;
@@ -96,7 +129,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
   };
 
   return (
-    <motion.div className="w-full pb-12 pt-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+    <motion.div className="w-full pb-12 pt-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
           animate={{
@@ -317,12 +350,10 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
             const isHovered = hoveredCardId === card.id && selectedCardId === null;
 
             return (
-              <div
-                key={card.id}
-                className={`flex justify-center ${CARD_ASPECT_CLASS}`}
-              >
+              <LibraryCardSlot key={card.id} selected={isDetailed}>
                 <RitualCard
-                  layoutId={`card-${card.id}`}
+                  gentleLoading
+                  layoutId={`library-card-${card.id}`}
                   card={card}
                   isRevealed={true}
                   cardBackId={cardBackId}
@@ -357,7 +388,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                         }
                   }
                 />
-              </div>
+              </LibraryCardSlot>
             );
           })}
         </div>

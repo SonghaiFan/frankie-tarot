@@ -273,6 +273,9 @@ let lastSmallTick = -Infinity;
 const SMALL_RECT_REFRESH_MS = 500;
 let lastSmallSweep = -Infinity;
 const cachedRects = new WeakMap<HTMLCanvasElement, DOMRect>();
+// Track the short entrance continuously; idle caching would retain the
+// pre-flight crop and snap to the final position after the cards land.
+const entranceUntil = new WeakMap<HTMLCanvasElement, number>();
 
 export interface AuraWindowOptions {
   /** Repaints per second at most (default: every frame, or 20 for small windows). */
@@ -320,7 +323,8 @@ const drawWindows = (now: number) => {
     // is itself a cost. Whether a window is small is known from its last paint;
     // a window not yet painted paints at once.
     const options = windowOptions.get(target);
-    if (appearance.mode === "gradient" && lastPainted.has(target)) {
+    const entering = now < (entranceUntil.get(target) ?? 0);
+    if (!entering && appearance.mode === "gradient" && lastPainted.has(target)) {
       if (options?.maxFps) {
         if (now - lastPainted.get(target)! < 1000 / options.maxFps) return;
       } else if (smallWindows.get(target) && !smallTick) {
@@ -329,7 +333,7 @@ const drawWindows = (now: number) => {
     }
 
     const cached = cachedRects.get(target);
-    const rect = cached && smallWindows.get(target) && !smallSweep ? cached : target.getBoundingClientRect();
+    const rect = cached && !entering && smallWindows.get(target) && !smallSweep ? cached : target.getBoundingClientRect();
     cachedRects.set(target, rect);
     if (rect.width < 1 || rect.height < 1) return;
     const small = rect.height < SMALL_WINDOW_PX;
@@ -403,6 +407,7 @@ if (typeof window !== "undefined") {
 
 export const registerAuraWindow = (canvas: HTMLCanvasElement, options?: AuraWindowOptions) => {
   subscribers.add(canvas);
+  entranceUntil.set(canvas, performance.now() + 650);
   if (options) windowOptions.set(canvas, options);
   invalidate();
   return () => {

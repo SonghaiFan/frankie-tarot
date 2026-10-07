@@ -1,7 +1,6 @@
 {
   "appTitle": "Frank Tarot",
   "intro": {
-    "enter": "开始占卜",
     "title": "塔罗",
     "tagline1": "一个更安静的空间",
     "tagline2": "照见更明亮的问题",
@@ -40,7 +39,6 @@
     "meditation": "请闭上双眼，深呼吸三次\n在心中默念你的困惑，保持虔诚与专注",
     "enterQuestion": "输入你的问题",
     "fallbackPlaceholder": "在此输入你心中的疑惑...",
-    "beginRitual": "开始洗牌",
     "divining": "感知中"
   },
   "picking": {
@@ -215,5 +213,8 @@
     "readingSoftFail": "迷雾太浓，我看不到前路...",
     "readingHardFail": "命运的丝线暂时纠缠不清，请静心片刻后再试。",
     "silentStars": "星象暂时沉默，请稍后再试。"
+  },
+  "actions": {
+    "startDrawing": "开始抽牌"
   }
 }

@@ -68,7 +68,7 @@ const starReach = (width: number, height: number) => {
   const dx = Math.max(POLE.x, 1 - POLE.x) * width;
   return Math.max(
     Math.hypot(dx, POLE.y * height + 0.6 * height),
-    Math.hypot(dx, (HORIZON_FRACTION - POLE.y) * height),
+    Math.hypot(dx, (1 - POLE.y) * height),
   ) * 1.05;
 };
 
@@ -84,6 +84,7 @@ export const paintStars = (
   dpr: number,
   seconds: number,
   animated: boolean,
+  fullSky = false,
 ) => {
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, context.canvas.width, context.canvas.height);
@@ -109,7 +110,7 @@ export const paintStars = (
     const offsetX = (unitX[i] * cos - unitY[i] * sin) * reach;
     const offsetY = (unitX[i] * sin + unitY[i] * cos) * reach;
     const worldY = poleY + offsetY;
-    if (worldY > horizonY) continue; // Set below the sea.
+    if (!fullSky && worldY > horizonY) continue; // Set below the sea.
     const x = (poleX + offsetX) * scale + dx;
     const y = worldY * scale + dy;
     if (x < -8 || x > screenWidth + 8 || y < -8 || y > screenHeight + 8) continue;
@@ -117,7 +118,7 @@ export const paintStars = (
     // Dimmed by thicker air near the horizon, with a slow shimmer; the
     // faintest newly revealed stars ease in as the camera moves closer.
     const star = stars[i];
-    const extinction = Math.min(1, Math.max(0, (horizonY - worldY) / (height * 0.18)));
+    const extinction = fullSky ? 1 : Math.min(1, Math.max(0, (horizonY - worldY) / (height * 0.18)));
     const shimmer = animated ? 0.85 + 0.15 * Math.sin(seconds * 1.7 + star.twinkle) : 1;
     const reveal = i < revealFrom ? 1 : (count - i) / Math.max(1, count - revealFrom);
     const alpha = star.brightness * shimmer * (0.25 + 0.75 * extinction) * reveal;

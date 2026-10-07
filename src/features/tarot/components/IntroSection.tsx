@@ -7,7 +7,6 @@ import {
   useTime,
   useTransform,
 } from "motion/react";
-import { ArrowRight, Languages, Library } from "lucide-react";
 import FrankSignature from "@/app/components/FrankSignature";
 import { useTranslation } from "react-i18next";
 import { SILKY_EASE } from "@/shared/constants/ui";
@@ -15,14 +14,8 @@ import AuraHeroCard from "./AuraHeroCard";
 import { setReflectionSubject } from "../scene/reflection";
 
 interface IntroSectionProps {
-  onEnter: () => void;
-  /** Opens the card library (on phones, from beside the Start button). */
-  onLibraryClick: () => void;
+  quietEntrance?: boolean;
 }
-
-// On phones the header steps aside on this page; its controls sit beside Start.
-const SIDE_BUTTON =
-  "grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/[0.04] text-white/70 backdrop-blur-md transition-colors hover:border-white/50 hover:text-white focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white/70 md:hidden";
 
 // The card's slow drift: a 10s bob and sway around a 15° lean.
 const DRIFT_PERIOD_MS = 10_000;
@@ -31,19 +24,21 @@ const MAX_TILT = 8;
 const tiltSpring = { stiffness: 110, damping: 18, mass: 0.8 };
 
 const fadeIn = (delay: number) => ({
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  // On leaving, the words and buttons fade quickly; the card flies on its own.
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  // Words and buttons enter and leave with opacity only.
   exit: { opacity: 0, transition: { duration: 0.25, ease: "easeIn" as const } },
   transition: { delay, duration: 0.9, ease: SILKY_EASE },
 });
 
 /** The home page: one card floating over still water, and a single way in. */
 const IntroSection: React.FC<IntroSectionProps> = ({
-  onEnter,
-  onLibraryClick,
+  quietEntrance = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const entrance = (delay: number) => quietEntrance
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
+    : fadeIn(delay);
   const isEnglish = i18n.language === "en";
   const prefersReducedMotion = useReducedMotion();
   const tiltX = useSpring(useMotionValue(0), tiltSpring);
@@ -97,11 +92,15 @@ const IntroSection: React.FC<IntroSectionProps> = ({
           so a notch or a host's bar above never pushes the title into it. */}
       <div className="absolute left-1/2 top-[calc((max(calc(var(--safe-top)+2.5rem),15%)+5.5rem+58%)/2)] -translate-x-1/2 -translate-y-1/2 [perspective:1200px] md:top-[40%]">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           // Fade away before the next screen appears.
           exit={{ opacity: 0, transition: { duration: 0.3, ease: SILKY_EASE } }}
-          transition={{ duration: 1, ease: SILKY_EASE }}
+          transition={{
+            delay: quietEntrance && !prefersReducedMotion ? 0.2 : 0,
+            duration: prefersReducedMotion ? 0 : quietEntrance ? 0.35 : 1,
+            ease: SILKY_EASE,
+          }}
         >
           <motion.div style={{ y: driftY, rotate }}>
             <motion.div style={{ rotateX: tiltX, rotateY: tiltY }}>
@@ -116,7 +115,7 @@ const IntroSection: React.FC<IntroSectionProps> = ({
 
       {/* Left: the name and the promise. */}
       <motion.div
-        {...fadeIn(0.6)}
+        {...entrance(0.6)}
         className="absolute left-1/2 top-[max(calc(var(--safe-top)+2.5rem),15%)] -translate-x-1/2 text-center md:left-[8%] md:top-[42%] md:translate-x-0 md:text-left"
       >
         <h2 className="pl-[0.9em] text-2xl font-light tracking-[0.9em] md:pl-0 md:text-[28px]">
@@ -131,7 +130,7 @@ const IntroSection: React.FC<IntroSectionProps> = ({
 
       {/* Right: what a reading is for. */}
       <motion.ul
-        {...fadeIn(0.8)}
+        {...entrance(0.8)}
         className="absolute right-[7.5%] top-[44.5%] hidden flex-col items-end gap-3 text-[11px] font-light tracking-[0.42em] text-white/70 md:flex"
       >
         <li>{t("intro.pillar1")}</li>
@@ -140,58 +139,9 @@ const IntroSection: React.FC<IntroSectionProps> = ({
         <li aria-hidden="true" className="mt-6 h-px w-8 bg-white/40" />
       </motion.ul>
 
-      {/* The one way in. */}
-      {/* On phones: midway between the horizon and the signature above the
-          bottom safe edge, which a host's message box may raise. */}
-      <motion.div
-        {...fadeIn(1.2)}
-        className="absolute left-1/2 top-[calc((58%+100%-var(--safe-bottom)-4.5rem)/2)] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-6 md:top-[73%]"
-      >
-        <div className="flex items-center gap-8">
-          <button
-            type="button"
-            onClick={() => void i18n.changeLanguage(isEnglish ? "zh-CN" : "en")}
-            className={SIDE_BUTTON}
-            aria-label={
-              isEnglish
-                ? t("header.switchToChinese")
-                : t("header.switchToEnglish")
-            }
-          >
-            <Languages size={17} strokeWidth={1.5} />
-          </button>
-          <button
-            type="button"
-            onClick={onEnter}
-            aria-label={t("intro.enter")}
-            className="group grid size-20 place-items-center rounded-full border border-white/45 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,0.16),rgba(255,255,255,0.03)_60%)] backdrop-blur-md shadow-[0_0_40px_rgba(255,200,170,0.12)] transition-[border-color,box-shadow,transform] duration-500 hover:scale-105 hover:border-white/80 hover:shadow-[0_0_60px_rgba(255,200,170,0.28)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:ring-offset-4 focus-visible:ring-offset-black md:size-[88px]"
-          >
-            <ArrowRight
-              size={22}
-              strokeWidth={1}
-              className="transition-transform duration-500 group-hover:translate-x-0.5"
-            />
-          </button>
-          <button
-            type="button"
-            onClick={onLibraryClick}
-            className={SIDE_BUTTON}
-            aria-label={t("header.openLibraryTitle")}
-          >
-            <Library size={17} strokeWidth={1.5} />
-          </button>
-        </div>
-        <span
-          aria-hidden="true"
-          className="pl-[0.42em] text-[11px] font-light tracking-[0.42em] text-white/80"
-        >
-          {t("intro.enter")}
-        </span>
-      </motion.div>
-
       {/* Footer notes. */}
       <motion.p
-        {...fadeIn(1.4)}
+        {...entrance(1.4)}
         className="absolute bottom-[calc(var(--safe-bottom)+3.5%)] left-[calc(var(--safe-left)+4%)] hidden text-[10px] font-light leading-[2] tracking-[0.42em] text-white/45 md:block"
       >
         {t("intro.footnote1")}
@@ -199,7 +149,7 @@ const IntroSection: React.FC<IntroSectionProps> = ({
         {t("intro.footnote2")}
       </motion.p>
       <motion.div
-        {...fadeIn(1.4)}
+        {...entrance(1.4)}
         className="absolute bottom-[calc(var(--safe-bottom)+1rem)] right-[calc(var(--safe-right)+4%)] flex flex-col items-end gap-4 md:bottom-[calc(var(--safe-bottom)+4%)]"
       >
         {/* On phones the logo comes down from the header to sign the page. */}

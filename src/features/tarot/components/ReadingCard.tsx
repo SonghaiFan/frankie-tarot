@@ -70,7 +70,7 @@ export default function ReadingCard({question,spread,pickedCards,readingText,loc
         </div>
         <button type="button" disabled={!onCardClick} onClick={()=>onCardClick?.(index+1)} aria-label={`${zh ? '讨论' : 'Discuss'} ${name}`} style={{display:'block',border:0,background:'none',padding:0,width:'100%',cursor:onCardClick?'pointer':'default'}}>
           <div style={{padding:frame.padding,borderRadius:CARD_BORDER_RADIUS,background:'#fff',boxShadow:'0 30px 60px -20px rgba(0,0,0,0.85), 0 0 48px rgba(150,140,255,0.07)'}}>
-            <img crossOrigin="anonymous" src={getCardImageUrl(card.image,cardFaceStyle)} alt={name} style={{display:'block',width:'100%',aspectRatio:'2 / 3.4',objectFit:'cover',borderRadius:frame.innerRadius,transform:card.isReversed?'rotate(180deg)':undefined}} />
+            <img draggable={false} crossOrigin="anonymous" src={getCardImageUrl(card.image,cardFaceStyle)} alt={name} style={{display:'block',width:'100%',aspectRatio:'2 / 3.4',objectFit:'cover',borderRadius:frame.innerRadius,transform:card.isReversed?'rotate(180deg)':undefined}} />
           </div>
         </button>
         <figcaption style={{marginTop:18}}>

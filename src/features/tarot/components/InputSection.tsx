@@ -7,9 +7,10 @@ import { getLocalizedSpread, SPREADS } from "@/features/tarot/constants/spreads"
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
 import SelectionTile from "@/shared/components/SelectionTile";
-import CircleActionButton from "@/shared/components/CircleActionButton";
 
 interface InputSectionProps {
+  primaryActionRef: React.RefObject<(() => void) | null>;
+  onConfirmationChange: (confirmed: boolean) => void;
   question: string;
   spread: SpreadType | null;
   onQuestionChange: (value: string) => void;
@@ -18,19 +19,19 @@ interface InputSectionProps {
   isMobile: boolean;
   isTablet: boolean;
   isThinking?: boolean;
-  smartSpread?: boolean;
 }
 
 const InputSection: React.FC<InputSectionProps> = ({
   question,
   spread,
+  primaryActionRef,
+  onConfirmationChange,
   onQuestionChange,
   onSpreadChange,
   onStartRitual,
   isMobile,
   isTablet,
   isThinking = false,
-  smartSpread = false,
 }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
@@ -87,12 +88,17 @@ const InputSection: React.FC<InputSectionProps> = ({
     setIsSpreadConfirmed(false);
   };
 
+  React.useLayoutEffect(() => {
+    primaryActionRef.current = isSpreadConfirmed ? onStartRitual : handleConfirm;
+    onConfirmationChange(isSpreadConfirmed);
+  });
+
   return (
     // 修改说明：
     // 1. min-h-[80vh] + justify-center: 实现垂直居中
     // 2. items-center: 实现水平居中
     // 3. overflow-hidden: 保持动画边界整洁
-    <div className="w-full max-w-3xl px-0 sm:px-4 flex flex-col justify-center items-center min-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-7.5rem)] py-4 md:py-8 relative">
+    <div className="w-full max-w-3xl px-0 sm:px-4 flex flex-col justify-center items-center min-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-7.5rem)] pt-4 pb-[max(8rem,25dvh)] md:pt-8 relative">
       <AnimatePresence mode="wait" custom={direction}>
         {/* === PHASE 1: SPREAD SELECTION (选牌阵) === */}
         {!isSpreadConfirmed ? (
@@ -125,12 +131,7 @@ const InputSection: React.FC<InputSectionProps> = ({
               {/* Description Panel (Phase 1) */}
               <DescriptionPanel spread={spread} />
 
-              {/* Confirm Button */}
-              <ActionButton
-                disabled={!spread}
-                onClick={handleConfirm}
-                text={spread ? t("input.confirmSpread") : t("input.selectSpread")}
-              />
+
             </div>
           </motion.div>
         ) : (
@@ -229,15 +230,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                 />
               </div>
 
-              <div className="flex justify-center mt-10">
-                <ActionButton
-                  disabled={!spread || isThinking}
-                  onClick={onStartRitual}
-                  text={smartSpread
-                    ? (locale === "zh-CN" ? (isThinking ? "选择牌阵中…" : "智能选择牌阵") : (isThinking ? "Choosing a spread…" : "Choose a smart spread"))
-                    : isThinking ? t("input.divining") : t("input.beginRitual")}
-                />
-              </div>
+
             </div>
           </motion.div>
         )}
@@ -321,10 +314,5 @@ const SpreadCard = ({
     </SelectionTile>
   );
 };
-
-// Primary actions use the app's round glass button, as on the home page.
-const ActionButton = ({ disabled, onClick, text }: { disabled: boolean; onClick: () => void; text: string }) => (
-  <CircleActionButton label={text} onClick={onClick} disabled={disabled} className="mx-auto mt-[clamp(2rem,7dvh,4rem)]" />
-);
 
 export default InputSection;

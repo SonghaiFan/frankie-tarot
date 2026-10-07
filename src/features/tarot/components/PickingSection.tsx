@@ -1,6 +1,6 @@
 import { CARD_CORNER_CLASS } from "@/features/tarot/constants/cardDimensions";
 import React from "react";
-import { motion, useTransform } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { SpreadType, TarotCard as TarotCardType, PickedCard } from "@/features/tarot/types";
 import { camera, SHOTS } from "@/features/tarot/scene/camera";
 import { SILKY_EASE } from "@/shared/constants/ui";
@@ -15,6 +15,9 @@ interface CloudCardRenderData {
   y: number;
   rotation: number;
   cardWidth: string;
+  arrivalX: number;
+  arrivalY: number;
+  arrivalDelay: number;
 }
 
 interface PickingCloudCardProps {
@@ -93,10 +96,11 @@ const PickingSection: React.FC<PickingSectionProps> = ({
   onCardSelect,
   cardBackId,
 }) => {
+  const reducedMotion = useReducedMotion();
   const stageRef = React.useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -111,12 +115,19 @@ const PickingSection: React.FC<PickingSectionProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // The laid-out deck follows the same camera as the stars.
-  const cloudScale = useTransform(camera.zoom, (zoom) => zoom / SHOTS.picking.zoom);
-  const cloudX = useTransform(() =>
-    (SHOTS.picking.x - camera.x.get()) * window.innerWidth * camera.zoom.get());
-  const cloudY = useTransform(() =>
-    (SHOTS.picking.y - camera.y.get()) * window.innerHeight * camera.zoom.get());
+  // Do not mount card layout nodes during camera travel: their first layout
+  // otherwise captures the previous page and can flash a miniature deck.
+  const [cameraReady, setCameraReady] = React.useState(false);
+  React.useLayoutEffect(() => {
+    const update = () => setCameraReady(
+      Math.abs(camera.zoom.get() - SHOTS.picking.zoom) < 0.001 &&
+      Math.abs(camera.x.get() - SHOTS.picking.x) < 0.001 &&
+      Math.abs(camera.y.get() - SHOTS.picking.y) < 0.001
+    );
+    const unsubscribe = [camera.zoom, camera.x, camera.y].map(value => value.on("change", update));
+    update();
+    return () => unsubscribe.forEach(stop => stop());
+  }, []);
 
   const pickedIdSet = React.useMemo(() => {
     return new Set(pickedCards.map((c) => c.visualId ?? c.id));
@@ -149,6 +160,9 @@ const PickingSection: React.FC<PickingSectionProps> = ({
           x: Math.cos(angle) * radiusX * radius,
           y: Math.sin(angle) * radiusY * radius,
           rotation: r3 * 360,
+          arrivalX: Math.cos(r3 * Math.PI * 2) * (24 + r1 * 40),
+          arrivalY: Math.sin(r3 * Math.PI * 2) * (24 + r1 * 40),
+          arrivalDelay: r2 * 0.1,
           cardWidth,
         };
       });
@@ -171,9 +185,13 @@ const PickingSection: React.FC<PickingSectionProps> = ({
         ref={stageRef}
         className="absolute inset-x-0 top-[calc(var(--safe-top)+6rem)] bottom-[calc(var(--safe-bottom)+5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
       >
-        <motion.div className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2" style={{ x: cloudX, y: cloudY, scale: cloudScale }}>
-          {cloudCards.map(({ card, x, y, rotation, cardWidth }) => (
-            <div key={card.id} className="absolute" style={{ left: x, top: y }}>
+        {cameraReady && stageSize.width > 0 && stageSize.height > 0 && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25, ease: SILKY_EASE }} className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2">
+          {cloudCards.map(({ card, x, y, rotation, cardWidth, arrivalX, arrivalY, arrivalDelay }) => (
+            <motion.div key={card.id} className="absolute" style={{ left: x, top: y }}
+              initial={reducedMotion ? false : { x: arrivalX, y: arrivalY, opacity: 0 }}
+              animate={{ x: 0, y: 0, opacity: 1 }}
+              transition={{ duration: reducedMotion ? 0 : 0.32, delay: reducedMotion ? 0 : arrivalDelay, ease: SILKY_EASE }}
+            >
               <PickingCloudCard
                 layoutId={`card-${card.id}`}
                 card={card}
@@ -191,9 +209,9 @@ const PickingSection: React.FC<PickingSectionProps> = ({
                 onClick={() => onCardSelect(card)}
                 cardBackId={cardBackId}
               />
-            </div>
+            </motion.div>
           ))}
-        </motion.div>
+        </motion.div>}
       </div>
     </motion.div>
 

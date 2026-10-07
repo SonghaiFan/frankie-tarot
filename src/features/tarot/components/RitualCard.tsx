@@ -35,6 +35,7 @@ interface RitualCardProps extends Omit<HTMLMotionProps<"div">, "onAnimationStart
   height?: string;
   onHover?: (id: number | null) => void;
   onDetailClose?: () => void;
+  gentleLoading?: boolean;
 }
 
 const clamp = (value: number, min: number, max: number) =>
@@ -63,6 +64,7 @@ const RitualCard: React.FC<RitualCardProps> = ({
   isHovered = false,
   isHorizontal = false,
   showName = true,
+  gentleLoading = false,
   label,
   labelPosition = "bottom",
   width = "w-full",
@@ -538,18 +540,21 @@ const RitualCard: React.FC<RitualCardProps> = ({
                 </div>
               ) : (
                 <motion.img
+                  draggable={false}
                   key={activeCardImageUrl}
                   ref={imageRef}
                   src={activeCardImageUrl}
                   alt={card.nameEn}
                   loading={isRevealed ? "eager" : "lazy"}
                   decoding="async"
-                  onLoad={() => {
+                  onLoad={async (event) => {
+                    const image = event.currentTarget;
+                    try { await image.decode(); } catch { /* Loaded images may already be decoded. */ }
                     setLoadedImageUrl(activeCardImageUrl);
                     setFailedImageUrl(undefined);
                   }}
                   onError={() => setFailedImageUrl(activeCardImageUrl)}
-                  className={`absolute object-cover transition-[filter,opacity] duration-500 ${
+                  className={`absolute object-cover transition-[filter,opacity] duration-300 motion-reduce:transition-none ${
                     isCurrentFaceOriginal
                       ? ORIGINAL_CARD_INSET_CLASS
                       : "inset-0 h-full w-full"
@@ -570,7 +575,7 @@ const RitualCard: React.FC<RitualCardProps> = ({
               )}
               {!isImageLoaded && !hasImageError && !isDetailed && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+                  {gentleLoading ? <div aria-hidden="true" className="absolute inset-0 bg-linear-to-br from-white/[0.06] via-transparent to-white/[0.02] motion-safe:animate-pulse"><span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl text-white/20">✦</span></div> : <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />}
                 </div>
               )}
               <div

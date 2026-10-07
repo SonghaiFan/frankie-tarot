@@ -1,7 +1,6 @@
 {
   "appTitle": "Frank Tarot",
   "intro": {
-    "enter": "START READING",
     "title": "TAROT",
     "tagline1": "A QUIETER SPACE",
     "tagline2": "FOR BRIGHTER QUESTIONS",
@@ -40,7 +39,6 @@
     "meditation": "Close your eyes and take three deep breaths.\nHold your question in your mind with sincerity and focus.",
     "enterQuestion": "Enter your question",
     "fallbackPlaceholder": "Type the question resting on your heart...",
-    "beginRitual": "BEGIN RITUAL",
     "divining": "DIVINING..."
   },
   "picking": {
@@ -215,5 +213,8 @@
     "readingSoftFail": "The mist is too dense for me to see the path ahead...",
     "readingHardFail": "The threads of fate are tangled for the moment. Please breathe and try again shortly.",
     "silentStars": "The stars are silent for now. Please try again in a moment."
+  },
+  "actions": {
+    "startDrawing": "START DRAWING"
   }
 }
