@@ -10,6 +10,7 @@ import type { TarotAppSnapshot, TarotHost } from '@/host/tarotHost';
 import type { SpreadType } from '@/features/tarot/types';
 import type { TarotView } from '../shared';
 import { cardContext, completeReadingContext, restoreSnapshot, applyReadingSummary } from './readingContext';
+import { chatMessage } from './chatMessages';
 import { saveReadingImage } from './saveReadingImage';
 import '@/app/index.css';
 
@@ -43,10 +44,8 @@ const host:TarotHost={
   async expand(){if(bridge.getHostContext()?.availableDisplayModes?.includes('fullscreen')) await bridge.requestDisplayMode({mode:'fullscreen'});},
   async requestSpread(question,locale){
     smartSelectionFlowId=current?.flowId;
-    await attach({question,requestedAction:'select_spread'});
-    await send(locale === 'en'
-      ? `Choose a suitable F.Tarot spread for my question using list_tarot_spreads. Then call open_tarot with this exact question, the chosen actual spread ID, locale="en" and flowId="${current?.flowId}". The user already requested the smart ritual; the UI will immediately enter manual card picking after applying your spread. Do not pick, flip or interpret.\nQuestion: ${question}`
-      : `请通过 list_tarot_spreads，根据我的问题智能选择合适的牌阵，再调用 open_tarot，预填原问题与所选实际牌阵，locale="zh-CN"，flowId="${current?.flowId}"。用户已点击智能开始；应用会在收到牌阵后直接进入选牌。不要替用户选牌、翻牌或解读。\n问题：${question}`);
+    await attach({question,locale,requestedAction:'select_spread',instruction:'Use list_tarot_spreads to choose a supported spread, then open_tarot with this exact question, locale, chosen spread and current flowId. The user requested the smart ritual; the UI will enter manual card picking. Do not pick, flip or interpret.'});
+    await send(chatMessage('select_spread',locale));
   },
   async reportState(state){
     const previous = snapshot;
@@ -68,17 +67,13 @@ const host:TarotHost={
       snapshot={...snapshot,revealedCardIds:reading.revealedCardIds,summaryRequested:true};
       persist();
     }
-    await attach({...context,readingId:reading.readingId,requestedAction:'brief_summary',instruction:'All cards are revealed. Give a brief poetic summary and write it into this exact table using open_tarot summary. Do not redraw.'});
-    await send((reading.locale === 'zh-CN'
-      ? '牌已全部翻开。请根据以下问题与牌阵写一段简短、富有诗意但具体的解读，2–4句，不作确定性预言。通过 open_tarot 写回牌桌：'
-      : 'All cards are revealed. Write a brief, poetic but concrete interpretation in 2–4 sentences, without certain predictions. Write it to the table using open_tarot: ')
-      + JSON.stringify({flowId:current?.flowId,locale:reading.locale,summary:{readingId:reading.readingId,text:'<your brief interpretation>'}})
-      + '\nOmit question and spread from the tool call. Do not repeat the summary in chat.\n' + JSON.stringify(context));
+    await attach({...context,locale:reading.locale,readingId:reading.readingId,requestedAction:'brief_summary',instruction:'All cards are revealed. Write 2–4 brief, poetic but concrete sentences without certain predictions. Call open_tarot with the current flowId, locale and summary containing this exact readingId and your text; omit question and spread. Do not redraw or repeat the summary in chat.'});
+    await send(chatMessage('brief_summary',reading.locale));
   },
   async interpret(reading){
     const context = completeReadingContext(reading);
-    await attach({...context,requestedAction:'interpret',instruction:'Interpret this exact spread in ordinary chat. Keep the current cards; do not reopen the app or draw again.'});
-    await send(buildTarotFollowUpPrompt({...reading,readingText:snapshot?.readingText ?? ''}));
+    await attach({...context,locale:reading.locale,requestedAction:'interpret',followUpPrompt:buildTarotFollowUpPrompt({...reading,readingText:snapshot?.readingText ?? ''}),instruction:'Interpret this exact spread in ordinary chat. Keep the current cards; do not reopen the app or draw again.'});
+    await send(chatMessage('interpret',reading.locale));
   },
   async saveResult(_locale,_text,image){ return saveReadingImage(bridge,image); },
 };
