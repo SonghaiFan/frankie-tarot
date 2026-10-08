@@ -1,5 +1,5 @@
 import type { TarotCard } from "@/features/tarot/types";
-import { registerRemoteCards } from "@/features/tarot/constants/cards";
+import { registerRemoteCards, FULL_DECK } from "@/features/tarot/constants/cards";
 import { registerRemoteSpreads, type ApiSpread } from "@/features/tarot/constants/spreads";
 
 export type ApiLocale = "en" | "zh-CN";
@@ -8,7 +8,6 @@ export const TAROT_API_BASE = (import.meta.env.VITE_TAROT_API_URL || "").replace
 
 export interface ApiCard {
   id: string;
-  legacyId: number;
   names: { en: string; "zh-CN": string };
   imageUrls: { redraw: string; dreamy: string; original: string };
   keywords: { en: string[]; "zh-CN": string[] };
@@ -27,9 +26,11 @@ export interface ApiReadingSnapshot {
   cards: Array<{ positionIndex: number; positionLabel: string; cardId: string; orientation: "UPRIGHT" | "REVERSED" }>;
 }
 
-export function toTarotCard(card: ApiCard): TarotCard {
+export function toTarotCard(card: ApiCard, deckIndex?: number): TarotCard {
+  const id = deckIndex ?? FULL_DECK.find(item => item.image === card.id)?.id;
+  if (id === undefined) throw new Error(`Card ${card.id} is missing from the loaded API deck.`);
   return {
-    id: card.legacyId,
+    id,
     nameEn: card.names.en,
     nameCn: card.names["zh-CN"],
     descriptionEn: card.description.en,
@@ -55,7 +56,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 export async function loadApiDeck(locale: ApiLocale) {
   const response = await apiRequest<{ cards: ApiCard[]; total: number }>(`/api/v1/cards?locale=${encodeURIComponent(locale)}&limit=78`);
   if (response.total !== 78 || response.cards.length !== 78) throw new Error("The API did not return the complete 78-card deck.");
-  const cards = response.cards.map(toTarotCard);
+  const cards = response.cards.map((card, index) => toTarotCard(card, index));
   registerRemoteCards(cards);
   return { ...response, cards };
 }

@@ -38,8 +38,9 @@ test('full interpretation requires a complete, unique, entirely revealed spread'
   assert.throws(()=>completeReadingContext({...reading,spread:'AUTO'}));
 });
 
-const snapshot:TarotAppSnapshot={version:1,readingId:'local-reading',stage:GameState.PICKING,question:reading.question,spread:'THREE',
-  pickedCards:cards.slice(0,1),drawTargets:cards,revealedCardIds:[],cardFaceStyle:'dreamy'};
+const snapshot:TarotAppSnapshot={version:1,readingId:'111111111111111111111111',stage:GameState.PICKING,question:reading.question,spread:'THREE',
+  pickedCards:cards.slice(0,1),drawTargets:cards,revealedCardIds:[],cardFaceStyle:'dreamy',
+  apiReading:{readingId:'111111111111111111111111',datasetVersion:'fixture',algorithmVersion:'sha256-counter-v1',seed:'fixture',spreadId:'THREE',drawLocale:'zh-CN',reversedProbability:0.4,cards:cards.map((card,index)=>({positionIndex:index+1,positionLabel:`位置${index+1}`,cardId:card.image,orientation:card.isReversed?'REVERSED':'UPRIGHT'}))}};
 test('cold-page recovery preserves the exact reading before the remote catalog loads', () => {
   const catalog = { ...SPREADS };
   for (const key of Object.keys(SPREADS)) delete (SPREADS as any)[key];
@@ -62,6 +63,7 @@ test('private recovery preserves remaining draw, selected cards and orientation'
   assert.equal(restoreSnapshot({...snapshot,drawTargets:[]}),undefined);
   assert.equal(restoreSnapshot({...snapshot,stage:GameState.READING}),undefined);
   assert.equal(restoreSnapshot({...snapshot,version:99}),undefined);
+  assert.equal(restoreSnapshot({...snapshot,apiReading:undefined}),undefined);
 });
 
 test('summary updates only the matching completed reading and preserves the exact cards',()=>{

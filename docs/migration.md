@@ -1,12 +1,12 @@
-# Frankie / Franklin migration
+# Project and domain rules
 
-- Application repository: `SonghaiFan/frankie-tarot` (existing Git history retained).
-- API and developer docs: `SonghaiFan/franklin-tarot-api` (independent repository).
-- Vercel application project: renamed from `frank-tarot` to `frankie-tarot`, retaining its project ID and `tarot.songhai.site` domain.
-- Vercel service project: `franklin-tarot-api`.
+| Project | Canonical public origin | Responsibility |
+| --- | --- | --- |
+| frankie-tarot | https://tarot.songhai.site | Web app and UI MCP at /mcp |
+| franklin-tarot-api | https://tarot-api.songhai.site | Docs at /, REST at /api/v1, Agent MCP at /mcp/agent |
 
-The app migration is based on the previously prepared local `frankie-tarot-app` copy plus fixes for cold-page recovery and remote context retrieval. The original API migration source was preserved in the Franklin repository; the pre-migration local code was also backed up before replacing it. The ChatGPT and DSH worktrees are not rewritten or removed.
+`frankie-*` names apps; `franklin-*` names APIs and developer tools. Public URLs use product names under `songhai.site`. Cloudflare owns DNS; Vercel is the current deployment provider. Changing providers does not change public URLs.
 
-A page refresh must restore saved cards before the remote spread catalog finishes loading. The same snapshot and revealed-card set are retained. Draw retries reuse the pending seed, and the server validates follow-up context. The browser no longer generates authoritative card meanings locally.
+Greenfield policy: no old API routes, legacy identifiers, historical widget aliases, or GitHub Pages redirects. Current-session recovery and deterministic draw retries remain required. The frontend assigns numeric positions to the loaded catalog for its visual layout; external card identity is always the stable API string ID.
 
-Previously published plugin resource URIs remain accepted. A real ChatGPT Refresh and a fresh host conversation are still needed to verify the actual host; local AppBridge/protocol tests are a separate evidence boundary.
+Refresh the ChatGPT connection after releasing a changed widget descriptor. Browser/protocol tests do not substitute for a real host acceptance test.

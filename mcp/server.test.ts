@@ -120,12 +120,10 @@ test("UI resource uses MCP Apps MIME, exact image CSP and no generated reading H
   assert.match((resource as any).text, /F.Tarot test resource/);
 });
 
-test("cached launch descriptors remain readable after a UI deployment", async () => {
+test("only the current content-addressed resource is available", async () => {
   const oldUri = getUiUri("previous deployment");
   assert.notEqual(oldUri, UI_URI);
-  const current = (await client.readResource({ uri: UI_URI })).contents[0];
-  const alias = (await client.readResource({ uri: oldUri })).contents[0];
-  assert.deepEqual(alias, { ...current, uri: oldUri });
+  await assert.rejects(client.readResource({ uri: oldUri }));
   await assert.rejects(client.readResource({ uri: "ui://frankie-tarot/app-invalid.html" }));
   await assert.rejects(client.readResource({ uri: "ui://other-app/app-01234567890123456789.html" }));
   const opened = await client.callTool({ name: "open_tarot", arguments: {} });
@@ -156,7 +154,7 @@ test("MCP rejects unexpected browser origins and excessive request bodies", asyn
   assert.match(UI_URI, /^ui:\/\/frankie-tarot\/app-[0-9a-f]{20}\.html$/);
 });
 
-test('brief summary writeback accepts service IDs and legacy UUIDs only for an existing flow', async () => {
+test('brief summary writeback accepts only current service IDs for an existing flow', async () => {
   const flowId='b4267470-4910-43ad-a2ef-20f29efec10f', readingId='8cc59a71b4fb4cdbabf86930';
   const summary={readingId,text:'风穿过旧门，新的光从缝隙里来。'};
   const result=await client.callTool({name:'open_tarot',arguments:{flowId,summary}});
@@ -165,7 +163,7 @@ test('brief summary writeback accepts service IDs and legacy UUIDs only for an e
   assert.equal((result._meta as any).tarot.question,undefined);
   assert.equal((result.structuredContent as any).cards,undefined);
   const legacy = await client.callTool({name:'open_tarot',arguments:{flowId,summary:{readingId:'8cc59a71-b4fb-4cdb-abf8-6930e45d37ba',text:'A legacy reading remains intact.'}}});
-  assert.ok(!legacy.isError);
+  assert.equal(legacy.isError,true);
   for (const args of [{summary},{flowId,summary,question:'new draw'},{flowId,summary,spread:'SINGLE'},{flowId,summary:{...summary,text:' '}}]) {
     assert.equal((await client.callTool({name:'open_tarot',arguments:args})).isError,true);
   }

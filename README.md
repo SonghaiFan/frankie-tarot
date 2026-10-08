@@ -4,7 +4,7 @@ The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table,
 
 - App: https://tarot.songhai.site
 - Plugin MCP: https://tarot.songhai.site/mcp
-- API documentation: https://songhaifan.github.io/franklin-tarot-api/
+- API documentation: https://tarot-api.songhai.site/
 - API: https://tarot-api.songhai.site
 
 ## Local development
@@ -31,7 +31,7 @@ npm run test:vercel
 
 The last test imports the built Vercel handler, so build first. For a local MCP AppBridge preview, set `CORE_MCP_URL` and use `npm run mcp:dev`; the preview checks protocol and embedding behavior, not the real ChatGPT host.
 
-The GitHub Pages entry redirects visitors to the deployed app. Vercel serves the Web app and plugin from the same project. Existing `/mcp` and `ui://frankie-tarot/app-*.html` resource identifiers remain compatible.
+Vercel serves the Web app and `/mcp` from one project. Only the current content-addressed widget resource is served. Refresh the ChatGPT connection after a UI release. GitHub Pages is not a deployment target.
 
 ## Naming and migration
 

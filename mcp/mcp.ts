@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { localeSchema, SPREAD_IDS, spreadSchema, listSpreads, callCoreTool } from "./catalog";
@@ -38,8 +38,7 @@ export function createMcpServer(options: {
   });
 
   const tableMeta = { ...noauth, ui: {resourceUri: uiUri, visibility: ["model", "app"] as ("model" | "app")[]} };
-  const readingIdSchema = z.string().refine((value) => /^[a-f0-9]{24}$/.test(value) || z.string().uuid().safeParse(value).success,
-    "Reading ID must be a current service ID or a legacy UUID.");
+  const readingIdSchema = z.string().regex(/^[a-f0-9]{24}$/, "Reading ID must be a current service ID.");
   const flowIdSchema = z.string().uuid().optional().describe('Reuse the flowId from the latest app context or tool result in this conversation, including for a new question. Omit only on the first launch. This updates the existing interaction window.');
   const guarded = async (action: () => TarotView | Promise<TarotView>) => {
     try {
@@ -95,13 +94,5 @@ export function createMcpServer(options: {
     }],
   });
   registerAppResource(server, "F.Tarot interaction", uiUri, {}, async () => readUi(uiUri));
-  // Connected hosts can retain an earlier deployment's tool descriptor. Keep
-  // those launch URLs readable as aliases to the current, compatible app.
-  server.registerResource("F.Tarot previous launch", new ResourceTemplate(
-    "ui://frankie-tarot/app-{hash}.html", { list: undefined },
-  ), { mimeType: RESOURCE_MIME_TYPE }, async (uri, { hash }) => {
-    if (typeof hash !== "string" || !/^[a-f0-9]{20}$/.test(hash)) throw new Error("Invalid F.Tarot UI resource.");
-    return readUi(uri.href);
-  });
   return server;
 }

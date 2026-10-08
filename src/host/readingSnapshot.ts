@@ -29,8 +29,8 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
     if ([GameState.PICKING,GameState.READING,GameState.REVEAL].includes(state.stage)) {
       // The remote catalog is empty on a fresh page. Restore private UI state
       // first; the API validates its reading snapshot when context is requested.
-      const expectedCount = state.spread ? SPREADS[state.spread]?.cardCount ?? state.apiReading?.cards.length ?? drawTargets.length : 0;
-      if (!state.spread || state.spread === 'AUTO' || expectedCount < 1 || expectedCount > 78 || drawTargets.length !== expectedCount ||
+      const expectedCount = state.spread ? SPREADS[state.spread]?.cardCount ?? state.apiReading?.cards.length ?? 0 : 0;
+      if (!state.apiReading || state.apiReading.readingId !== state.readingId || !state.spread || state.spread === 'AUTO' || expectedCount < 1 || expectedCount > 78 || drawTargets.length !== expectedCount ||
         pickedCards.length > drawTargets.length ||
         !pickedCards.every((card,i)=>card.id===drawTargets[i].id && card.isReversed===drawTargets[i].isReversed) ||
         (state.stage !== GameState.PICKING && pickedCards.length !== drawTargets.length)) return;
