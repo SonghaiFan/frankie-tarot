@@ -6,6 +6,7 @@ import { SILKY_EASE } from "@/shared/constants/ui";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
 import { getLocalizedSpread } from "@/features/tarot/constants/spreads";
+import StatusToast from "@/shared/components/StatusToast";
 import type { SavedReadingImage } from '@/host/tarotHost';
 
 interface ReadingSectionProps {
@@ -45,6 +46,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [savedImage, setSavedImage] = useState<SavedReadingImage>();
   useEffect(()=>{setIsCopied(false);setSavedImage(undefined);},[readingText,question]);
 
@@ -62,9 +64,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
     try {
       const prompt = await onCopyContext();
       await navigator.clipboard.writeText(prompt);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-      window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
+      setShowCopiedToast(true);
     } catch (err) {
       console.error("Failed to copy reading prompt:", err);
       setSendError(locale === "zh-CN"
@@ -72,6 +72,12 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
         : "Could not copy the prompt. Check clipboard permission and try again.");
     } finally { setIsSending(false); }
   };
+
+  useEffect(() => {
+    if (!showCopiedToast) return;
+    const timer = window.setTimeout(() => setShowCopiedToast(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [showCopiedToast]);
 
   const localizedSpread = getLocalizedSpread(spread, locale);
   const nextIndex = pickedCards.findIndex(card => !revealedCardIds.has(card.id));
@@ -128,8 +134,8 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 )}
                 <div className="w-12 h-px bg-white/20 mx-auto mb-6" />
                 <div className="text-base md:text-xl leading-loose text-neutral-300 font-light font-serif tracking-wide mb-12 text-center">
-                  {!readingText && (briefStatus === 'pending' ? (locale === 'zh-CN' ? '正在邀请 ChatGPT，为这组牌写下几句诗意的回声…' : 'Inviting ChatGPT to write a few poetic echoes for these cards…') : briefStatus === 'error' ? (locale === 'zh-CN' ? '简短解读尚未返回，你的牌已保留。' : 'The brief reading has not returned. Your cards are preserved.') : onInterpret
-                    ? (locale === "zh-CN" ? "先看看你的牌。准备好后，邀请 ChatGPT 一起解读。" : "Take a moment with your cards. When ready, invite ChatGPT to explore them with you.")
+                  {!readingText && (briefStatus === 'pending' ? (locale === 'zh-CN' ? '正在邀请 AI，为这组牌写下几句诗意的回声…' : 'Inviting your AI assistant to reflect on these cards…') : briefStatus === 'error' ? (locale === 'zh-CN' ? '简短解读尚未返回，你的牌已保留。' : 'The brief reading has not returned. Your cards are preserved.') : onInterpret
+                    ? (locale === "zh-CN" ? "先看看你的牌。准备好后，邀请 AI 一起解读。" : "Take a moment with your cards. When ready, invite your AI assistant to explore them with you.")
                     : t("reading.webPromptReady"))}
                   {readingText.split("**").map((part, idx) =>
                     idx % 2 === 1 ? (
@@ -141,15 +147,15 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     )
                   )}
                 </div>
-                <p className="text-xs md:text-sm text-neutral-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-                  {onInterpret ? (readingText ? (locale === "zh-CN" ? "点击“解读”，在当前对话里展开更深入的详细分析。" : "Use Explore deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前 ChatGPT 对话。" : "Use the button below to share this question and draw with the current ChatGPT conversation.")) : t("reading.deeperNotice")}
-                </p>
+                {onInterpret && <p className="text-xs md:text-sm text-neutral-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
+                  {readingText ? (locale === "zh-CN" ? "点击“解读”，在当前对话里展开更深入的详细分析。" : "Use Explore deeper to explore this reading in the current conversation.") : (locale === "zh-CN" ? "点击下方按钮，将这次问题与牌阵交给当前对话，一起解读。" : "Use the button below to share this reading with the current conversation.")}
+                </p>}
               </div>
 
               {briefStatus === 'error' && !readingText && onRetryBrief && <button onClick={()=>void onRetryBrief()} className="mb-4 text-xs text-neutral-400 underline">{locale === 'zh-CN' ? '重试简短解读' : 'Retry brief reading'}</button>}
               {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
               {savedImage && <p role="status" className="text-xs text-neutral-400 mb-4">
-                {savedImage.destination==='library' ? (locale==='zh-CN'?'图片已保存到 ChatGPT 文件库':'Image saved to the ChatGPT file library') : (locale==='zh-CN'?'结果图片已导出':'Reading image exported')}
+                {savedImage.destination==='library' ? (locale==='zh-CN'?'图片已保存到当前对话的文件库':'Image saved to the current conversation library') : (locale==='zh-CN'?'结果图片已导出':'Reading image exported')}
                 {savedImage.downloadUrl && <> · <a href={savedImage.downloadUrl} target="_blank" rel="noopener noreferrer" className="underline">{locale==='zh-CN'?'下载 PNG':'Download PNG'}</a></>}
               </p>}
               <div className="shrink-0 flex flex-col items-center w-full">
@@ -174,10 +180,10 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     onClick={handleCopyPrompt}
                     className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-neutral-600 hover:text-white transition-colors group px-4 py-2 border border-neutral-800 hover:border-white/20"
                     disabled={isSending || (!!onInterpret && isCopied)}
-                    title={onInterpret ? "ChatGPT" : t("reading.promptTitle")}
+                    title={onInterpret ? (locale === "zh-CN" ? "在当前对话中解读" : "Interpret in this conversation") : t("reading.promptTitle")}
                   >
-                    {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "解读") : (isCopied ? "Sent to chat" : isSending ? "Sending…" : "Interpret")) : (isCopied ? t("reading.copied") : t("reading.copyToChatGPT"))}
+                    {onInterpret && isCopied ? <Check size={14} /> : <Copy size={14} />}
+                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "解读") : (isCopied ? "Sent to conversation" : isSending ? "Sending…" : "Interpret")) : t("reading.copyPromptButton")}
                   </motion.button>
                 </div>
 
@@ -199,6 +205,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
           )}
         </AnimatePresence>
       </div>
+      <StatusToast open={showCopiedToast} variant="success" title={t("reading.copiedToast")} placement="top" />
     </motion.div>
   );
 };
