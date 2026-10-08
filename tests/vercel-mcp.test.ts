@@ -33,7 +33,7 @@ test("Vercel /mcp handles preflight and rejects untrusted browser origins", asyn
   assert.equal(response.status, 403);
 });
 
-test("Vercel /mcp works without a signing key and exposes only two tools", async () => {
+test("Vercel /mcp works without a signing key and exposes the three adapter tools", async () => {
   const init = await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: {
     protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "vercel-test", version: "1" },
   } });

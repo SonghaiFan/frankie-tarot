@@ -65,6 +65,16 @@ test("MCP discovery exposes the launcher and API-backed context tools", async ()
   assert.ok(!(spreads.structuredContent as any).spreads.some((s:any)=>s.id==='AUTO'));
 });
 
+test("context adapter validates structured output through the actual MCP transport", async () => {
+  const result = await client.callTool({ name: 'get_tarot_reading_context', arguments: {
+    reading: { readingId: 'test-reading' }, question: 'Follow up on this table', locale: 'en',
+  } });
+  assert.notEqual(result.isError, true);
+  assert.equal((result.structuredContent as any).sourceReadingId, 'test-reading');
+  assert.equal((result.structuredContent as any).question, 'Follow up on this table');
+  assert.deepEqual((result.structuredContent as any).cards, []);
+});
+
 test("opening prefills without drawing and keeps reveal progress private", async () => {
   const question='  This week?  ';
   const setup=await client.callTool({name:'open_tarot',arguments:{question,spread:'THREE'}});

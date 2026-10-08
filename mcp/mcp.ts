@@ -66,7 +66,7 @@ export function createMcpServer(options: {
     title: "Get validated reading context",
     description: "Rebuild authoritative reading context from the independent F.Tarot API through its Agent MCP. The caller retains the reading snapshot; this tool does not redraw or persist it.",
     inputSchema: { reading: z.record(z.string(), z.unknown()), question: z.string().trim().max(2000).default(""), locale: localeSchema.default("zh-CN") },
-    outputSchema: z.record(z.string(), z.unknown()),
+    outputSchema: z.object({}).passthrough(),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (args) => {
     try {
