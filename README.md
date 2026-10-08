@@ -11,8 +11,10 @@ The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table,
 
 ```sh
 npm ci
-VITE_TAROT_API_URL=https://tarot-api.songhai.site npm run dev
+npm run dev
 ```
+
+The app talks to https://tarot-api.songhai.site by default. Set `VITE_TAROT_API_URL` to point it at a local or staging API instead.
 
 The browser obtains cards, spreads and user-triggered draws over REST. Failed draw retries preserve the same seed; refresh restores the same cards, orientations and revealed state. There is no local random-draw or meanings fallback.
 
@@ -23,7 +25,7 @@ Use `.env.example` as a template for these public service URLs. Do not put secre
 ## Build and test
 
 ```sh
-VITE_TAROT_API_URL=https://tarot-api.songhai.site npm run build:vercel
+npm run build:vercel
 npm run typecheck
 npm run mcp:test
 npm run test:vercel

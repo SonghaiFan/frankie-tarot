@@ -1,10 +1,11 @@
 import type { TarotCard, TarotSuit } from "@/features/tarot/types";
 import { registerRemoteCards } from "@/features/tarot/constants/cards";
 import { registerRemoteSpreads, type ApiSpread } from "@/features/tarot/constants/spreads";
+import { DEFAULT_TAROT_API_URL } from "./defaults";
 
 export type ApiLocale = "en" | "zh-CN";
 
-export const TAROT_API_BASE = (import.meta.env.VITE_TAROT_API_URL || "").replace(/\/$/, "");
+export const TAROT_API_BASE = (import.meta.env.VITE_TAROT_API_URL || DEFAULT_TAROT_API_URL).replace(/\/$/, "");
 const apiCardIndices = new Map<string, number>();
 
 export interface ApiCard {
@@ -42,6 +43,9 @@ export function toTarotCard(card: ApiCard, deckIndex?: number): TarotCard {
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${TAROT_API_BASE}${path}`, init);
+  if (!response.headers.get("content-type")?.includes("application/json")) {
+    throw new Error(`Tarot API returned a non-JSON response (${response.status}).`);
+  }
   const payload = await response.json();
   if (!response.ok) throw new Error(payload?.error?.message || `Tarot API returned ${response.status}.`);
   return payload as T;

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { localeSchema, SPREAD_IDS, spreadSchema, listSpreads, callCoreTool } from "./catalog";
 import { flowSchema, viewResult } from "./flow";
 import type { TarotView } from "./shared";
+import { DEFAULT_TAROT_API_URL } from "../src/api/defaults";
 
 /** Content-addressed resources prevent hosts from reusing an older UI after deploy. */
 export function getUiUri(html: string) {
@@ -61,6 +62,7 @@ export function createMcpServer(options: {
     summary,question,spread:spread ?? 'THREE',stage:question !== undefined ? 'input' : 'intro',
   });}));
 
+  const tarotApiOrigin = new URL(process.env.VITE_TAROT_API_URL || DEFAULT_TAROT_API_URL).origin;
   const readUi = (uri: string) => ({
     contents: [{
       uri, mimeType: RESOURCE_MIME_TYPE, text: options.widgetHtml,
@@ -68,8 +70,8 @@ export function createMcpServer(options: {
         ui: {
           prefersBorder: false,
           csp: {
-            connectDomains: [...new Set([new URL(options.publicBaseUrl).origin, process.env.VITE_TAROT_API_URL ? new URL(process.env.VITE_TAROT_API_URL).origin : undefined].filter(Boolean))] as string[],
-            resourceDomains: [...new Set([new URL(options.publicBaseUrl).origin, process.env.VITE_TAROT_API_URL ? new URL(process.env.VITE_TAROT_API_URL).origin : undefined, "https://fonts.googleapis.com", "https://fonts.gstatic.com"].filter(Boolean))] as string[],
+            connectDomains: [...new Set([new URL(options.publicBaseUrl).origin, tarotApiOrigin])],
+            resourceDomains: [...new Set([new URL(options.publicBaseUrl).origin, tarotApiOrigin, "https://fonts.googleapis.com", "https://fonts.gstatic.com"])],
           },
           ...(options.uiDomain ? { domain: options.uiDomain } : {}),
         },
