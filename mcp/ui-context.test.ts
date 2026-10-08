@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { FULL_DECK } from '../src/features/tarot/constants/cards';
 import { GameState } from '../src/features/tarot/types';
+import { registerRemoteSpreads, SPREADS } from '../src/features/tarot/constants/spreads';
 import { cardContext, completeReadingContext, restoreSnapshot, applyReadingSummary } from './ui/readingContext';
 import type { TarotAppSnapshot, TarotReadingRequest } from '../src/host/tarotHost';
 
-const cards=FULL_DECK.slice(0,3).map((card,i)=>({...card,isReversed:i===1,visualId:70+i}));
+const cards=[
+  {id:1,nameEn:'The Magician',nameCn:'魔术师',image:'maj01',keywords:['创造'],positive:'开始',negative:'停滞'},
+  {id:2,nameEn:'The High Priestess',nameCn:'女祭司',image:'maj02',keywords:['直觉'],positive:'倾听',negative:'封闭'},
+  {id:3,nameEn:'The Empress',nameCn:'皇后',image:'maj03',keywords:['丰饶'],positive:'滋养',negative:'匮乏'},
+].map((card,i)=>({...card,isReversed:i===1,visualId:70+i}));
+const ids=['SINGLE','THREE','COURT','FOUR','FIVE','TIMELINE','DIMENSION','CELTIC','RELATION','GOALS','YEARLY'];
+const counts=[1,3,3,4,5,5,5,10,11,7,15];
+registerRemoteSpreads(ids.map((id,index)=>({id,names:{en:`${id} spread`,'zh-CN':`${id}牌阵`},descriptions:{en:'fixture','zh-CN':'测试'},cardCount:counts[index],labelsByLocale:{en:Array.from({length:counts[index]},(_,i)=>`Position ${i+1}`),'zh-CN':Array.from({length:counts[index]},(_,i)=>`位置${i+1}`)},cardPools:Array.from({length:counts[index]},()=>"FULL" as const),interpretationInstructions:{en:'fixture','zh-CN':'测试'}})));
 const reading:TarotReadingRequest={question:'我的工作方向？',spread:'THREE',cards,revealedCardIds:cards.map(c=>c.id),locale:'zh-CN'};
 
 test('card context contains only the clicked card and its actual spread position',()=>{
@@ -33,6 +40,15 @@ test('full interpretation requires a complete, unique, entirely revealed spread'
 
 const snapshot:TarotAppSnapshot={version:1,readingId:'local-reading',stage:GameState.PICKING,question:reading.question,spread:'THREE',
   pickedCards:cards.slice(0,1),drawTargets:cards,revealedCardIds:[],cardFaceStyle:'dreamy'};
+test('cold-page recovery preserves the exact reading before the remote catalog loads', () => {
+  const catalog = { ...SPREADS };
+  for (const key of Object.keys(SPREADS)) delete (SPREADS as any)[key];
+  try {
+    const saved = { ...snapshot, stage: GameState.READING, pickedCards: cards, revealedCardIds: [cards[0].id], readingText: 'Saved interpretation' };
+    assert.deepEqual(restoreSnapshot(JSON.parse(JSON.stringify(saved))), saved);
+    assert.equal(restoreSnapshot({ ...saved, drawTargets: [] }), undefined);
+  } finally { Object.assign(SPREADS, catalog); }
+});
 test('private recovery preserves remaining draw, selected cards and orientation',()=>{
   const restored=restoreSnapshot(JSON.parse(JSON.stringify(snapshot)))!;
   assert.ok(restored);

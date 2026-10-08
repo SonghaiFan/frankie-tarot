@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
 
   // Dynamic base path:
   // - Respect explicit BASE_PATH or VITE_BASE_PATH
-  // - Defaults to "/frank-tarot/" for GitHub Actions (GitHub Pages)
+  // - Defaults to "/frankie-tarot/" for GitHub Actions (GitHub Pages)
   // - Defaults to "/" for Vercel, Netlify, Cloudflare Pages, and local dev
   const isGitHubPages =
     Boolean(process.env.GITHUB_ACTIONS) &&
@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
     env.VITE_BASE_PATH ||
     env.BASE_PATH ||
     process.env.BASE_PATH ||
-    (isGitHubPages ? "/frank-tarot/" : "/");
+    (isGitHubPages ? "/frankie-tarot/" : "/");
 
   return {
     base: basePath,

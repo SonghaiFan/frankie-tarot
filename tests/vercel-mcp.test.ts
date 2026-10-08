@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import handler from "../mcp/dist/vercel-handler.mjs";
+import { createVercelHandler } from "../mcp/dist/vercel-handler.mjs";
 
 // The endpoint must work even if a developer shell happens to have the old key.
 delete process.env.TAROT_SIGNING_KEY;
+const ids = ['SINGLE','THREE','COURT','FOUR','FIVE','TIMELINE','DIMENSION','CELTIC','RELATION','GOALS','YEARLY'];
+const counts = [1,3,3,4,5,5,5,10,11,7,15];
+const handler = createVercelHandler(async(name: string,args: Record<string,unknown>) => name === 'list_tarot_spreads'
+  ? {locale:args.locale,spreads:ids.map((id,index)=>({id,name:`${id} spread`,description:'Fixture',cardCount:counts[index],labels:Array.from({length:counts[index]},(_,position)=>`Position ${position+1}`)}))}
+  : {question:args.question,locale:args.locale,spread:{id:'THREE',cardCount:3},cards:[],sourceReadingId:'test-reading',policy:'reflection'});
 
 
 async function post(message: unknown, origin = "https://chatgpt.com") {
@@ -36,7 +41,7 @@ test("Vercel /mcp works without a signing key and exposes only two tools", async
   assert.equal(init.body.result.serverInfo.name, "frankie-tarot");
 
   const { body } = await post({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
-  assert.deepEqual(body.result.tools.map((tool: any) => tool.name).sort(), ['list_tarot_spreads','open_tarot']);
+  assert.deepEqual(body.result.tools.map((tool: any) => tool.name).sort(), ['get_tarot_reading_context','list_tarot_spreads','open_tarot']);
   const open = await post({ jsonrpc:'2.0',id:3,method:'tools/call',params:{
     name:'open_tarot',arguments:{question:'What should I consider?',spread:'THREE'},
   }});

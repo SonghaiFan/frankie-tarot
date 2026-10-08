@@ -1,0 +1,430 @@
+{
+  "layouts": {
+    "SINGLE": {
+      "type": "flex",
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "cardSize": {
+        "mobile": "w-64 aspect-[7/12]",
+        "desktop": "w-80 aspect-[7/12]"
+      }
+    },
+    "THREE": {
+      "type": "flex",
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "cardSize": {
+        "mobile": "w-28 aspect-[7/12]",
+        "desktop": "w-56 aspect-[7/12]"
+      }
+    },
+    "COURT": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -48
+      },
+      "positions": [
+        {
+          "x": -62,
+          "y": 46,
+          "labelPosition": "top"
+        },
+        {
+          "x": 0,
+          "y": -56,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 62,
+          "y": 46,
+          "labelPosition": "top"
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-20 aspect-[7/12]",
+        "desktop": "w-32 aspect-[7/12]"
+      }
+    },
+    "FOUR": {
+      "type": "flex",
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "cardSize": {
+        "mobile": "w-24 aspect-[7/12]",
+        "desktop": "w-36 aspect-[7/12]"
+      }
+    },
+    "FIVE": {
+      "type": "flex",
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "cardSize": {
+        "mobile": "w-20 aspect-[7/12]",
+        "desktop": "w-32 aspect-[7/12]"
+      }
+    },
+    "TIMELINE": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -48
+      },
+      "positions": [
+        {
+          "x": -104,
+          "y": 18,
+          "labelPosition": "top"
+        },
+        {
+          "x": -52,
+          "y": -6,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 0,
+          "y": -16,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 52,
+          "y": -6,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 104,
+          "y": 18,
+          "labelPosition": "top"
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-18 aspect-[7/12]",
+        "desktop": "w-28 aspect-[7/12]"
+      }
+    },
+    "DIMENSION": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -48
+      },
+      "positions": [
+        {
+          "x": -66,
+          "y": -34,
+          "labelPosition": "right"
+        },
+        {
+          "x": 66,
+          "y": -34,
+          "labelPosition": "left"
+        },
+        {
+          "x": 40,
+          "y": 72,
+          "labelPosition": "top"
+        },
+        {
+          "x": -40,
+          "y": 72,
+          "labelPosition": "top"
+        },
+        {
+          "x": 0,
+          "y": -108,
+          "labelPosition": "bottom"
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-18 aspect-[7/12]",
+        "desktop": "w-28 aspect-[7/12]"
+      }
+    },
+    "CELTIC": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -40
+      },
+      "positions": [
+        {
+          "x": -42,
+          "y": 0,
+          "zIndex": 10
+        },
+        {
+          "x": -42,
+          "y": 0,
+          "rotation": 90,
+          "zIndex": 20
+        },
+        {
+          "x": -42,
+          "y": -98
+        },
+        {
+          "x": -118,
+          "y": 0
+        },
+        {
+          "x": -42,
+          "y": 98
+        },
+        {
+          "x": 34,
+          "y": 0
+        },
+        {
+          "x": 84,
+          "y": 98
+        },
+        {
+          "x": 84,
+          "y": 33
+        },
+        {
+          "x": 84,
+          "y": -33
+        },
+        {
+          "x": 84,
+          "y": -98
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-12 aspect-[7/12]",
+        "desktop": "w-28 aspect-[7/12]"
+      }
+    },
+    "RELATION": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -20
+      },
+      "positions": [
+        {
+          "x": -80,
+          "y": 77,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": -80,
+          "y": 26,
+          "labelPosition": "right"
+        },
+        {
+          "x": -80,
+          "y": -26,
+          "labelPosition": "right"
+        },
+        {
+          "x": -80,
+          "y": -77,
+          "labelPosition": "top"
+        },
+        {
+          "x": 80,
+          "y": 77,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 80,
+          "y": 26,
+          "labelPosition": "left"
+        },
+        {
+          "x": 80,
+          "y": -26,
+          "labelPosition": "left"
+        },
+        {
+          "x": 80,
+          "y": -77,
+          "labelPosition": "top"
+        },
+        {
+          "x": 0,
+          "y": 77,
+          "labelPosition": "top"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "labelPosition": "top"
+        },
+        {
+          "x": 0,
+          "y": -77,
+          "labelPosition": "top"
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-14 aspect-[7/12]",
+        "desktop": "w-25 aspect-[7/12]"
+      }
+    },
+    "GOALS": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -30
+      },
+      "positions": [
+        {
+          "x": -80,
+          "y": -27,
+          "labelPosition": "top",
+          "zIndex": 10
+        },
+        {
+          "x": -80,
+          "y": 0,
+          "labelPosition": "bottom",
+          "rotation": 90,
+          "zIndex": 20
+        },
+        {
+          "x": 0,
+          "y": -27,
+          "labelPosition": "top",
+          "zIndex": 10
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "labelPosition": "bottom",
+          "rotation": 90,
+          "zIndex": 20
+        },
+        {
+          "x": 80,
+          "y": -27,
+          "labelPosition": "top",
+          "zIndex": 10
+        },
+        {
+          "x": 80,
+          "y": 0,
+          "labelPosition": "bottom",
+          "rotation": 90,
+          "zIndex": 20
+        },
+        {
+          "x": 0,
+          "y": 80,
+          "labelPosition": "bottom"
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-14 aspect-[7/12]",
+        "desktop": "w-28 aspect-[7/12]"
+      }
+    },
+    "YEARLY": {
+      "type": "absolute",
+      "offset": {
+        "x": -16,
+        "y": -30
+      },
+      "positions": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": -42,
+          "y": 0
+        },
+        {
+          "x": 42,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": -104,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 52,
+          "y": -92,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 90,
+          "y": -52,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 102,
+          "y": 0,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 90,
+          "y": 52,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": 52,
+          "y": 92,
+          "labelPosition": "top"
+        },
+        {
+          "x": 0,
+          "y": 104,
+          "labelPosition": "top"
+        },
+        {
+          "x": -52,
+          "y": 92,
+          "labelPosition": "top"
+        },
+        {
+          "x": -90,
+          "y": 52,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": -102,
+          "y": 0,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": -90,
+          "y": -52,
+          "labelPosition": "bottom"
+        },
+        {
+          "x": -52,
+          "y": -92,
+          "labelPosition": "bottom"
+        }
+      ],
+      "cardSize": {
+        "mobile": "w-12 aspect-[7/12]",
+        "desktop": "w-26 aspect-[7/12]"
+      }
+    }
+  },
+  "cardDimensions": {
+    "standard": {
+      "name": "Classic Tarot (Rider-Waite)",
+      "widthCm": 7,
+      "heightCm": 12,
+      "widthMm": 70,
+      "heightMm": 120,
+      "aspectRatio": "7/12",
+      "heightToWidthRatio": 1.7142857142857142,
+      "tailwindAspect": "aspect-[7/12]"
+    }
+  }
+}

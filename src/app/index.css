@@ -35,6 +35,18 @@ body {
   overscroll-behavior: none;
 }
 
+html:has(.api-docs-shell),
+body:has(.api-docs-shell),
+#root:has(.api-docs-shell) {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+.api-docs-shell {
+  font-family: var(--font-display);
+}
+
 /* Film grain — analog texture, kills the "flat digital" feel */
 body::after {
   content: '';

@@ -79,4 +79,12 @@ __pycache__/
 # Generated MCP outputs
 mcp/dist/
 mcp/test-results/
+api/_bundles/
+.api-deploy/
 .sites-runtime/
+.vercel
+.env*
+
+!.env.example
+output/
+.playwright-cli/

@@ -6,7 +6,6 @@ import { SILKY_EASE } from "@/shared/constants/ui";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
 import { getLocalizedSpread } from "@/features/tarot/constants/spreads";
-import { buildTarotReadingPrompt } from "@/core/promptBuilder";
 import type { SavedReadingImage } from '@/host/tarotHost';
 
 interface ReadingSectionProps {
@@ -22,6 +21,7 @@ interface ReadingSectionProps {
   savesToChat?: boolean;
   onReset: () => void;
   onInterpret?: () => Promise<void>;
+  onCopyContext: () => Promise<string>;
 }
 
 const ReadingSection: React.FC<ReadingSectionProps> = ({
@@ -35,6 +35,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   savesToChat = false,
   onReset,
   onInterpret,
+  onCopyContext,
 }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language as Locale;
@@ -56,14 +57,10 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
       finally { setIsSending(false); }
       return;
     }
-    const prompt = buildTarotReadingPrompt({
-      cards: displayedCards,
-      spread,
-      question,
-      locale,
-    });
-
+    if (isSending) return;
+    setIsSending(true); setSendError("");
     try {
+      const prompt = await onCopyContext();
       await navigator.clipboard.writeText(prompt);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
@@ -73,7 +70,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
       setSendError(locale === "zh-CN"
         ? "无法复制提示词，请检查浏览器剪贴板权限后重试。"
         : "Could not copy the prompt. Check clipboard permission and try again.");
-    }
+    } finally { setIsSending(false); }
   };
 
   const localizedSpread = getLocalizedSpread(spread, locale);

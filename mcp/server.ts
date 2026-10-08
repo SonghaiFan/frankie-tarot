@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpServer, VERSION } from "./mcp";
+import type { callCoreTool } from "./catalog";
 export { createMcpServer, VERSION, getUiUri } from "./mcp";
 const localHost = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
 function send(res: ServerResponse, status: number, type: string, body: string | Buffer) {
@@ -16,6 +17,7 @@ export function createTarotHttpServer(options: {
   assetDirectory: string;
   uiDomain?: string;
   preview?: { html: string; javascript: string };
+  coreTool?: typeof callCoreTool;
 }) {
   const publicUrl = new URL(options.publicBaseUrl);
   return createServer(async (req, res) => {

@@ -1,4 +1,5 @@
 import type { PickedCard, SpreadType, Locale, CardFaceStyle, GameState } from '@/features/tarot/types';
+import type { ApiReadingSnapshot } from '@/api/client';
 export interface ReadingImage { name: string; dataUrl: string; }
 export interface SavedReadingImage { destination: 'download' | 'library'; name: string; downloadUrl?: string; }
 /** UI-only recovery data; never attach this snapshot to model context. */
@@ -14,9 +15,11 @@ export interface TarotAppSnapshot {
   drawTargets: PickedCard[];
   revealedCardIds: number[];
   cardFaceStyle: CardFaceStyle;
+  apiReading?: ApiReadingSnapshot;
 }
 export interface TarotReadingRequest {
   readingId?: string;
+  apiReading?: ApiReadingSnapshot;
   question: string;
   spread: SpreadType;
   cards: PickedCard[];

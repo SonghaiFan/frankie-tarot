@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "./mcp";
+import { callCoreTool } from "./catalog";
+type CoreTool = typeof callCoreTool;
 
 const widgetHtml = readFile(join(process.cwd(), "mcp/dist/widget.html"), "utf8");
 const allowedHeaders = "Content-Type, Accept, MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID";
@@ -20,7 +22,8 @@ function responseHeaders(origin?: string) {
   return headers;
 }
 
-export default async function handler(request: Request): Promise<Response> {
+export function createVercelHandler(coreTool: CoreTool = callCoreTool) {
+return async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const origin = request.headers.get("origin") ?? undefined;
   const headers = responseHeaders(origin);
@@ -45,6 +48,7 @@ export default async function handler(request: Request): Promise<Response> {
     server = createMcpServer({
       widgetHtml: await widgetHtml,
       publicBaseUrl: baseUrl,
+      coreTool,
     });
     transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
@@ -63,3 +67,6 @@ export default async function handler(request: Request): Promise<Response> {
     await server?.close().catch(() => undefined);
   }
 }
+}
+
+export default createVercelHandler();

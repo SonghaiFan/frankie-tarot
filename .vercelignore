@@ -1,0 +1,11 @@
+.env*
+.git
+node_modules
+dist
+mcp/dist
+.api-deploy
+output
+.playwright-cli
+public/images/cards/*.png
+public/images/cards_dreamy/*.png
+public/images/cards_rws_original/*.png

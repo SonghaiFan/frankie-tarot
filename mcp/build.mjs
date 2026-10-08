@@ -14,6 +14,7 @@ const base = new URL(process.env.TAROT_ASSET_BASE_URL || `${origin}/`);
 if (!base.pathname.endsWith("/") || base.search || base.hash || base.username || base.password) throw new Error("Use a plain asset origin");
 const result = await build({
   configFile: false, root, base: base.href, publicDir: false,
+  define: { "import.meta.env.VITE_TAROT_API_URL": JSON.stringify(process.env.VITE_TAROT_API_URL || "") },
   plugins: [react(), tailwindcss()],
   resolve: { alias: [
     { find: "@", replacement: join(root, "src") },

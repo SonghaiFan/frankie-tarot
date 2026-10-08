@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://songhaifan.github.io/frank-tarot/sitemap.xml
+Sitemap: https://tarot.songhai.site/sitemap.xml

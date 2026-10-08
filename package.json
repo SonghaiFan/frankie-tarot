@@ -1,5 +1,5 @@
 {
-  "name": "frank-tarot",
+  "name": "frankie-tarot",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,6 @@
     "build:vercel": "node scripts/vercel-build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "cli": "tsx scripts/cli.ts",
-    "api": "tsx scripts/server.ts",
     "generate-cards": "python3 scripts/generate_card_art.py",
     "mcp:build": "node mcp/build.mjs",
     "mcp:start": "node mcp/dist/server.mjs",

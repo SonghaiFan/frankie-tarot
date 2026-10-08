@@ -42,6 +42,7 @@ export interface TarotCard {
   keywords: string[];
   keywordsEn?: string[];
   image: string; // Local asset filename
+  imageUrls?: { redraw: string; dreamy: string; original: string };
   positive?: string;
   negative?: string;
   positiveEn?: string;

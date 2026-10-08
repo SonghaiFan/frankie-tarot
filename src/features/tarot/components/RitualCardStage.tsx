@@ -245,7 +245,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
   };
 
   const slotWidth =
-    isMobile && SPREADS[spread].cardCount > 5
+    isMobile && (SPREADS[spread]?.cardCount ?? 0) > 5
       ? "w-[clamp(2rem,7vw,3rem)]"
       : "w-[clamp(2.5rem,8vmin,5rem)]";
 

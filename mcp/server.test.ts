@@ -10,6 +10,16 @@ import { createTarotHttpServer, getUiUri } from "./server";
 
 const widgetHtml = "<!doctype html><html><body>F.Tarot test resource</body></html>";
 const UI_URI = getUiUri(widgetHtml);
+const spreadIds = ['SINGLE','THREE','COURT','FOUR','FIVE','TIMELINE','DIMENSION','CELTIC','RELATION','GOALS','YEARLY'];
+const spreadCounts = [1,3,3,4,5,5,5,10,11,7,15];
+const coreTool = async (name: string, args: Record<string, unknown>) => {
+  if (name === 'list_tarot_spreads') return { locale: args.locale, spreads: spreadIds.map((id,index) => ({
+    id, name: `${id} spread`, description: `Fixture for ${id}`, cardCount: spreadCounts[index],
+    labels: Array.from({length:spreadCounts[index]},(_,position)=>`Position ${position+1}`),
+    cardPools: Array.from({length:spreadCounts[index]},()=>"FULL"), interpretationInstruction: "Fixture",
+  })) };
+  return { question: args.question, locale: args.locale, spread: { id: 'THREE', cardCount: 3 }, cards: [], sourceReadingId: 'test-reading', policy: 'reflection' };
+};
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 let directory: string;
@@ -22,7 +32,7 @@ before(async () => {
   await mkdir(join(directory, "redraw"));
   await copyFile(join(root, "public/images/cards/maj00.webp"), join(directory, "redraw/maj00.webp"));
   server = createTarotHttpServer({ publicBaseUrl: "http://127.0.0.1:8787", assetDirectory: directory,
-    widgetHtml });
+    widgetHtml, coreTool });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   assert.ok(address && typeof address === "object");
@@ -40,9 +50,9 @@ after(async () => {
   if (directory) await rm(directory, { recursive: true, force: true });
 });
 
-test("MCP discovery exposes only launcher and smart-spread lookup", async () => {
+test("MCP discovery exposes the launcher and API-backed context tools", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool=>tool.name).sort(), ['list_tarot_spreads','open_tarot']);
+  assert.deepEqual(tools.map(tool=>tool.name).sort(), ['get_tarot_reading_context','list_tarot_spreads','open_tarot']);
   const launcher = tools.find(tool=>tool.name==='open_tarot')!;
   assert.equal((launcher._meta?.ui as any).resourceUri, UI_URI);
   assert.deepEqual(Object.keys(launcher.inputSchema.properties ?? {}).sort(),['flowId','locale','question','spread','summary']);
@@ -136,14 +146,16 @@ test("MCP rejects unexpected browser origins and excessive request bodies", asyn
   assert.match(UI_URI, /^ui:\/\/frankie-tarot\/app-[0-9a-f]{20}\.html$/);
 });
 
-test('brief summary writeback requires an existing flow and never starts a new reading', async () => {
-  const flowId='b4267470-4910-43ad-a2ef-20f29efec10f', readingId='8cc59a71-b4fb-4cdb-abf8-6930e45d37ba';
+test('brief summary writeback accepts service IDs and legacy UUIDs only for an existing flow', async () => {
+  const flowId='b4267470-4910-43ad-a2ef-20f29efec10f', readingId='8cc59a71b4fb4cdbabf86930';
   const summary={readingId,text:'风穿过旧门，新的光从缝隙里来。'};
   const result=await client.callTool({name:'open_tarot',arguments:{flowId,summary}});
   assert.ok(!result.isError);
   assert.deepEqual((result._meta as any).tarot.summary,summary);
   assert.equal((result._meta as any).tarot.question,undefined);
   assert.equal((result.structuredContent as any).cards,undefined);
+  const legacy = await client.callTool({name:'open_tarot',arguments:{flowId,summary:{readingId:'8cc59a71-b4fb-4cdb-abf8-6930e45d37ba',text:'A legacy reading remains intact.'}}});
+  assert.ok(!legacy.isError);
   for (const args of [{summary},{flowId,summary,question:'new draw'},{flowId,summary,spread:'SINGLE'},{flowId,summary:{...summary,text:' '}}]) {
     assert.equal((await client.callTool({name:'open_tarot',arguments:args})).isError,true);
   }

@@ -2,15 +2,11 @@ import { CARD_CORNER_CLASS } from "../constants/cardDimensions";
 import CardFrameEditor from "./CardFrameEditor";
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CardPoolType, CardFaceStyle } from "@/features/tarot/types";
+import { CardPoolType, CardFaceStyle, TarotCard } from "@/features/tarot/types";
 import { CARD_BACKS, CardBackId } from "@/features/tarot/constants/cardBacks";
 import { CARD_FACE_STYLES } from "@/features/tarot/constants/cardFaceStyles";
 import { CARD_PACKS, CardPack, findPackByCombination } from "@/features/tarot/constants/cardPacks";
-import {
-  getDeckForPool,
-  FULL_DECK,
-  CARD_ASPECT_CLASS,
-} from "@/features/tarot/constants/cards";
+import { CARD_ASPECT_CLASS } from "@/features/tarot/constants/cards";
 import RitualCard from "./RitualCard";
 import CardBackColorEditor from "./CardBackColorEditor";
 import { useTranslation } from "react-i18next";
@@ -28,6 +24,7 @@ interface DeckLibraryProps {
   onCardFaceStyleChange: (style: CardFaceStyle) => void;
   cardPackId?: string;
   onSelectPack?: (pack: CardPack) => void;
+  cards: TarotCard[];
 }
 
 // One observer for the entire grid. Reveal once and retain mounted cards so
@@ -64,13 +61,14 @@ const LibraryCardSlot: React.FC<{ children: React.ReactNode; selected: boolean }
 
 const LibraryCardPreview: React.FC<{
   image: string;
+  cards: TarotCard[];
   cardFaceStyle: CardFaceStyle;
   cardBackId: CardBackId;
   isRevealed: boolean;
   isHighlighted?: boolean;
-}> = ({ image, cardFaceStyle, cardBackId, isRevealed, isHighlighted = false }) => (
+}> = ({ image, cards, cardFaceStyle, cardBackId, isRevealed, isHighlighted = false }) => (
   <RitualCard
-    card={FULL_DECK.find((card) => card.image === image) ?? FULL_DECK[0]}
+    card={cards.find((card) => card.image === image) ?? cards[0]}
     cardFaceStyle={cardFaceStyle}
     cardBackId={cardBackId}
     isRevealed={isRevealed}
@@ -92,6 +90,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
   onCardFaceStyleChange,
   cardPackId,
   onSelectPack,
+  cards,
 }) => {
   const { t } = useTranslation();
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
@@ -114,10 +113,14 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
     { id: "SUIT_PENTACLES", label: t("deck.categories.SUIT_PENTACLES") },
   ];
 
-  const filteredCards = useMemo(
-    () => getDeckForPool(activeCategory),
-    [activeCategory]
-  );
+  const filteredCards = useMemo(() => cards.filter((card) => {
+    if (activeCategory === "MAJOR") return card.id < 22;
+    if (activeCategory === "SUIT_WANDS") return card.nameEn.includes("Wands");
+    if (activeCategory === "SUIT_CUPS") return card.nameEn.includes("Cups");
+    if (activeCategory === "SUIT_SWORDS") return card.nameEn.includes("Swords");
+    if (activeCategory === "SUIT_PENTACLES") return card.nameEn.includes("Pentacles");
+    return true;
+  }), [activeCategory, cards]);
 
   const handlePackClick = (pack: CardPack) => {
     if (onSelectPack) {
@@ -127,6 +130,8 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
       onCardBackChange(pack.cardBackId);
     }
   };
+
+  if (!cards.length) return <div className="px-6 py-32 text-center text-sm text-white/50">{t("common.loading")}</div>;
 
   return (
     <motion.div className="w-full pb-12 pt-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
@@ -176,6 +181,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                       <div className={`absolute left-[6.25%] top-[6.25%] w-[48%] ${CARD_ASPECT_CLASS} -rotate-8 transition-transform duration-300 group-hover:-rotate-10`}>
                         <LibraryCardPreview
                           image={pack.previewCard}
+                          cards={cards}
                           cardFaceStyle={pack.cardFaceStyle}
                           cardBackId={pack.cardBackId}
                           isRevealed={false}
@@ -185,6 +191,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                       <div className={`absolute right-[8.33%] top-0 w-[48%] ${CARD_ASPECT_CLASS} rotate-6 transition-transform duration-300 group-hover:rotate-8`}>
                         <LibraryCardPreview
                           image={pack.previewCard}
+                          cards={cards}
                           cardFaceStyle={pack.cardFaceStyle}
                           cardBackId={pack.cardBackId}
                           isRevealed
@@ -255,6 +262,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                           <div aria-hidden="true" className={`pointer-events-none w-9 shrink-0 ${CARD_ASPECT_CLASS}`}>
                             <LibraryCardPreview
                               image={styleOption.previewImage}
+                              cards={cards}
                               cardFaceStyle={styleOption.id}
                               cardBackId={cardBackId}
                               isRevealed
@@ -302,6 +310,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
                           <div aria-hidden="true" className={`pointer-events-none w-24 max-w-full ${CARD_ASPECT_CLASS}`}>
                             <LibraryCardPreview
                               image="maj00.png"
+                              cards={cards}
                               cardFaceStyle={cardFaceStyle}
                               cardBackId={cardBack.id}
                               isRevealed={false}

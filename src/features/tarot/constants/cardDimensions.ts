@@ -1,4 +1,4 @@
-import groundTruth from "@/features/tarot/data/ground-truth.json";
+import groundTruth from "@/features/tarot/data/spread-layouts.json";
 
 export interface CardDimensionConfig {
   name: string;
