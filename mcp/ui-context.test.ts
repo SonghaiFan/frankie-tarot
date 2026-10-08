@@ -10,9 +10,10 @@ const cards=[
   {id:2,nameEn:'The High Priestess',nameCn:'女祭司',image:'maj02',keywords:['直觉'],positive:'倾听',negative:'封闭'},
   {id:3,nameEn:'The Empress',nameCn:'皇后',image:'maj03',keywords:['丰饶'],positive:'滋养',negative:'匮乏'},
 ].map((card,i)=>({...card,isReversed:i===1,visualId:70+i}));
-const ids=['SINGLE','THREE','COURT','FOUR','FIVE','TIMELINE','DIMENSION','CELTIC','RELATION','GOALS','YEARLY'];
-const counts=[1,3,3,4,5,5,5,10,11,7,15];
-registerRemoteSpreads(ids.map((id,index)=>({id,names:{en:`${id} spread`,'zh-CN':`${id}牌阵`},descriptions:{en:'fixture','zh-CN':'测试'},cardCount:counts[index],labelsByLocale:{en:Array.from({length:counts[index]},(_,i)=>`Position ${i+1}`),'zh-CN':Array.from({length:counts[index]},(_,i)=>`位置${i+1}`)},cardPools:Array.from({length:counts[index]},()=>"FULL" as const),interpretationInstructions:{en:'fixture','zh-CN':'测试'}})));
+const fixtureSpread = {id:'THREE',names:{en:'Fixture spread','zh-CN':'测试牌阵'},descriptions:{en:'fixture','zh-CN':'测试'},cardCount:3,
+  labelsByLocale:{en:['Position 1','Position 2','Position 3'],'zh-CN':['位置1','位置2','位置3']},cardPools:['FULL','FULL','FULL'],
+  interpretationInstructions:{en:'fixture','zh-CN':'测试'},layout:{type:'flex' as const,positions:null}};
+registerRemoteSpreads([fixtureSpread]);
 const reading:TarotReadingRequest={question:'我的工作方向？',spread:'THREE',cards,revealedCardIds:cards.map(c=>c.id),locale:'zh-CN'};
 
 test('card context contains only the clicked card and its actual spread position',()=>{

@@ -140,9 +140,6 @@ export function SpreadIcon({
   );
 }
 
-const sparkPath =
-  "M12 3.3L13.2 5.9L15.8 7.1L13.2 8.3L12 10.9L10.8 8.3L8.2 7.1L10.8 5.9L12 3.3Z";
-
 function getFlexIconCards(cardCount: number): IconCard[] {
   const width = cardCount <= 1 ? 5 : cardCount <= 4 ? 4 : cardCount <= 7 ? 3 : 2.4;
   const gap = cardCount >= 10 ? 0.6 : 1;
@@ -215,16 +212,6 @@ export const makeSpreadIcon = (spread: {
   };
   cardCount: number;
 }) => {
-  if (spread.id === "AUTO") {
-    return (isActive: boolean) => (
-      <SpreadIcon
-        isActive={isActive}
-        cards={[{ x: 10, y: 11, accent: true }]}
-        paths={[{ d: sparkPath, accent: true, filled: true }]}
-      />
-    );
-  }
-
   return (isActive: boolean) => (
     <LayoutDrivenIcon
       isActive={isActive}

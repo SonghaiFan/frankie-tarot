@@ -1,5 +1,3 @@
-import { SPREADS } from "@/features/tarot/constants/spreads";
-import layoutData from "@/features/tarot/data/spread-layouts.json";
 import { GameState } from "@/features/tarot/types";
 import type { TarotAppSnapshot } from "./tarotHost";
 
@@ -11,7 +9,7 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
     (state.readingText !== undefined && (typeof state.readingText !== 'string' || state.readingText.length > 800)) ||
     (state.summaryRequested !== undefined && typeof state.summaryRequested !== 'boolean') ||
     !Object.values(GameState).includes(state.stage) ||
-    (state.spread !== null && !Object.hasOwn(layoutData.layouts,state.spread)) ||
+    (state.spread !== null && (typeof state.spread !== 'string' || !state.spread)) ||
     !['original','redraw','dreamy'].includes(state.cardFaceStyle) ||
     !Array.isArray(state.pickedCards) || !Array.isArray(state.drawTargets) || !Array.isArray(state.revealedCardIds)) return;
   const normalize = (values: TarotAppSnapshot['pickedCards']) => values.map(value => {
@@ -29,8 +27,9 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
     if ([GameState.PICKING,GameState.READING,GameState.REVEAL].includes(state.stage)) {
       // The remote catalog is empty on a fresh page. Restore private UI state
       // first; the API validates its reading snapshot when context is requested.
-      const expectedCount = state.spread ? SPREADS[state.spread]?.cardCount ?? state.apiReading?.cards.length ?? 0 : 0;
-      if (!state.apiReading || state.apiReading.readingId !== state.readingId || !state.spread || state.spread === 'AUTO' || expectedCount < 1 || expectedCount > 78 || drawTargets.length !== expectedCount ||
+      const expectedCount = state.apiReading?.cards.length ?? 0;
+      if (!state.apiReading || state.apiReading.readingId !== state.readingId || !state.spread ||
+        state.apiReading.spreadId !== state.spread || expectedCount < 1 || drawTargets.length !== expectedCount ||
         pickedCards.length > drawTargets.length ||
         !pickedCards.every((card,i)=>card.id===drawTargets[i].id && card.isReversed===drawTargets[i].isReversed) ||
         (state.stage !== GameState.PICKING && pickedCards.length !== drawTargets.length)) return;

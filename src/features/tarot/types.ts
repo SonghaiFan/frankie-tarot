@@ -7,31 +7,13 @@ export enum GameState {
   LIBRARY = "LIBRARY",
 }
 
-export type SpreadType =
-  | "SINGLE"
-  | "THREE"
-  | "FOUR"
-  | "TIMELINE"
-  | "DIMENSION"
-  | "FIVE"
-  | "RELATION"
-  | "CELTIC"
-  | "COURT"
-  | "GOALS"
-  | "YEARLY"
-  | "AUTO";
+/** Opaque identifier owned by the configured API, never a local catalog. */
+export type SpreadType = string;
 
 export type { Locale } from "@/i18n/types";
 
-export type CardPoolType =
-  | "MAJOR"
-  | "MINOR_PIP"
-  | "COURT"
-  | "FULL"
-  | "SUIT_CUPS"
-  | "SUIT_PENTACLES"
-  | "SUIT_SWORDS"
-  | "SUIT_WANDS";
+/** Opaque API value, retained only when passing API metadata through the UI. */
+export type CardPoolType = string;
 
 export interface TarotCard {
   id: number;

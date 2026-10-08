@@ -1,10 +1,11 @@
 import type { TarotCard } from "@/features/tarot/types";
-import { registerRemoteCards, FULL_DECK } from "@/features/tarot/constants/cards";
+import { registerRemoteCards } from "@/features/tarot/constants/cards";
 import { registerRemoteSpreads, type ApiSpread } from "@/features/tarot/constants/spreads";
 
 export type ApiLocale = "en" | "zh-CN";
 
 export const TAROT_API_BASE = (import.meta.env.VITE_TAROT_API_URL || "").replace(/\/$/, "");
+const apiCardIndices = new Map<string, number>();
 
 export interface ApiCard {
   id: string;
@@ -27,7 +28,7 @@ export interface ApiReadingSnapshot {
 }
 
 export function toTarotCard(card: ApiCard, deckIndex?: number): TarotCard {
-  const id = deckIndex ?? FULL_DECK.find(item => item.image === card.id)?.id;
+  const id = deckIndex ?? apiCardIndices.get(card.id);
   if (id === undefined) throw new Error(`Card ${card.id} is missing from the loaded API deck.`);
   return {
     id,
@@ -54,16 +55,36 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function loadApiDeck(locale: ApiLocale) {
-  const response = await apiRequest<{ cards: ApiCard[]; total: number }>(`/api/v1/cards?locale=${encodeURIComponent(locale)}&limit=78`);
-  if (response.total !== 78 || response.cards.length !== 78) throw new Error("The API did not return the complete 78-card deck.");
-  const cards = response.cards.map((card, index) => toTarotCard(card, index));
-  registerRemoteCards(cards);
-  return { ...response, cards };
+  const cards: ApiCard[] = [];
+  let total: number | undefined;
+  while (total === undefined || cards.length < total) {
+    const page = await apiRequest<{ cards: ApiCard[]; total: number; offset: number; limit: number }>(
+      `/api/v1/cards?locale=${encodeURIComponent(locale)}&offset=${cards.length}`
+    );
+    if (!Number.isInteger(page.total) || page.total < 1 || page.offset !== cards.length ||
+      !Number.isInteger(page.limit) || page.limit < 1 || !page.cards.length ||
+      (total !== undefined && page.total !== total)) {
+      throw new Error("The API returned an incomplete or invalid card catalog.");
+    }
+    total = page.total;
+    cards.push(...page.cards);
+    if (cards.length > total) throw new Error("The API returned too many cards for its catalog.");
+  }
+  if (new Set(cards.map((card) => card.id)).size !== cards.length) {
+    throw new Error("The API returned duplicate cards in its catalog.");
+  }
+  apiCardIndices.clear();
+  cards.forEach((card, index) => apiCardIndices.set(card.id, index));
+  const mappedCards = cards.map((card, index) => toTarotCard(card, index));
+  registerRemoteCards(mappedCards);
+  return { cards: mappedCards, total };
 }
 
 export async function loadApiSpreads(locale: ApiLocale) {
   const response = await apiRequest<{ spreads: ApiSpread[]; locale: ApiLocale }>(`/api/v1/spreads?locale=${encodeURIComponent(locale)}`);
-  if (response.spreads.length !== 11 || response.spreads.some((spread) => spread.id === "AUTO")) throw new Error("The API returned an invalid spread catalog.");
+  if (!response.spreads.length || new Set(response.spreads.map((spread) => spread.id)).size !== response.spreads.length) {
+    throw new Error("The API returned an incomplete or invalid spread catalog.");
+  }
   registerRemoteSpreads(response.spreads);
   return response.spreads;
 }

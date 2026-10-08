@@ -137,7 +137,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
   const absoluteLayoutMetrics = React.useMemo(() => {
     if (spreadConfig.layoutType !== "absolute" || !spreadConfig.positions?.length) {
       return {
-        offset: spreadConfig.layoutOffset ?? { x: 0, y: 0 },
+        offset: { x: 0, y: 0 },
         cardWidthUnits: null,
         boundsWidthUnits: 0,
         boundsHeightUnits: 0,
@@ -148,7 +148,7 @@ const RitualCardStage: React.FC<RitualCardStageProps> = ({
 
     if (!cardWidthUnits) {
       return {
-        offset: spreadConfig.layoutOffset ?? { x: 0, y: 0 },
+        offset: { x: 0, y: 0 },
         cardWidthUnits: null,
         boundsWidthUnits: 0,
         boundsHeightUnits: 0,

@@ -15,7 +15,6 @@ import {
   TarotCard,
   SpreadType,
   PickedCard,
-  CardPoolType,
   CardFaceStyle,
 } from "@/features/tarot/types";
 import { DEFAULT_CARD_FACE_STYLE } from "@/features/tarot/constants/cardFaceStyles";
@@ -76,7 +75,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
 
   // Input State
   const [question, setQuestion] = useState(savedReading?.question ?? "");
-  const [spread, setSpread] = useState<SpreadType | null>(savedReading?.spread ?? (host ? "THREE" : "SINGLE"));
+  const [spread, setSpread] = useState<SpreadType | null>(savedReading?.spread ?? initialSetup?.spread ?? null);
 
   // Game Data
   const [pickedCards, setPickedCards] = useState<PickedCard[]>(savedReading?.pickedCards ?? []);
@@ -163,8 +162,9 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   const loadDeck = async () => {
     setApiError("");
     try {
-      const [response] = await Promise.all([loadApiDeck(locale), loadApiSpreads(locale)]);
+      const [response, remoteSpreads] = await Promise.all([loadApiDeck(locale), loadApiSpreads(locale)]);
       setApiDeck(response.cards);
+      setSpread((current) => current ?? remoteSpreads[0]?.id ?? null);
     } catch (error) {
       setApiError(error instanceof Error ? error.message : "Could not load cards from the Tarot API.");
     }
@@ -238,26 +238,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     preferences.setItem("f-tarot-card-face-style", cardFaceStyle);
   }, [cardFaceStyle]);
 
-  // --- Computed Deck ---
-  const activeDeck = useMemo(() => {
-    if (!spread) return apiDeck;
-
-    const spreadDef = SPREADS[spread];
-    if (!spreadDef) return apiDeck;
-
-    if (pickedCards.length >= spreadDef.cardCount) {
-      return [];
-    }
-
-    const currentStep = pickedCards.length;
-    let poolType: CardPoolType = "FULL";
-    if (spreadDef.cardPools && spreadDef.cardPools[currentStep]) {
-      poolType = spreadDef.cardPools[currentStep];
-    }
-
-    void poolType;
-    return apiDeck;
-  }, [spread, pickedCards.length, apiDeck]);
+  const activeDeck = apiDeck;
 
   // --- Flow Handlers ---
   const enterInputPhase = async () => {
@@ -286,7 +267,11 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       }
       return;
     }
-    const selectedSpread = !spread || spread === "AUTO" ? "SINGLE" : spread;
+    const selectedSpread = spread && spread !== "AUTO" ? spread : Object.keys(SPREADS)[0];
+    if (!selectedSpread) {
+      setApiError(locale === 'zh-CN' ? '牌阵目录尚未加载。请重试。' : 'The spread catalog is not available yet. Please retry.');
+      return;
+    }
     if (selectedSpread !== spread) setSpread(selectedSpread);
     if (!apiDeck.length || !SPREADS[selectedSpread]) {
       setApiError(locale === 'zh-CN' ? '牌库 API 尚未连接。请检查服务地址后重试。' : 'The card API is unavailable. Check the service URL and retry.');
