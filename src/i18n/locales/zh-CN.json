@@ -212,7 +212,10 @@
   "errors": {
     "readingSoftFail": "迷雾太浓，我看不到前路...",
     "readingHardFail": "命运的丝线暂时纠缠不清，请静心片刻后再试。",
-    "silentStars": "星象暂时沉默，请稍后再试。"
+    "silentStars": "星象暂时沉默，请稍后再试。",
+    "apiUnavailable": "牌库暂时无法连接。",
+    "retryConnection": "重新连接",
+    "retryReading": "再试一次"
   },
   "actions": {
     "startDrawing": "开始抽牌"

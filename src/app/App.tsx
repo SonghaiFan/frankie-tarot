@@ -1,5 +1,5 @@
 import CircleActionButton from "@/shared/components/CircleActionButton";
-import { Languages, Library } from "lucide-react";
+import { CircleAlert, Languages, Library } from "lucide-react";
 import { restoreSnapshot } from "@/host/readingSnapshot";
 import { preferences } from "@/shared/storage";
 import React, {
@@ -550,7 +550,24 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       <div className="absolute inset-0 z-0">
         <SkyScene stage={sceneStage} starsOnly={gameState === GameState.LIBRARY} />
       </div>
-      {apiError && <div role="alert" className="fixed left-1/2 top-20 z-[250] w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-red-300/30 bg-[#251b1a]/95 px-4 py-3 text-center text-sm text-red-100 shadow-xl"><p>{apiError}</p><button onClick={() => void loadDeck()} className="mt-2 underline underline-offset-4">{locale === 'zh-CN' ? '重试连接' : 'Retry connection'}</button></div>}
+      {apiError && (
+        <div
+          role="alert"
+          className="fixed inset-x-4 top-[calc(var(--safe-top)+1rem)] z-[250] mx-auto flex w-auto max-w-md items-start gap-3 border border-amber-100/20 bg-[#080812]/90 px-4 py-3 text-left text-neutral-200 shadow-[0_12px_48px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:inset-x-0"
+        >
+          <CircleAlert aria-hidden="true" size={18} strokeWidth={1.5} className="mt-0.5 shrink-0 text-amber-100/75" />
+          <div className="min-w-0 flex-1">
+            <p className="font-serif text-sm tracking-wide text-amber-50/90">{t("errors.apiUnavailable")}</p>
+            <p className="mt-1 break-words font-sans text-xs leading-relaxed text-neutral-400">{apiError}</p>
+          </div>
+          <button
+            onClick={() => apiDeck.length && spread && SPREADS[spread] ? void startRitual() : void loadDeck()}
+            className="shrink-0 border border-white/15 px-3 py-1.5 font-sans text-[10px] tracking-[0.14em] text-white/70 transition-colors hover:border-amber-100/35 hover:text-amber-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100/70"
+          >
+            {apiDeck.length && spread && SPREADS[spread] ? t("errors.retryReading") : t("errors.retryConnection")}
+          </button>
+        </div>
+      )}
 
       {/* Header */}
       <motion.div

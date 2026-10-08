@@ -212,7 +212,10 @@
   "errors": {
     "readingSoftFail": "The mist is too dense for me to see the path ahead...",
     "readingHardFail": "The threads of fate are tangled for the moment. Please breathe and try again shortly.",
-    "silentStars": "The stars are silent for now. Please try again in a moment."
+    "silentStars": "The stars are silent for now. Please try again in a moment.",
+    "apiUnavailable": "The archive is temporarily out of reach.",
+    "retryConnection": "Reconnect",
+    "retryReading": "Try again"
   },
   "actions": {
     "startDrawing": "START DRAWING"
