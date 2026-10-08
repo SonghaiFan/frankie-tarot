@@ -1,4 +1,4 @@
-import type { TarotCard } from "@/features/tarot/types";
+import type { TarotCard, TarotSuit } from "@/features/tarot/types";
 import { registerRemoteCards } from "@/features/tarot/constants/cards";
 import { registerRemoteSpreads, type ApiSpread } from "@/features/tarot/constants/spreads";
 
@@ -9,22 +9,13 @@ const apiCardIndices = new Map<string, number>();
 
 export interface ApiCard {
   id: string;
+  suit: TarotSuit | null;
+  rank: number;
   names: { en: string; "zh-CN": string };
   imageUrls: { redraw: string; dreamy: string; original: string };
   keywords: { en: string[]; "zh-CN": string[] };
   description: { en: string; "zh-CN": string };
   meanings: { upright: { en: string; "zh-CN": string }; reversed: { en: string; "zh-CN": string } };
-}
-
-export interface ApiReadingSnapshot {
-  readingId: string;
-  datasetVersion: string;
-  algorithmVersion: string;
-  seed: string;
-  spreadId: string;
-  drawLocale: ApiLocale;
-  reversedProbability: number;
-  cards: Array<{ positionIndex: number; positionLabel: string; cardId: string; orientation: "UPRIGHT" | "REVERSED" }>;
 }
 
 export function toTarotCard(card: ApiCard, deckIndex?: number): TarotCard {
@@ -39,6 +30,8 @@ export function toTarotCard(card: ApiCard, deckIndex?: number): TarotCard {
     keywordsEn: card.keywords.en,
     keywords: card.keywords["zh-CN"],
     image: card.id,
+    suit: card.suit,
+    rank: card.rank,
     imageUrls: card.imageUrls,
     positiveEn: card.meanings.upright.en,
     positive: card.meanings.upright["zh-CN"],
@@ -55,29 +48,15 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function loadApiDeck(locale: ApiLocale) {
-  const cards: ApiCard[] = [];
-  let total: number | undefined;
-  while (total === undefined || cards.length < total) {
-    const page = await apiRequest<{ cards: ApiCard[]; total: number; offset: number; limit: number }>(
-      `/api/v1/cards?locale=${encodeURIComponent(locale)}&offset=${cards.length}`
-    );
-    if (!Number.isInteger(page.total) || page.total < 1 || page.offset !== cards.length ||
-      !Number.isInteger(page.limit) || page.limit < 1 || !page.cards.length ||
-      (total !== undefined && page.total !== total)) {
-      throw new Error("The API returned an incomplete or invalid card catalog.");
-    }
-    total = page.total;
-    cards.push(...page.cards);
-    if (cards.length > total) throw new Error("The API returned too many cards for its catalog.");
-  }
-  if (new Set(cards.map((card) => card.id)).size !== cards.length) {
-    throw new Error("The API returned duplicate cards in its catalog.");
+  const { cards } = await apiRequest<{ cards: ApiCard[] }>(`/api/v1/cards?locale=${encodeURIComponent(locale)}`);
+  if (!Array.isArray(cards) || !cards.length || new Set(cards.map((card) => card.id)).size !== cards.length) {
+    throw new Error("The API returned an incomplete or invalid card catalog.");
   }
   apiCardIndices.clear();
   cards.forEach((card, index) => apiCardIndices.set(card.id, index));
   const mappedCards = cards.map((card, index) => toTarotCard(card, index));
   registerRemoteCards(mappedCards);
-  return { cards: mappedCards, total };
+  return { cards: mappedCards };
 }
 
 export async function loadApiSpreads(locale: ApiLocale) {
@@ -87,19 +66,4 @@ export async function loadApiSpreads(locale: ApiLocale) {
   }
   registerRemoteSpreads(response.spreads);
   return response.spreads;
-}
-
-export async function drawApiReading(input: { question: string; spread: string; locale: ApiLocale; seed: string }) {
-  return apiRequest<{ reading: ApiReadingSnapshot; context: { cards: Array<{ card: ApiCard; orientation: "UPRIGHT" | "REVERSED" }> } }>("/api/v1/readings/draw", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-}
-
-export async function getApiReadingContext(reading: ApiReadingSnapshot, question: string, locale: ApiLocale) {
-  return apiRequest<Record<string, unknown>>("/api/v1/readings/context", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reading, question, locale }),
-  });
 }

@@ -15,8 +15,14 @@ export type { Locale } from "@/i18n/types";
 /** Opaque API value, retained only when passing API metadata through the UI. */
 export type CardPoolType = string;
 
+export type TarotSuit = "WANDS" | "CUPS" | "SWORDS" | "PENTACLES";
+
 export interface TarotCard {
   id: number;
+  /** null for major arcana. */
+  suit: TarotSuit | null;
+  /** Major arcana 0–21; minor arcana 1–10 pips, 11–14 Page, Knight, Queen, King. */
+  rank: number;
   nameEn: string;
   nameCn: string;
   descriptionCn?: string;

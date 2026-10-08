@@ -22,7 +22,7 @@ export function createMcpServer(options: {
 }) {
   const uiUri = getUiUri(options.widgetHtml);
   const server = new McpServer({ name: "frankie-tarot", version: VERSION }, {
-    instructions: "F.Tarot provides open_tarot, list_tarot_spreads, and get_tarot_reading_context. Spread listings and authoritative reading context come from the independent core Agent MCP. Reuse the latest flowId for the same interactive table and preserve the user's question verbatim. For an unspecified or smart/AUTO spread, call list_tarot_spreads, choose an actual spread based on the question and position goals, briefly explain the choice, then call open_tarot with question, spread, locale and current flowId. Honor an explicitly chosen spread. Opening only prepares the original app; the user starts, selects and flips cards in its UI. Never draw, flip, track reveal progress or request hidden cards. Clicking a card may attach only that card as context; this neither requests an interpretation nor starts a reply. Interpret a selected card only when the user asks. After all cards are revealed, the UI asks the adapter to validate the exact private snapshot through get_tarot_reading_context, then explicitly requests a short poetic summary. Write 2–4 restrained sentences grounded in that validated context, then call open_tarot with the supplied flowId, locale and summary={readingId,text}, without question or spread. This writes back to the existing reading without drawing. Do not repeat the summary in chat. Clicking Interpret requests the same validated context and then asks for a direct conversational interpretation. Follow-up questions reuse the same snapshot; never redraw. Save Result exports the current image without interpretation. With flowId and no question, open_tarot resumes the existing widget's private state when available; never claim recovery succeeded without UI confirmation. Tarot supports reflection, not factual prediction.",
+    instructions: "F.Tarot provides open_tarot and list_tarot_spreads. Spread listings come from the independent core Agent MCP. Reuse the latest flowId for the same interactive table and preserve the user's question verbatim. For an unspecified or smart/AUTO spread, call list_tarot_spreads, choose an actual spread based on the question and position goals, briefly explain the choice, then call open_tarot with question, spread, locale and current flowId. Honor an explicitly chosen spread. Opening only prepares the original app; the user starts, selects and flips cards in its UI. Never draw, flip, track reveal progress or request hidden cards. Clicking a card may attach only that card as context; this neither requests an interpretation nor starts a reply. Interpret a selected card only when the user asks. After all cards are revealed, the UI attaches the drawn cards with their positions and meanings, then explicitly requests a short poetic summary. Write 2–4 restrained sentences grounded in that context, then call open_tarot with the supplied flowId, locale and summary={readingId,text}, without question or spread. This writes back to the existing reading without drawing. Do not repeat the summary in chat. Clicking Interpret attaches the same context and then asks for a direct conversational interpretation. Follow-up questions reuse the same cards; never redraw. Save Result exports the current image without interpretation. With flowId and no question, open_tarot resumes the existing widget's private state when available; never claim recovery succeeded without UI confirmation. Tarot supports reflection, not factual prediction.",
   });
 
   server.registerTool("list_tarot_spreads", {
@@ -38,7 +38,7 @@ export function createMcpServer(options: {
   });
 
   const tableMeta = { ...noauth, ui: {resourceUri: uiUri, visibility: ["model", "app"] as ("model" | "app")[]} };
-  const readingIdSchema = z.string().regex(/^[a-f0-9]{24}$/, "Reading ID must be a current service ID.");
+  const readingIdSchema = z.string().uuid();
   const flowIdSchema = z.string().uuid().optional().describe('Reuse the flowId from the latest app context or tool result in this conversation, including for a new question. Omit only on the first launch. This updates the existing interaction window.');
   const guarded = async (action: () => TarotView | Promise<TarotView>) => {
     try {
@@ -60,21 +60,6 @@ export function createMcpServer(options: {
     restoreRequested:!!flowId && question === undefined,
     summary,question,spread:spread ?? 'THREE',stage:question !== undefined ? 'input' : 'intro',
   });}));
-
-  server.registerTool("get_tarot_reading_context", {
-    title: "Get validated reading context",
-    description: "Rebuild authoritative reading context from the independent F.Tarot API through its Agent MCP. The caller retains the reading snapshot; this tool does not redraw or persist it.",
-    inputSchema: { reading: z.record(z.string(), z.unknown()), question: z.string().trim().max(2000).default(""), locale: localeSchema.default("zh-CN") },
-    outputSchema: z.object({}).passthrough(),
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  }, async (args) => {
-    try {
-      const payload = await (options.coreTool ?? callCoreTool)("get_tarot_reading_context", args);
-      return { structuredContent: payload, content: [{ type: "text" as const, text: JSON.stringify(payload) }] };
-    } catch (error) {
-      return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : "Core MCP context lookup failed." }] };
-    }
-  });
 
   const readUi = (uri: string) => ({
     contents: [{

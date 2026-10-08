@@ -50,9 +50,9 @@ after(async () => {
   if (directory) await rm(directory, { recursive: true, force: true });
 });
 
-test("MCP discovery exposes the launcher and API-backed context tools", async () => {
+test("MCP discovery exposes the launcher and spread catalog tools", async () => {
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool=>tool.name).sort(), ['get_tarot_reading_context','list_tarot_spreads','open_tarot']);
+  assert.deepEqual(tools.map(tool=>tool.name).sort(), ['list_tarot_spreads','open_tarot']);
   const launcher = tools.find(tool=>tool.name==='open_tarot')!;
   assert.equal((launcher._meta?.ui as any).resourceUri, UI_URI);
   assert.deepEqual(Object.keys(launcher.inputSchema.properties ?? {}).sort(),['flowId','locale','question','spread','summary']);
@@ -63,16 +63,6 @@ test("MCP discovery exposes the launcher and API-backed context tools", async ()
   const spreads=await client.callTool({name:'list_tarot_spreads',arguments:{locale:'en'}});
   assert.ok((spreads.structuredContent as any).spreads.every((s:any)=>s.labels.length===s.cardCount));
   assert.ok(!(spreads.structuredContent as any).spreads.some((s:any)=>s.id==='AUTO'));
-});
-
-test("context adapter validates structured output through the actual MCP transport", async () => {
-  const result = await client.callTool({ name: 'get_tarot_reading_context', arguments: {
-    reading: { readingId: 'test-reading' }, question: 'Follow up on this table', locale: 'en',
-  } });
-  assert.notEqual(result.isError, true);
-  assert.equal((result.structuredContent as any).sourceReadingId, 'test-reading');
-  assert.equal((result.structuredContent as any).question, 'Follow up on this table');
-  assert.deepEqual((result.structuredContent as any).cards, []);
 });
 
 test("opening prefills without drawing and keeps reveal progress private", async () => {
@@ -154,15 +144,15 @@ test("MCP rejects unexpected browser origins and excessive request bodies", asyn
   assert.match(UI_URI, /^ui:\/\/frankie-tarot\/app-[0-9a-f]{20}\.html$/);
 });
 
-test('brief summary writeback accepts only current service IDs for an existing flow', async () => {
-  const flowId='b4267470-4910-43ad-a2ef-20f29efec10f', readingId='8cc59a71b4fb4cdbabf86930';
+test('brief summary writeback accepts only the app reading ID for an existing flow', async () => {
+  const flowId='b4267470-4910-43ad-a2ef-20f29efec10f', readingId='8cc59a71-b4fb-4cdb-abf8-6930e45d37ba';
   const summary={readingId,text:'风穿过旧门，新的光从缝隙里来。'};
   const result=await client.callTool({name:'open_tarot',arguments:{flowId,summary}});
   assert.ok(!result.isError);
   assert.deepEqual((result._meta as any).tarot.summary,summary);
   assert.equal((result._meta as any).tarot.question,undefined);
   assert.equal((result.structuredContent as any).cards,undefined);
-  const legacy = await client.callTool({name:'open_tarot',arguments:{flowId,summary:{readingId:'8cc59a71-b4fb-4cdb-abf8-6930e45d37ba',text:'A legacy reading remains intact.'}}});
+  const legacy = await client.callTool({name:'open_tarot',arguments:{flowId,summary:{readingId:'8cc59a71b4fb4cdbabf86930',text:'A service-era reading ID is no longer issued.'}}});
   assert.equal(legacy.isError,true);
   for (const args of [{summary},{flowId,summary,question:'new draw'},{flowId,summary,spread:'SINGLE'},{flowId,summary:{...summary,text:' '}}]) {
     assert.equal((await client.callTool({name:'open_tarot',arguments:args})).isError,true);

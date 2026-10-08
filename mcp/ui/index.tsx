@@ -39,17 +39,6 @@ async function send(text: string) {
   const result = await bridge.sendMessage({role:'user',content:[{type:'text',text}]});
   if(result.isError) throw new Error('Host did not accept the message');
 }
-async function authoritativeReadingContext(reading: TarotReadingRequest) {
-  if (!reading.apiReading) throw new Error('The current API reading snapshot is unavailable.');
-  const result = await bridge.callServerTool({name:'get_tarot_reading_context',arguments:{
-    reading:reading.apiReading,question:reading.question,locale:reading.locale,
-  }});
-  if (result.isError || !result.structuredContent) {
-    const message = result.content?.find(item=>item.type==='text')?.text;
-    throw new Error(message || 'Could not retrieve authoritative reading context.');
-  }
-  return result.structuredContent as Record<string, unknown>;
-}
 const host:TarotHost={
   async expand(){if(bridge.getHostContext()?.availableDisplayModes?.includes('fullscreen')) await bridge.requestDisplayMode({mode:'fullscreen'});},
   async requestSpread(question,locale){
@@ -71,8 +60,7 @@ const host:TarotHost={
     await attach({...cardContext(selection),instruction:'The user selected this card in the app. This is context only, not a request for interpretation. Do not infer other cards or track reveal progress.'});
   },
   async summarize(reading){
-    completeReadingContext(reading);
-    const context = await authoritativeReadingContext(reading);
+    const context = completeReadingContext(reading);
     if (!reading.readingId) throw new Error('Missing current reading ID');
     if (snapshot?.readingId === reading.readingId) {
       snapshot={...snapshot,revealedCardIds:reading.revealedCardIds,summaryRequested:true};
@@ -82,9 +70,8 @@ const host:TarotHost={
     await send(chatMessage('brief_summary',reading.locale));
   },
   async interpret(reading){
-    completeReadingContext(reading);
-    const context = await authoritativeReadingContext(reading);
-    await attach({...context,locale:reading.locale,requestedAction:'interpret',previousInterpretation:snapshot?.readingText ?? '',instruction:'Interpret this exact validated spread in ordinary chat with practical reflection. Keep the current cards; do not reopen the app or draw again.'});
+    const context = completeReadingContext(reading);
+    await attach({...context,locale:reading.locale,requestedAction:'interpret',previousInterpretation:snapshot?.readingText ?? '',instruction:'Interpret this exact spread in ordinary chat with practical reflection. Keep the current cards; do not reopen the app or draw again.'});
     await send(chatMessage('interpret',reading.locale));
   },
   async saveResult(_locale,_text,image){ return saveReadingImage(bridge,image); },

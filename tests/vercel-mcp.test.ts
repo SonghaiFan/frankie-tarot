@@ -33,7 +33,7 @@ test("Vercel /mcp handles preflight and rejects untrusted browser origins", asyn
   assert.equal(response.status, 403);
 });
 
-test("Vercel /mcp works without a signing key and exposes the three adapter tools", async () => {
+test("Vercel /mcp works without a signing key and exposes the two adapter tools", async () => {
   const init = await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: {
     protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "vercel-test", version: "1" },
   } });
@@ -41,7 +41,7 @@ test("Vercel /mcp works without a signing key and exposes the three adapter tool
   assert.equal(init.body.result.serverInfo.name, "frankie-tarot");
 
   const { body } = await post({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
-  assert.deepEqual(body.result.tools.map((tool: any) => tool.name).sort(), ['get_tarot_reading_context','list_tarot_spreads','open_tarot']);
+  assert.deepEqual(body.result.tools.map((tool: any) => tool.name).sort(), ['list_tarot_spreads','open_tarot']);
   const open = await post({ jsonrpc:'2.0',id:3,method:'tools/call',params:{
     name:'open_tarot',arguments:{question:'What should I consider?',spread:'THREE'},
   }});
