@@ -1,6 +1,6 @@
 # Frankie Tarot
 
-The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table, visual layouts, reveal interactions and private recovery state. [Franklin Tarot API](https://github.com/SonghaiFan/franklin-tarot-api) owns the card data, spread rules, seeded draws and authoritative reading context.
+The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table, visual layouts, reveal interactions and private recovery state. [Franklin Tarot API](https://github.com/SonghaiFan/franklin-tarot-api) owns card data, spread definitions and optional random draws for other API consumers and AI agents. Frankie does not use those server draws.
 
 - App: https://tarot.songhai.site
 - Plugin MCP: https://tarot.songhai.site/mcp
@@ -16,9 +16,9 @@ npm run dev
 
 The app talks to https://tarot-api.songhai.site by default. Set `VITE_TAROT_API_URL` to point it at a local or staging API instead.
 
-The browser obtains cards, spreads and user-triggered draws over REST. Failed draw retries preserve the same seed; refresh restores the same cards, orientations and revealed state. There is no local random-draw or meanings fallback.
+The browser loads cards and spreads over REST, shuffles locally, and assigns each user-clicked tile to the next spread position subject to its card pool. The private snapshot retains the dealt table, orientations, picks and reveal state. Duplicate tile clicks do not draw again. Catalog failures can be retried without changing an existing table. There is no server seed or draw retry contract, and no bundled meanings fallback.
 
-For the plugin adapter, configure `CORE_MCP_URL=https://tarot-api.songhai.site/mcp/agent` as well. It uses a standard MCP client to retrieve spreads and validate reading context. The widget makes REST requests only when the user starts drawing. Hidden cards and the full reading snapshot stay in private UI state; full context is sent only after all cards are revealed and the relevant interpretation action is requested.
+For the plugin adapter, configure `CORE_MCP_URL=https://tarot-api.songhai.site/mcp/agent` as well. It uses a standard MCP client to retrieve spread definitions; reading context is assembled and validated locally. The widget loads REST catalogs on mount. Opening or setting up the widget does not pick cards. Hidden cards and the full reading snapshot stay in private UI state; full context is sent only after all cards are revealed and the user clicks Brief reading or Interpret. Revealing the final card does not automatically request either action.
 
 Use `.env.example` as a template for these public service URLs. Do not put secrets in `VITE_` variables.
 
@@ -28,8 +28,11 @@ Use `.env.example` as a template for these public service URLs. Do not put secre
 npm run build:vercel
 npm run typecheck
 npm run mcp:test
+npm run test:interaction
 npm run test:vercel
 ```
+
+Interaction tests mount the real App and REST client with visual/audio adapters stubbed; they do not replace a browser or real ChatGPT acceptance test.
 
 The last test imports the built Vercel handler, so build first. For a local MCP AppBridge preview, set `CORE_MCP_URL` and use `npm run mcp:dev`; the preview checks protocol and embedding behavior, not the real ChatGPT host.
 

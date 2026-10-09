@@ -11,6 +11,8 @@ export interface TarotAppSnapshot {
   question: string;
   spread: SpreadType | null;
   pickedCards: PickedCard[];
+  /** Full private face-down table, never included in model context. */
+  dealtCards?: PickedCard[];
   revealedCardIds: number[];
   cardFaceStyle: CardFaceStyle;
 }

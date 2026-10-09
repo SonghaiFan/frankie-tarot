@@ -27,3 +27,34 @@ test('each reading hides a shuffled deck behind the same tiles', () => {
   assert.ok(orders.size > 1, 'the deal changes between readings');
   assert.ok(REVERSED_PROBABILITY > 0 && REVERSED_PROBABILITY < 1);
 });
+
+// These helpers are also used by App's click handler and private recovery path.
+import { dealReadingTable, selectLocalCard } from '../src/features/tarot/utils/localDraw';
+import { restoreSnapshot } from '../src/host/readingSnapshot';
+import { GameState } from '../src/features/tarot/types';
+
+test('manual clicks respect position pools, ignore repeats and survive private recovery', () => {
+  const dealt = dealReadingTable(deck, () => 0.25);
+  const table = new Map(dealt.map(card => [card.visualId!, card]));
+  const pools: CardPoolType[] = ['MINOR_PIP','COURT','MAJOR'];
+  let picked: typeof dealt = [];
+  const wrong = dealt.find(card => isInPool(card,'MAJOR'))!;
+  assert.strictEqual(selectLocalCard(table,picked,wrong.visualId!,pools),picked);
+  for (const pool of pools) {
+    const tile = dealt.find(card => isInPool(card,pool))!;
+    picked = selectLocalCard(table,picked,tile.visualId!,pools);
+    assert.strictEqual(selectLocalCard(table,picked,tile.visualId!,pools),picked);
+    const saved = {version:1,readingId:'local-reading',stage:GameState.PICKING,question:'test',spread:'COURT',pickedCards:picked,dealtCards:dealt,revealedCardIds:[],cardFaceStyle:'dreamy'};
+    const restored = restoreSnapshot(JSON.parse(JSON.stringify(saved)))!;
+    assert.ok(restored);
+    assert.deepEqual(restored.dealtCards,dealt);
+    assert.deepEqual(restored.pickedCards,picked);
+    const resumed = new Map(restored.dealtCards!.map(card => [card.visualId!,card]));
+    assert.deepEqual(selectLocalCard(resumed,restored.pickedCards,wrong.visualId!,pools), selectLocalCard(table,picked,wrong.visualId!,pools));
+    assert.equal(restoreSnapshot({...saved,dealtCards:[dealt[0],dealt[0]]}),undefined);
+    assert.equal(restoreSnapshot({...saved,pickedCards:picked.map(card=>({...card,isReversed:!card.isReversed}))}),undefined);
+  }
+  assert.equal(picked.length,3);
+  assert.deepEqual(picked.map(card=>card.isReversed),[true,true,true]);
+  assert.strictEqual(selectLocalCard(table,picked,dealt[0].visualId!,pools),picked);
+});

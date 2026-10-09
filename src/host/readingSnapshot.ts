@@ -29,6 +29,16 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
       if (typeof state.readingId !== 'string' || !state.readingId || !state.spread ||
         (state.stage !== GameState.PICKING && pickedCards.length < 1)) return;
     }
+    if (state.dealtCards !== undefined) {
+      if (!Array.isArray(state.dealtCards) || state.dealtCards.length < 1) return;
+      const dealt = normalize(state.dealtCards);
+      if (dealt.some(card => !Number.isInteger(card.visualId)) ||
+        new Set(dealt.map(card => card.visualId)).size !== dealt.length ||
+        new Set(dealt.map(card => card.id)).size !== dealt.length ||
+        new Set(dealt.map(card => card.image)).size !== dealt.length ||
+        pickedCards.some(card => !dealt.some(tile => tile.visualId === card.visualId &&
+          tile.image === card.image && tile.id === card.id && tile.isReversed === card.isReversed))) return;
+    }
     const { drawTargets: _legacy, ...rest } = state as TarotAppSnapshot & { drawTargets?: unknown };
     return {...rest,pickedCards};
   } catch { return; }
