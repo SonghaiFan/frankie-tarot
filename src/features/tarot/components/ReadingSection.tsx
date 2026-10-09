@@ -152,7 +152,7 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                 </p>}
               </div>
 
-              {briefStatus === 'error' && !readingText && onRetryBrief && <button onClick={()=>void onRetryBrief()} className="mb-4 text-xs text-neutral-400 underline">{locale === 'zh-CN' ? '重试简短解读' : 'Retry brief reading'}</button>}
+              {briefStatus !== 'pending' && !readingText && onRetryBrief && <button onClick={()=>void onRetryBrief()} className="mb-4 text-xs text-neutral-400 underline">{briefStatus === 'error' ? (locale === 'zh-CN' ? '重试简短解读' : 'Retry brief reading') : (locale === 'zh-CN' ? '简短解读' : 'Brief reading')}</button>}
               {sendError && <p role="alert" className="text-sm text-red-200 mb-4">{sendError}</p>}
               {savedImage && <p role="status" className="text-xs text-neutral-400 mb-4">
                 {savedImage.destination==='library' ? (locale==='zh-CN'?'图片已保存到当前对话的文件库':'Image saved to the current conversation library') : (locale==='zh-CN'?'结果图片已导出':'Reading image exported')}
