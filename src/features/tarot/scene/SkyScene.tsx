@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { type SceneStage, type View, camera, frameStage, readView } from "./camera";
+import { type SceneStage, type View, camera, frameStage, horizonOnScreen, readView } from "./camera";
 import { paintBackdrop, paintHorizon, paintPlanet } from "./painters";
 import { getReflectionSubject } from "./reflection";
 import { createSea } from "./sea";
@@ -129,7 +129,7 @@ const SkyScene: React.FC<{ stage: SceneStage; starsOnly?: boolean }> = ({ stage,
         lastStars = now;
       }
       if (sea) {
-        paintReflectedSky();
+        if (horizonOnScreen(view) < 1 && !fullSky) paintReflectedSky();
         sea.render(sky, view, width, height, animated ? seconds : 20);
       }
 

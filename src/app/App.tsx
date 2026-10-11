@@ -479,8 +479,6 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
             pickedCards={pickedCards}
             isMobile={isMobile}
             isTablet={isTablet}
-            hoveredCardId={hoveredCardId}
-            onCardHover={setHoveredCardId}
             onCardSelect={handleCardSelect}
             cardBackId={cardBackId}
           />
