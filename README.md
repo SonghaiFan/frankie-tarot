@@ -7,6 +7,8 @@ The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table,
 - API documentation: https://tarot-api.songhai.site/
 - API: https://tarot-api.songhai.site
 
+> This project is evolving quickly and will remain free and open source forever. If you’ve downloaded it or are using it, please **Star** the repository and [**Follow @SonghaiFan**](https://github.com/SonghaiFan) to keep up with my projects. Your Star is my biggest source of support and motivation to keep building.
+
 ## Local development
 
 ```sh
