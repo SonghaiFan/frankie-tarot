@@ -69,8 +69,9 @@ test('private recovery preserves picked cards and orientation',()=>{
 });
 
 test('summary updates only the matching completed reading and preserves the exact cards',()=>{
-  const complete={...snapshot,stage:GameState.READING,pickedCards:cards,revealedCardIds:cards.map(c=>c.id)};
+  const complete={...snapshot,stage:GameState.READING,pickedCards:cards,revealedCardIds:cards.map(c=>c.id),summaryRequested:true};
   const summary={readingId:complete.readingId!,text:'  风穿过旧门，光照见下一步。  '};
+  assert.throws(()=>applyReadingSummary({...complete,summaryRequested:false},summary), 'unsolicited summaries are rejected');
   const updated=applyReadingSummary(complete,summary);
   assert.equal(updated.readingText,'风穿过旧门，光照见下一步。');
   assert.equal(updated.summaryRequested,true);

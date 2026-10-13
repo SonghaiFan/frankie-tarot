@@ -51,6 +51,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
+/** Catalog-only client. Selection, orientation and retry/recovery state belong to the local table. */
 export async function loadApiDeck(locale: ApiLocale) {
   const { cards } = await apiRequest<{ cards: ApiCard[] }>(`/api/v1/cards?locale=${encodeURIComponent(locale)}`);
   if (!Array.isArray(cards) || !cards.length || new Set(cards.map((card) => card.id)).size !== cards.length) {

@@ -24,7 +24,7 @@ import {
 } from "@/features/tarot/constants/cards";
 import { SPREADS } from "@/features/tarot/constants/spreads";
 import { loadApiDeck, loadApiSpreads } from "@/api/client";
-import { dealTiles, isInPool, REVERSED_PROBABILITY } from "@/features/tarot/utils/cardPools";
+import { isInPool } from "@/features/tarot/utils/cardPools";
 import { completeReadingContext } from "@/host/readingContext";
 import type { TarotHost, TarotAppSnapshot } from "@/host/tarotHost";
 import SkyScene from "@/features/tarot/scene/SkyScene";
@@ -48,6 +48,8 @@ import {
   DEFAULT_CARD_PACK_ID,
   findPackByCombination,
 } from "@/features/tarot/constants/cardPacks";
+
+import { dealReadingTable, selectLocalCard } from "@/features/tarot/utils/localDraw";
 
 const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; briefSummary?: {readingId:string;text:string}; initialSetup?: {question: string; spread: SpreadType; revision: number; autoStart?: boolean} }> = ({ host, initialSnapshot, initialSetup, briefSummary }) => {
   const { t, i18n } = useTranslation();
@@ -145,9 +147,15 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     preferences.setItem("f-tarot-card-pack", newPackId);
   };
 
+  // Keep rapid successive clicks atomic before React renders the next state.
+  const pickedCardsRef = useRef(pickedCards);
+  const updatePickedCards = (cards: PickedCard[]) => {
+    pickedCardsRef.current = cards;
+    setPickedCards(cards);
+  };
   // --- Refs ---
   // The card hidden behind each face-down tile, shuffled for every reading.
-  const [tileCards, setTileCards] = useState<Map<number, TarotCard>>(() => new Map());
+  const [tileCards, setTileCards] = useState<Map<number, PickedCard>>(() => new Map(savedReading?.dealtCards?.map(card => [card.visualId!, card])));
   // A refresh mid-pick can land on a table whose last pick already happened.
   const restoredPickingRef = useRef(savedReading?.stage === GameState.PICKING);
   const hiddenCardIdsRef = useRef<Set<number>>(new Set(savedReading?.pickedCards.map(card => card.visualId ?? card.id)));
@@ -174,7 +182,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setTileCards(new Map());
     hiddenCardIdsRef.current.clear();
     setQuestion(initialSetup.question); setSpread(initialSetup.spread);
-    setPickedCards([]); setRevealedCardIds(new Set()); setReadingText("");
+    updatePickedCards([]); setRevealedCardIds(new Set()); setReadingText("");
     setSelectedCardId(null); setIsThinking(false); setGameState(GameState.INPUT);
   }, [initialSetup?.revision]);
 
@@ -185,8 +193,8 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     readingIdRef.current = initialSnapshot.readingId;
     setQuestion(initialSnapshot.question);
     setSpread(initialSnapshot.spread);
-    setPickedCards(initialSnapshot.pickedCards);
-    setTileCards(new Map());
+    updatePickedCards(initialSnapshot.pickedCards);
+    setTileCards(new Map(initialSnapshot.dealtCards?.map(card => [card.visualId!, card])));
     restoredPickingRef.current = initialSnapshot.stage === GameState.PICKING;
     hiddenCardIdsRef.current = new Set(initialSnapshot.pickedCards.map(card => card.visualId ?? card.id));
     setRevealedCardIds(new Set(initialSnapshot.revealedCardIds));
@@ -203,6 +211,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     const state: TarotAppSnapshot = {version:1,readingId:readingIdRef.current,
       stage:gameState === GameState.LIBRARY ? previousGameState ?? GameState.INTRO : gameState,
       question,spread,pickedCards,readingText,
+      ...(tileCards.size ? {dealtCards:[...tileCards.values()]} : {}),
       summaryRequested:!!readingIdRef.current && summaryRequestedRef.current===readingIdRef.current,
       revealedCardIds:[...revealedCardIds],cardFaceStyle};
     if (host?.reportState) {
@@ -210,7 +219,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     } else if (!host) {
       try { sessionStorage.setItem('f-tarot-reading',JSON.stringify(state)); } catch { /* Storage may be unavailable. */ }
     }
-  }, [host,gameState,previousGameState,question,spread,pickedCards,[...revealedCardIds].join(','),cardFaceStyle,readingText,briefStatus]);
+  }, [host,gameState,previousGameState,question,spread,pickedCards,tileCards,[...revealedCardIds].join(','),cardFaceStyle,readingText,briefStatus]);
 
   const attachCardContext = (id: number) => {
     const position = pickedCards.findIndex(card => card.id === id);
@@ -241,7 +250,12 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   }, [apiDeck, tileCards, gameState, pickedCards, currentPool]);
 
   useEffect(() => {
-    if (gameState === GameState.PICKING && apiDeck.length && !tileCards.size) setTileCards(dealTiles(apiDeck));
+    if (gameState !== GameState.PICKING || !apiDeck.length || tileCards.size) return;
+    const saved = pickedCardsRef.current;
+    const remainingCards = apiDeck.filter(card => !saved.some(pick => pick.image === card.image));
+    const remainingTiles = apiDeck.filter(tile => !saved.some(pick => (pick.visualId ?? pick.id) === tile.id));
+    const dealt = dealReadingTable(remainingCards).map((card, index) => ({...card, visualId:remainingTiles[index].id}));
+    setTileCards(new Map([...dealt, ...saved.map(card => ({...card, visualId:card.visualId ?? card.id}))].map(card => [card.visualId!, card])));
   }, [gameState, apiDeck, tileCards]);
 
   useEffect(() => {
@@ -265,7 +279,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   };
 
   const startRitual = async () => {
-    if (isThinking) return;
+    if (isThinking || readingIdRef.current) return;
     setHostError("");
     setApiError("");
     if (spread === 'AUTO' && host?.requestSpread) {
@@ -290,12 +304,12 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     // Tags this reading so a summary the model writes back later lands only on this table.
     readingIdRef.current = crypto.randomUUID();
     setGameState(GameState.PICKING);
-    setPickedCards([]);
+    updatePickedCards([]);
     setSelectedCardId(null);
     setRevealedCardIds(new Set());
     setReadingText("");
     hiddenCardIdsRef.current.clear();
-    setTileCards(dealTiles(apiDeck));
+    setTileCards(new Map(dealReadingTable(apiDeck).map(card => [card.visualId!, card])));
 
     playVoice("PICK", "pick");
     setIsThinking(false);
@@ -317,18 +331,13 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   }, [briefSummary]);
 
   const requestBriefSummary = async () => {
-    if (!host?.summarize || !spread || !readingIdRef.current) return;
+    if (!host?.summarize || !spread || !readingIdRef.current || briefStatus === 'pending' || readingText ||
+      gameState !== GameState.READING || pickedCards.length !== SPREADS[spread]?.cardCount ||
+      !pickedCards.every(card => revealedCardIds.has(card.id))) return;
     summaryRequestedRef.current = readingIdRef.current;setBriefStatus('pending');
     try { await host.summarize({readingId:readingIdRef.current,question,spread,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale}); }
     catch { setBriefStatus('error'); }
   };
-  useEffect(() => {
-    if (!host?.summarize || gameState !== GameState.READING || !spread || !pickedCards.length ||
-      pickedCards.length !== SPREADS[spread]?.cardCount ||
-      !pickedCards.every(card=>revealedCardIds.has(card.id)) ||
-      !readingIdRef.current || summaryRequestedRef.current === readingIdRef.current) return;
-    void requestBriefSummary();
-  }, [host,gameState,spread,pickedCards,revealedCardIds]);
   useEffect(() => {
     if (briefStatus !== 'pending' || readingText) return;
     const timer=setTimeout(()=>setBriefStatus('error'),60000);
@@ -340,30 +349,26 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
 
     const requiredCards = SPREADS[spread!]?.cardCount;
     if (!requiredCards) return;
-    if (pickedCards.length >= requiredCards) return;
+    if (pickedCardsRef.current.length >= requiredCards) return;
 
     if (hiddenCardIdsRef.current.has(visualCard.id)) return;
 
-    const card = tileCards.get(visualCard.id);
-    if (!card || pickedCards.some(picked => picked.id === card.id) || !isInPool(card, currentPool)) return;
-
-    const pickedCard: PickedCard = {
-      ...card,
-      isReversed: Math.random() < REVERSED_PROBABILITY,
-      visualId: visualCard.id,
-    };
+    const current = pickedCardsRef.current;
+    const pools = SPREADS[spread!].cardPools ?? Array.from({length:requiredCards}, () => "FULL" as const);
+    const newPicked = selectLocalCard(tileCards, current, visualCard.id, pools);
+    if (newPicked === current) return;
+    const card = newPicked[newPicked.length - 1];
     preload(getCardImageUrl(card.image, cardFaceStyle), { as: "image" });
-
     hiddenCardIdsRef.current.add(visualCard.id);
 
-    const newPicked: PickedCard[] = [...pickedCards, pickedCard];
-    setPickedCards(newPicked);
+    updatePickedCards(newPicked);
 
     if (newPicked.length === requiredCards) {
       // Request expansion directly from the final user selection.
       void host?.expand?.().catch(() => {});
       // Long enough for the last card to land in its slot (0.45s), then a beat.
-      setTimeout(startRevealProcess, 600);
+      const readingId = readingIdRef.current;
+      setTimeout(() => { if (readingIdRef.current === readingId) startRevealProcess(); }, 600);
     }
   };
 
@@ -374,10 +379,10 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setIsThinking(false);
   };
 
-  const resetRitual = () => {
+  const resetTable = (stage: GameState) => {
     stopVoice();
-    setGameState(GameState.INPUT);
-    setPickedCards([]);
+    setGameState(stage);
+    updatePickedCards([]);
     setSelectedCardId(null);
     setRevealedCardIds(new Set());
     setReadingText("");
@@ -387,6 +392,10 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setTileCards(new Map());
     setIsThinking(false);
     setPreviousGameState(null);
+  };
+
+  const resetRitual = () => {
+    resetTable(GameState.INPUT);
     playVoice("ASK", "ask");
   };
 
@@ -550,9 +559,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
           onLibraryClick={toggleLibrary}
           onExpand={host?.expand}
           onHomeClick={() => {
-            setSelectedCardId(null);
-            setGameState(GameState.INTRO);
-            setPreviousGameState(null);
+            resetTable(GameState.INTRO);
           }}
         />
       </motion.div>
