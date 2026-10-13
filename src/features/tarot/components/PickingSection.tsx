@@ -8,6 +8,7 @@ import { SILKY_EASE } from "@/shared/constants/ui";
 import { CARD_ASPECT_CLASS } from "@/features/tarot/constants/cards";
 import { CardBackId } from "@/features/tarot/constants/cardBacks";
 import CardBackSurface from "./CardBackSurface";
+import PickingCloudCanvas from "./PickingCloudCanvas";
 
 interface CloudCardRenderData {
   card: TarotCardType;
@@ -21,6 +22,7 @@ interface CloudCardRenderData {
 }
 
 interface PickingCloudCardProps {
+  gpuReady: boolean;
   card: TarotCardType;
   layoutId: string;
   width: string;
@@ -31,10 +33,18 @@ interface PickingCloudCardProps {
 }
 
 const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
-  ({ card, layoutId, width, height = CARD_ASPECT_CLASS, rotation, onSelect, cardBackId }) => {
+  ({ gpuReady, card, layoutId, width, height = CARD_ASPECT_CLASS, rotation, onSelect, cardBackId }) => {
+    const touchStart = React.useRef<{x: number; y: number} | null>(null);
+    const ignoreClickUntil = React.useRef(0);
     return (
       <motion.div
+        data-cloud-card={card.id}
+        data-rotation={rotation}
+        role="button"
+        tabIndex={0}
+        aria-label={`Select card ${card.id + 1}`}
         style={{
+          touchAction: "manipulation",
           backfaceVisibility: "hidden",
           position: "absolute",
           left: 0,
@@ -43,7 +53,28 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
           rotate: `${rotation}deg`,
         }}
         className={`relative cursor-pointer group ${width} ${height}`}
-        onClick={() => onSelect(card)}
+        onPointerDown={event => {
+          if (event.pointerType !== "mouse" && event.isPrimary) touchStart.current = {x: event.clientX, y: event.clientY};
+        }}
+        onPointerCancel={() => { touchStart.current = null; }}
+        onPointerUp={event => {
+          const start = touchStart.current;
+          touchStart.current = null;
+          if (!start || !event.isPrimary || event.pointerType === "mouse") return;
+          if (Math.hypot(event.clientX-start.x,event.clientY-start.y)>10) return;
+          event.preventDefault();
+          ignoreClickUntil.current = performance.now() + 700;
+          onSelect(card);
+        }}
+        onClick={event => {
+          // Touch has already selected on release. Click remains for mouse,
+          // keyboard and assistive technologies; selection is also idempotent.
+          if ((event.nativeEvent as PointerEvent).pointerType === "touch" || performance.now() < ignoreClickUntil.current) return;
+          onSelect(card);
+        }}
+        onKeyDown={event => {
+          if(event.key === "Enter" || event.key === " ") { event.preventDefault();onSelect(card); }
+        }}
         initial={false}
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.04 }}
@@ -55,9 +86,9 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
           transition={{ layout: { type: "tween", duration: 0.18, ease: [0.16, 1, 0.3, 1] } }}
           style={{ backfaceVisibility: "hidden" }}
         >
-          <div className={`absolute inset-0 overflow-hidden ${CARD_CORNER_CLASS} bg-black`}>
+          {!gpuReady && <div className={`absolute inset-0 overflow-hidden ${CARD_CORNER_CLASS} bg-black`}>
             <CardBackSurface cardBackId={cardBackId} />
-          </div>
+          </div>}
           <div
             aria-hidden
             className={`pointer-events-none absolute inset-0 z-10 ${CARD_CORNER_CLASS} border border-white/55 shadow-[0_0_18px_rgba(255,255,255,0.26)] opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
@@ -90,11 +121,15 @@ const PickingSection: React.FC<PickingSectionProps> = ({
   cardBackId,
 }) => {
   const reducedMotion = useReducedMotion();
+  const [gpuReady, setGpuReady] = React.useState(false);
   // Hover changes must not invalidate every memoized card via a new callback.
   const selectRef = React.useRef(onCardSelect);
   React.useLayoutEffect(() => { selectRef.current = onCardSelect; }, [onCardSelect]);
   const selectCard = React.useCallback((card: TarotCardType) => selectRef.current(card), []);
   const stageRef = React.useRef<HTMLDivElement>(null);
+  // WebKit synthesizes a mouse click after touch release, and can retarget it
+  // to the next card when the selected DOM node has already disappeared.
+  const suppressCompatibilityClickUntil = React.useRef(0);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
 
   React.useLayoutEffect(() => {
@@ -180,8 +215,21 @@ const PickingSection: React.FC<PickingSectionProps> = ({
     >
       <div
         ref={stageRef}
+        onPointerDownCapture={event => {
+          if (event.pointerType !== "mouse") suppressCompatibilityClickUntil.current = performance.now() + 700;
+        }}
+        onPointerUpCapture={event => {
+          if (event.pointerType !== "mouse") suppressCompatibilityClickUntil.current = performance.now() + 700;
+        }}
+        onClickCapture={event => {
+          if (event.detail > 0 && performance.now() < suppressCompatibilityClickUntil.current) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}
         className="absolute inset-x-0 top-[calc(var(--safe-top)+6rem)] bottom-[calc(var(--safe-bottom)+5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
       >
+        <PickingCloudCanvas stageRef={stageRef} cardBackId={cardBackId} onReady={setGpuReady} />
         {cameraReady && stageSize.width > 0 && stageSize.height > 0 && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25, ease: SILKY_EASE }} className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2">
           {cloudCards.map(({ card, x, y, rotation, cardWidth, arrivalX, arrivalY, arrivalDelay }) => (
             <motion.div key={card.id} className="absolute" style={{ left: x, top: y }}
@@ -190,6 +238,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
               transition={{ duration: reducedMotion ? 0 : 0.32, delay: reducedMotion ? 0 : arrivalDelay, ease: SILKY_EASE }}
             >
               <PickingCloudCard
+                gpuReady={gpuReady}
                 layoutId={`card-${card.id}`}
                 card={card}
                 width={cardWidth}

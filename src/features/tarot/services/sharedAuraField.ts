@@ -5,7 +5,7 @@ import {
   subscribeCardBackAppearance,
 } from "./cardBackAppearance";
 
-const SETTINGS = {
+export const AURA_FIELD_SETTINGS = {
   bands: [0.425, 0.47, 0.49, 0.505, 0.545],
   skyBias: 0.12,
   poolStart: 0.6,
@@ -18,6 +18,7 @@ const SETTINGS = {
   saturation: 1.08,
   renderScale: 0.35,
 } as const;
+const SETTINGS = AURA_FIELD_SETTINGS;
 
 /** Seconds-to-shader-time factor used by the aura, for other renderers of the same field. */
 export const AURA_TIME_SPEED = SETTINGS.timeSpeed;

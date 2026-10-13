@@ -73,9 +73,7 @@ try {
       (s) => s.stage === "PICKING" && s.dealtCards?.length === 78,
     );
     assert.equal(dealt.pickedCards.length, 0);
-    const tiles = ui
-      .locator("div.cursor-pointer.group")
-      .filter({ has: ui.locator("svg") });
+    const tiles = ui.locator("[data-cloud-card]");
     await tiles.last().waitFor();
     await tiles.last().evaluate((el) => {
       el.click();
