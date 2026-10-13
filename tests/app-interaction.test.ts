@@ -100,6 +100,13 @@ test('opening, picking, restore and final reveal never auto-interpret or call a 
     await act(async()=>{app=create(React.createElement(App,{host,initialSnapshot:completed}));});
     assert.equal(summaries.length,2);assert.equal(interpretations.length,1);
     assert.deepEqual(saved.pickedCards,finalCards);
+    // Home is a new setup entry: the previous reading must not block Start.
+    await act(async()=>{view('HeaderBar').props.onHomeClick();});
+    await act(async()=>{await view('CircleActionButton').props.onClick();});
+    await act(async()=>{await view('InputSection').props.onStartRitual();});
+    assert.equal(saved.stage,'PICKING');
+    assert.equal(saved.pickedCards.length,0);
+    assert.notEqual(saved.readingId,completed.readingId);
     assert.ok(urls.every(url=>/\/api\/v1\/(cards|spreads)\?locale=en$/.test(url)));
   } finally {await act(async()=>app?.unmount());globalThis.fetch=originalFetch;}
 });

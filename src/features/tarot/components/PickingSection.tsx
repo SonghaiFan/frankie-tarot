@@ -23,29 +23,30 @@ interface CloudCardRenderData {
 interface PickingCloudCardProps {
   card: TarotCardType;
   layoutId: string;
-  isHovered: boolean;
   width: string;
   height?: string;
-  style: React.CSSProperties;
-  onHover: (id: number | null) => void;
-  onClick: () => void;
+  rotation: number;
+  onSelect: (card: TarotCardType) => void;
   cardBackId: CardBackId;
 }
 
 const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
-  ({ card, layoutId, isHovered, width, height = CARD_ASPECT_CLASS, style, onHover, onClick, cardBackId }) => {
+  ({ card, layoutId, width, height = CARD_ASPECT_CLASS, rotation, onSelect, cardBackId }) => {
     return (
       <motion.div
         style={{
           backfaceVisibility: "hidden",
-          ...style,
+          position: "absolute",
+          left: 0,
+          top: 0,
+          transform: "translate(-50%, -50%)",
+          rotate: `${rotation}deg`,
         }}
         className={`relative cursor-pointer group ${width} ${height}`}
-        onMouseEnter={() => onHover(card.id)}
-        onMouseLeave={() => onHover(null)}
-        onClick={onClick}
+        onClick={() => onSelect(card)}
         initial={false}
-        animate={{ scale: isHovered ? 1.04 : 1, opacity: 1 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.04 }}
         transition={{ scale: { duration: 0.22, ease: SILKY_EASE }, opacity: { duration: 0.4 } }}
       >
         <motion.div
@@ -59,11 +60,7 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
           </div>
           <div
             aria-hidden
-            className={`pointer-events-none absolute inset-0 z-10 ${CARD_CORNER_CLASS} border transition-all duration-200 ${
-              isHovered
-                ? "border-white/55 shadow-[0_0_18px_rgba(255,255,255,0.26)]"
-                : "border-white/0"
-            }`}
+            className={`pointer-events-none absolute inset-0 z-10 ${CARD_CORNER_CLASS} border border-white/55 shadow-[0_0_18px_rgba(255,255,255,0.26)] opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
           />
         </motion.div>
       </motion.div>
@@ -79,8 +76,6 @@ interface PickingSectionProps {
   pickedCards: PickedCard[];
   isMobile: boolean;
   isTablet: boolean;
-  hoveredCardId: number | null;
-  onCardHover: (id: number | null) => void;
   onCardSelect: (card: TarotCardType) => void;
   cardBackId: CardBackId;
 }
@@ -91,12 +86,14 @@ const PickingSection: React.FC<PickingSectionProps> = ({
   pickedCards,
   isMobile,
   isTablet,
-  hoveredCardId,
-  onCardHover,
   onCardSelect,
   cardBackId,
 }) => {
   const reducedMotion = useReducedMotion();
+  // Hover changes must not invalidate every memoized card via a new callback.
+  const selectRef = React.useRef(onCardSelect);
+  React.useLayoutEffect(() => { selectRef.current = onCardSelect; }, [onCardSelect]);
+  const selectCard = React.useCallback((card: TarotCardType) => selectRef.current(card), []);
   const stageRef = React.useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
 
@@ -195,18 +192,10 @@ const PickingSection: React.FC<PickingSectionProps> = ({
               <PickingCloudCard
                 layoutId={`card-${card.id}`}
                 card={card}
-                isHovered={hoveredCardId === card.id}
-                onHover={onCardHover}
                 width={cardWidth}
                 height={CARD_ASPECT_CLASS}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  transform: "translate(-50%, -50%)",
-                  rotate: `${rotation}deg`,
-                }}
-                onClick={() => onCardSelect(card)}
+                rotation={rotation}
+                onSelect={selectCard}
                 cardBackId={cardBackId}
               />
             </motion.div>

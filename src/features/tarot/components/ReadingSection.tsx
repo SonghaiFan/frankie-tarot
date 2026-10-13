@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Download, RefreshCw, Copy, Check } from "lucide-react";
+import { Download, RefreshCw, Copy, Check, ExternalLink } from "lucide-react";
 import { SpreadType, PickedCard } from "@/features/tarot/types";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import { useTranslation } from "react-i18next";
@@ -46,9 +46,49 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [savedImage, setSavedImage] = useState<SavedReadingImage>();
   useEffect(()=>{setIsCopied(false);setSavedImage(undefined);},[readingText,question]);
+
+  const openPromptIn = async (provider: "chatgpt" | "claude" | "gemini") => {
+    if (isSending) return;
+    // Open synchronously from the user gesture so popup blockers allow the tab.
+    const tab = window.open("about:blank", "_blank");
+    setIsProviderMenuOpen(false);
+    setIsSending(true);
+    setSendError("");
+    try {
+      const prompt = await onCopyContext();
+      const encoded = encodeURIComponent(prompt);
+      const url = provider === "chatgpt"
+        ? `https://chatgpt.com/?prompt=${encoded}`
+        : provider === "claude"
+          ? `https://claude.ai/new?q=${encoded}`
+          : `https://gemini.google.com/app?prompt=${encoded}`;
+      if (provider === "gemini") {
+        // Gemini does not document prompt-prefill URLs, so keep the prompt ready to paste too.
+        try {
+          await navigator.clipboard.writeText(prompt);
+          setShowCopiedToast(true);
+        } catch {
+          // Still open Gemini with the prompt query string as a best-effort prefill.
+        }
+      }
+      if (tab) {
+        tab.location.replace(url);
+      } else {
+        // If popups are blocked, navigate this tab so the requested provider still opens.
+        window.location.assign(url);
+      }
+    } catch (err) {
+      tab?.close();
+      console.error("Failed to prepare interpretation prompt:", err);
+      setSendError(locale === "zh-CN" ? "无法生成提示词，请重试。" : "Could not prepare the prompt. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const handleCopyPrompt = async () => {
     if (onInterpret) {
@@ -173,18 +213,48 @@ const ReadingSection: React.FC<ReadingSectionProps> = ({
                     {t(isSavingResult ? "reading.saving" : "reading.save")}
                   </motion.button>
 
-                  <motion.button
+                  {onInterpret && <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 2.4 }}
                     onClick={handleCopyPrompt}
                     className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-neutral-600 hover:text-white transition-colors group px-4 py-2 border border-neutral-800 hover:border-white/20"
-                    disabled={isSending || (!!onInterpret && isCopied)}
-                    title={onInterpret ? (locale === "zh-CN" ? "在当前对话中解读" : "Interpret in this conversation") : t("reading.promptTitle")}
+                    disabled={isSending || isCopied}
+                    title={locale === "zh-CN" ? "在当前对话中解读" : "Interpret in this conversation"}
                   >
-                    {onInterpret && isCopied ? <Check size={14} /> : <Copy size={14} />}
-                    {onInterpret ? (locale === "zh-CN" ? (isCopied ? "已发送到对话" : isSending ? "正在发送…" : "解读") : (isCopied ? "Sent to conversation" : isSending ? "Sending…" : "Interpret")) : t("reading.copyPromptButton")}
-                  </motion.button>
+                    {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                    {isCopied ? (locale === "zh-CN" ? "已发送到对话" : "Sent to conversation") : isSending ? (locale === "zh-CN" ? "正在发送…" : "Sending…") : (locale === "zh-CN" ? "当前对话解读" : "Interpret here")}
+                  </motion.button>}
+
+                  <div className="relative">
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: onInterpret ? 2.5 : 2.4 }}
+                      onClick={() => setIsProviderMenuOpen((open) => !open)}
+                      className="inline-flex items-center gap-2 text-xs tracking-[0.15em] text-neutral-600 hover:text-white transition-colors group px-4 py-2 border border-neutral-800 hover:border-white/20"
+                      disabled={isSending}
+                      aria-haspopup="menu"
+                      aria-expanded={isProviderMenuOpen}
+                      title={locale === "zh-CN" ? "选择 AI 并打开解读提示词" : "Choose an AI and open the interpretation prompt"}
+                    >
+                      <ExternalLink size={14} />
+                      {isSending ? (locale === "zh-CN" ? "正在打开…" : "Opening…") : (locale === "zh-CN" ? "打开 AI" : "OPEN IN AI")}
+                    </motion.button>
+                    {isProviderMenuOpen && <div role="menu" className="absolute bottom-full left-1/2 z-30 mb-2 min-w-40 -translate-x-1/2 border border-white/15 bg-neutral-950/95 p-1 shadow-xl backdrop-blur-md">
+                      {([
+                        ["chatgpt", "ChatGPT"],
+                        ["claude", "Claude"],
+                        ["gemini", "Gemini"],
+                      ] as const).map(([provider, label]) => <button
+                        key={provider}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => void openPromptIn(provider)}
+                        className="block w-full px-4 py-2 text-left text-xs tracking-wider text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+                      >{label}</button>)}
+                    </div>}
+                  </div>
                 </div>
 
                 <motion.button

@@ -7,6 +7,8 @@ The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table,
 - API documentation: https://tarot-api.songhai.site/
 - API: https://tarot-api.songhai.site
 
+> This project is evolving quickly and will remain free and open source forever. If you’ve downloaded it or are using it, please **Star** the repository and [**Follow @SonghaiFan**](https://github.com/SonghaiFan) to keep up with my projects. Your Star is my biggest source of support and motivation to keep building.
+
 ## Local development
 
 ```sh
@@ -33,6 +35,16 @@ npm run test:vercel
 ```
 
 Interaction tests mount the real App and REST client with visual/audio adapters stubbed; they do not replace a browser or real ChatGPT acceptance test.
+
+For browser acceptance, install Chromium with `npx playwright install chromium`,
+then build/start the local MCP Apps preview against Franklin (`CORE_MCP_URL` and
+`VITE_TAROT_API_URL` must point at the same API under test). With that preview
+running, run `npm run test:browser`. The test checks desktop and mobile iframe
+flows, duplicate tile events, exact private recovery, explicit interpretation
+messages, and zero random-draw requests. `TAROT_PREVIEW_URL` can override the
+default English `/preview?locale=en` URL; `TAROT_CHROMIUM_PATH` can select an
+installed Chromium. This host records messages and simulates summary writeback;
+it does not call an AI model or certify the actual ChatGPT host.
 
 The last test imports the built Vercel handler, so build first. For a local MCP AppBridge preview, set `CORE_MCP_URL` and use `npm run mcp:dev`; the preview checks protocol and embedding behavior, not the real ChatGPT host.
 

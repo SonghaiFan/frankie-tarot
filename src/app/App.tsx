@@ -1,5 +1,6 @@
 import CircleActionButton from "@/shared/components/CircleActionButton";
-import { Languages, Library } from "lucide-react";
+import { GlassBubble } from "@/shared/components/GlassBubble";
+import { ArrowUp, Languages, Library } from "lucide-react";
 import { restoreSnapshot } from "@/host/readingSnapshot";
 import { preferences } from "@/shared/storage";
 import React, {
@@ -378,9 +379,9 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setIsThinking(false);
   };
 
-  const resetRitual = () => {
+  const resetTable = (stage: GameState) => {
     stopVoice();
-    setGameState(GameState.INPUT);
+    setGameState(stage);
     updatePickedCards([]);
     setSelectedCardId(null);
     setRevealedCardIds(new Set());
@@ -391,6 +392,10 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setTileCards(new Map());
     setIsThinking(false);
     setPreviousGameState(null);
+  };
+
+  const resetRitual = () => {
+    resetTable(GameState.INPUT);
     playVoice("ASK", "ask");
   };
 
@@ -406,8 +411,6 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     cardBackId
   );
 
-  const primaryActionRef = useRef<(() => void) | null>(null);
-  const [inputConfirmed, setInputConfirmed] = useState(false);
   const [returningFromLibrary, setReturningFromLibrary] = useState(false);
   const toggleLibrary = () => {
     setReturningFromLibrary(gameState === GameState.LIBRARY);
@@ -465,8 +468,6 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
         if (!apiDeck.length || (spread && !SPREADS[spread])) return <p role="status" className="fixed inset-x-0 top-1/2 z-[100] text-center text-sm text-white/60">{locale === 'zh-CN' ? '正在连接牌库…' : 'Connecting to the card library…'}</p>;
         return (
           <InputSection
-            primaryActionRef={primaryActionRef}
-            onConfirmationChange={setInputConfirmed}
             key="input"
             question={question}
             spread={spread}
@@ -487,8 +488,6 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
             pickedCards={pickedCards}
             isMobile={isMobile}
             isTablet={isTablet}
-            hoveredCardId={hoveredCardId}
-            onCardHover={setHoveredCardId}
             onCardSelect={handleCardSelect}
             cardBackId={cardBackId}
           />
@@ -560,9 +559,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
           onLibraryClick={toggleLibrary}
           onExpand={host?.expand}
           onHomeClick={() => {
-            setSelectedCardId(null);
-            setGameState(GameState.INTRO);
-            setPreviousGameState(null);
+            resetTable(GameState.INTRO);
           }}
         />
       </motion.div>
@@ -627,25 +624,36 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       </motion.main>
 
       <AnimatePresence>
-        {(gameState === GameState.INTRO || gameState === GameState.INPUT) && (
+        {gameState === GameState.INTRO && (
           <motion.div key="primary-draw-action"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed left-1/2 top-[calc((58%+100%-var(--safe-bottom)-4.5rem)/2)] z-50 -translate-x-1/2 -translate-y-1/2 md:top-[73%]"
+            className="fixed left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 top-[calc((58%+100%-var(--safe-bottom)-4.5rem)/2)] md:top-[73%]"
           >
             <CircleActionButton
-              label={gameState === GameState.INPUT && !inputConfirmed
-                ? (spread ? t("input.confirmSpread") : t("input.selectSpread"))
-                : isThinking ? t("input.divining") : t("actions.startDrawing")}
-              disabled={gameState === GameState.INPUT && (!spread || isThinking)}
-              onClick={gameState === GameState.INTRO ? enterInputPhase : () => primaryActionRef.current?.()}
+              label={t("actions.startDrawing")}
+              icon={<ArrowUp size={20} strokeWidth={1} />}
+              onClick={enterInputPhase}
             />
             {gameState === GameState.INTRO && <>
-              <button type="button" onClick={() => void i18n.changeLanguage(locale === "en" ? "zh-CN" : "en")}
-                aria-label={locale === "en" ? t("header.switchToChinese") : t("header.switchToEnglish")}
-                className="absolute right-[calc(100%+2rem)] top-3 grid size-10 place-items-center rounded-full border border-white/20 text-white/70 md:hidden"><Languages size={17} strokeWidth={1.5} /></button>
-              <button type="button" onClick={toggleLibrary} aria-label={t("header.openLibraryTitle")}
-                className="absolute left-[calc(100%+2rem)] top-3 grid size-10 place-items-center rounded-full border border-white/20 text-white/70 md:hidden"><Library size={17} strokeWidth={1.5} /></button>
+              <div className="absolute right-[calc(100%+2rem)] top-3 md:hidden">
+                <GlassBubble
+                  onClick={() => void i18n.changeLanguage(locale === "en" ? "zh-CN" : "en")}
+                  aria-label={locale === "en" ? t("header.switchToChinese") : t("header.switchToEnglish")}
+                  className="size-10 text-white/70"
+                >
+                  <Languages size={17} strokeWidth={1.5} />
+                </GlassBubble>
+              </div>
+              <div className="absolute left-[calc(100%+2rem)] top-3 md:hidden">
+                <GlassBubble
+                  onClick={toggleLibrary}
+                  aria-label={t("header.openLibraryTitle")}
+                  className="size-10 text-white/70"
+                >
+                  <Library size={17} strokeWidth={1.5} />
+                </GlassBubble>
+              </div>
             </>}
           </motion.div>
         )}

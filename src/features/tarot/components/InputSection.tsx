@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, ChevronUp } from "lucide-react";
+import { ArrowUp, Check, ChevronUp } from "lucide-react";
 import { SpreadType } from "@/features/tarot/types";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import { getLocalizedSpread, SPREADS } from "@/features/tarot/constants/spreads";
 import { useTranslation } from "react-i18next";
 import { Locale } from "@/features/tarot/types";
+import CircleActionButton from "@/shared/components/CircleActionButton";
 import SelectionTile from "@/shared/components/SelectionTile";
 
 interface InputSectionProps {
-  primaryActionRef: React.RefObject<(() => void) | null>;
-  onConfirmationChange: (confirmed: boolean) => void;
   question: string;
   spread: SpreadType | null;
   onQuestionChange: (value: string) => void;
@@ -24,8 +23,6 @@ interface InputSectionProps {
 const InputSection: React.FC<InputSectionProps> = ({
   question,
   spread,
-  primaryActionRef,
-  onConfirmationChange,
   onQuestionChange,
   onSpreadChange,
   onStartRitual,
@@ -88,17 +85,10 @@ const InputSection: React.FC<InputSectionProps> = ({
     setIsSpreadConfirmed(false);
   };
 
-  React.useLayoutEffect(() => {
-    primaryActionRef.current = isSpreadConfirmed ? onStartRitual : handleConfirm;
-    onConfirmationChange(isSpreadConfirmed);
-  });
-
   return (
-    // 修改说明：
-    // 1. min-h-[80vh] + justify-center: 实现垂直居中
-    // 2. items-center: 实现水平居中
-    // 3. overflow-hidden: 保持动画边界整洁
-    <div className="w-full max-w-3xl px-0 sm:px-4 flex flex-col justify-center items-center min-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-7.5rem)] pt-4 pb-[max(8rem,25dvh)] md:pt-8 relative">
+    // The action shares the content flow so a tall question or a short viewport
+    // cannot put the button on top of the input. The main element handles scrolling.
+    <div className="w-full max-w-3xl px-0 sm:px-4 flex flex-col justify-center items-center min-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-7.5rem)] py-4 md:pt-8 relative">
       <AnimatePresence mode="wait" custom={direction}>
         {/* === PHASE 1: SPREAD SELECTION (选牌阵) === */}
         {!isSpreadConfirmed ? (
@@ -220,6 +210,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                 </AnimatePresence>
 
                 <input
+                  aria-label={t("input.enterQuestion")}
                   type="text"
                   autoComplete="off"
                   value={question}
@@ -235,6 +226,15 @@ const InputSection: React.FC<InputSectionProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+      <CircleActionButton
+        className="mt-10 mb-2 shrink-0 md:mt-12"
+        label={!isSpreadConfirmed
+          ? (spread ? t("input.confirmSpread") : t("input.selectSpread"))
+          : isThinking ? t("input.divining") : t("actions.startDrawing")}
+        disabled={!spread || isThinking}
+        icon={isSpreadConfirmed ? <ArrowUp size={20} strokeWidth={1} /> : undefined}
+        onClick={isSpreadConfirmed ? onStartRitual : handleConfirm}
+      />
     </div>
   );
 };

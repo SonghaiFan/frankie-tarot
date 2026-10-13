@@ -31,10 +31,15 @@ let fallbackSource: HTMLCanvasElement | undefined;
 let sourceInitialized = false;
 let gl: WebGLRenderingContext | null = null;
 let program: WebGLProgram | null = null;
-let uResolution: WebGLUniformLocation | null = null;
-let uTime: WebGLUniformLocation | null = null;
+let sceneProgram: WebGLProgram | null = null;
+let sceneTexture: WebGLTexture | null = null;
+let sceneFramebuffer: WebGLFramebuffer | null = null;
+let sceneWidth = 0;
+let sceneHeight = 0;
+let sceneUniforms: { resolution: WebGLUniformLocation | null; time: WebGLUniformLocation | null; scale: WebGLUniformLocation | null; colors: WebGLUniformLocation | null; padding: WebGLUniformLocation | null } | undefined;
+let uPadding: WebGLUniformLocation | null = null;
+let uSceneSize: WebGLUniformLocation | null = null;
 let uScale: WebGLUniformLocation | null = null;
-let uColors: WebGLUniformLocation | null = null;
 let uploadedColors: string[] | undefined;
 let frameId = 0;
 let startedAt = 0;
@@ -42,7 +47,7 @@ let fieldScale = SETTINGS.renderScale;
 
 const value = (number: number) => Number(number).toFixed(4);
 /** The aura's GLSL (uniforms uRes, uTime, uScale, uColors[11]), for other renderers of the same field. */
-export const createAuraShaderSources = () => {
+export const createAuraShaderSources = (pass: "combined" | "scene" | "blur" = "combined") => {
   const { bands: b } = SETTINGS;
   const vertex = `
 attribute vec2 position;
@@ -54,6 +59,9 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform float uScale;
 uniform vec3 uColors[11];
+uniform float uPadding;
+uniform vec2 uSceneSize;
+uniform sampler2D uScene;
 
 vec2 hash(vec2 p) {
   p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
@@ -113,21 +121,25 @@ vec3 scene(vec2 fc) {
   return col;
 }
 
-void main() {
+${pass === "scene" ? `void main() {
+  gl_FragColor = vec4(scene(gl_FragCoord.xy - vec2(uPadding)), 1.0);
+}` : `void main() {
   vec3 col = vec3(0.0);
   float radius = ${value(SETTINGS.blur)} * uScale;
   for (int i = 0; i < 16; i++) {
     float fi = float(i);
     float r = radius * sqrt((fi + 0.5) / 16.0);
     float a = fi * 2.39996;
-    col += scene(gl_FragCoord.xy + r * vec2(cos(a), sin(a)));
+    ${pass === "blur"
+      ? "col += texture2D(uScene, (gl_FragCoord.xy + vec2(uPadding) + r * vec2(cos(a), sin(a))) / uSceneSize).rgb;"
+      : "col += scene(gl_FragCoord.xy + r * vec2(cos(a), sin(a)));"}
   }
   col /= 16.0;
   col = (col - 0.5) * ${value(SETTINGS.contrast)} + 0.5;
   float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = mix(vec3(luma), col, ${value(SETTINGS.saturation)});
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-}`;
+}`}`;
 
   return { vertex, fragment };
 };
@@ -153,7 +165,7 @@ const initializeWebGL = (canvas: HTMLCanvasElement) => {
   });
   if (!context) return false;
 
-  const { vertex, fragment } = createAuraShaderSources();
+  const { vertex, fragment } = createAuraShaderSources("blur");
   const vertexShader = compileShader(context, context.VERTEX_SHADER, vertex);
   const fragmentShader = compileShader(context, context.FRAGMENT_SHADER, fragment);
   if (!vertexShader || !fragmentShader) return false;
@@ -162,6 +174,7 @@ const initializeWebGL = (canvas: HTMLCanvasElement) => {
   if (!linkedProgram) return false;
   context.attachShader(linkedProgram, vertexShader);
   context.attachShader(linkedProgram, fragmentShader);
+  context.bindAttribLocation(linkedProgram, 0, "position");
   context.linkProgram(linkedProgram);
   if (!context.getProgramParameter(linkedProgram, context.LINK_STATUS)) {
     console.warn("Aura field shader failed to link:", context.getProgramInfoLog(linkedProgram));
@@ -177,12 +190,36 @@ const initializeWebGL = (canvas: HTMLCanvasElement) => {
   context.enableVertexAttribArray(position);
   context.vertexAttribPointer(position, 2, context.FLOAT, false, 0, 0);
 
+  const sceneShader = compileShader(context, context.FRAGMENT_SHADER, createAuraShaderSources("scene").fragment);
+  const rawProgram = context.createProgram();
+  const texture = context.createTexture();
+  const framebuffer = context.createFramebuffer();
+  if (!sceneShader || !rawProgram || !texture || !framebuffer) return false;
+  context.attachShader(rawProgram, vertexShader);
+  context.attachShader(rawProgram, sceneShader);
+  context.bindAttribLocation(rawProgram, 0, "position");
+  context.linkProgram(rawProgram);
+  if (!context.getProgramParameter(rawProgram, context.LINK_STATUS)) return false;
+  context.bindTexture(context.TEXTURE_2D, texture);
+  context.texParameteri(context.TEXTURE_2D, context.TEXTURE_MIN_FILTER, context.LINEAR);
+  context.texParameteri(context.TEXTURE_2D, context.TEXTURE_MAG_FILTER, context.LINEAR);
+  context.texParameteri(context.TEXTURE_2D, context.TEXTURE_WRAP_S, context.CLAMP_TO_EDGE);
+  context.texParameteri(context.TEXTURE_2D, context.TEXTURE_WRAP_T, context.CLAMP_TO_EDGE);
+  sceneProgram = rawProgram;
+  sceneTexture = texture;
+  sceneFramebuffer = framebuffer;
+  sceneUniforms = {
+    resolution: context.getUniformLocation(rawProgram, "uRes"),
+    time: context.getUniformLocation(rawProgram, "uTime"),
+    scale: context.getUniformLocation(rawProgram, "uScale"),
+    colors: context.getUniformLocation(rawProgram, "uColors[0]"),
+    padding: context.getUniformLocation(rawProgram, "uPadding"),
+  };
+  uPadding = context.getUniformLocation(linkedProgram, "uPadding");
+  uSceneSize = context.getUniformLocation(linkedProgram, "uSceneSize");
   gl = context;
   program = linkedProgram;
-  uResolution = context.getUniformLocation(linkedProgram, "uRes");
-  uTime = context.getUniformLocation(linkedProgram, "uTime");
   uScale = context.getUniformLocation(linkedProgram, "uScale");
-  uColors = context.getUniformLocation(linkedProgram, "uColors[0]");
   return true;
 };
 
@@ -248,28 +285,45 @@ const paintField = (time: number) => {
       gl.viewport(0, 0, width, height);
     }
     fieldScale = canvas.width / Math.max(1, window.innerWidth);
+    // Evaluate the expensive noise once, then blur with the original 16 taps.
+    // Padding evaluates the field beyond the viewport, preserving edge colours.
+    const scale = cardHeight * SETTINGS.sceneScale * fieldScale;
+    const padding = Math.ceil(SETTINGS.blur * scale) + 1;
+    const paddedWidth = width + padding * 2;
+    const paddedHeight = height + padding * 2;
+    if (!sceneProgram || !sceneTexture || !sceneFramebuffer || !sceneUniforms) return;
+    gl.bindTexture(gl.TEXTURE_2D, sceneTexture);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFramebuffer);
+    if (sceneWidth !== paddedWidth || sceneHeight !== paddedHeight) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paddedWidth, paddedHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sceneTexture, 0);
+      sceneWidth = paddedWidth;
+      sceneHeight = paddedHeight;
+    }
+    gl.viewport(0, 0, paddedWidth, paddedHeight);
+    gl.useProgram(sceneProgram);
+    gl.uniform2f(sceneUniforms.resolution, width, height);
+    gl.uniform1f(sceneUniforms.time, time * SETTINGS.timeSpeed);
+    gl.uniform1f(sceneUniforms.scale, scale);
+    gl.uniform1f(sceneUniforms.padding, padding);
     if (uploadedColors !== appearance.colors) {
-      gl.uniform3fv(uColors, getAuraColorChannels(appearance.colors));
+      gl.uniform3fv(sceneUniforms.colors, getAuraColorChannels(appearance.colors));
       uploadedColors = appearance.colors;
     }
-    gl.uniform2f(uResolution, canvas.width, canvas.height);
-    gl.uniform1f(uTime, time * SETTINGS.timeSpeed);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, width, height);
+    gl.useProgram(program);
+    gl.uniform1f(uPadding, padding);
+    gl.uniform2f(uSceneSize, paddedWidth, paddedHeight);
     gl.uniform1f(uScale, cardHeight * SETTINGS.sceneScale * fieldScale);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 };
 
-// Small windows (a deck of cards in a cloud) are many and tiny: the aura is a
-// soft gradient, so they repaint together on a shared 15-per-second tick at one
-// pixel per CSS pixel, and look the same. Together, because each tick costs
-// one GPU→CPU readback of the field (see cpuField) however many windows paint.
+// Small windows share one readback, but still repaint on every animation frame.
+// Cache idle geometry; entrance and camera travel always measure live positions.
 const SMALL_WINDOW_PX = 200;
-const SMALL_WINDOW_FPS = 15;
-let lastSmallTick = -Infinity;
-// Asking an animated card where it is forces the page's styles and layout to
-// be worked out early — the dominant cost with dozens of cards. Small windows
-// sample a slow, soft gradient, so they re-measure together twice a second and
-// reuse those boxes in between; a drifting card is off by a few pixels at most.
 const SMALL_RECT_REFRESH_MS = 500;
 let lastSmallSweep = -Infinity;
 const cachedRects = new WeakMap<HTMLCanvasElement, DOMRect>();
@@ -278,7 +332,7 @@ const cachedRects = new WeakMap<HTMLCanvasElement, DOMRect>();
 const entranceUntil = new WeakMap<HTMLCanvasElement, number>();
 
 export interface AuraWindowOptions {
-  /** Repaints per second at most (default: every frame, or 20 for small windows). */
+  /** Repaints per second at most (default: every animation frame). */
   maxFps?: number;
   /** Backing-store pixels per CSS pixel (default: the device ratio, or 1 for small windows). */
   resolution?: number;
@@ -313,22 +367,20 @@ const drawWindows = (now: number) => {
   const field = source ?? fallbackSource;
   if (!field && appearance.mode !== "solid") return;
   const deviceRatio = Math.min(window.devicePixelRatio || 1, maxDpr);
-  const smallTick = now - lastSmallTick >= 1000 / SMALL_WINDOW_FPS;
-  if (smallTick) lastSmallTick = now;
-  const smallSweep = smallTick && now - lastSmallSweep >= SMALL_RECT_REFRESH_MS;
+  const smallSweep = now - lastSmallSweep >= SMALL_RECT_REFRESH_MS;
   if (smallSweep) lastSmallSweep = now;
 
+  // Finish geometry reads before resizing/drawing any canvas. Interleaving
+  // reads and backing-store writes can force layout once for every card.
+  const windows: { target: HTMLCanvasElement; rect: DOMRect; small: boolean; dpr: number }[] = [];
   subscribers.forEach((target) => {
-    // Throttle before measuring: reading dozens of on-screen boxes every frame
-    // is itself a cost. Whether a window is small is known from its last paint;
-    // a window not yet painted paints at once.
+    // Explicitly throttled auxiliary windows (such as the hero glow) can
+    // skip geometry reads too. The deck itself always paints every frame.
     const options = windowOptions.get(target);
     const entering = now < (entranceUntil.get(target) ?? 0);
     if (!entering && appearance.mode === "gradient" && lastPainted.has(target)) {
       if (options?.maxFps) {
         if (now - lastPainted.get(target)! < 1000 / options.maxFps) return;
-      } else if (smallWindows.get(target) && !smallTick) {
-        return;
       }
     }
 
@@ -341,6 +393,12 @@ const drawWindows = (now: number) => {
     if (lastPainted.has(target) && appearance.mode === "gradient" && (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth)) return;
     const dpr = options?.resolution ?? (small ? 1 : deviceRatio);
 
+    windows.push({ target, rect, small, dpr });
+  });
+
+  const smallField = field && windows.some(window => window.small) && appearance.mode !== "solid"
+    ? cpuField(field, now) : undefined;
+  for (const { target, rect, small, dpr } of windows) {
     const width = Math.max(1, Math.round(rect.width * dpr));
     const height = Math.max(1, Math.round(rect.height * dpr));
     if (target.width !== width || target.height !== height) {
@@ -349,12 +407,12 @@ const drawWindows = (now: number) => {
     }
 
     const context = target.getContext("2d");
-    if (!context) return;
+    if (!context) continue;
     lastPainted.set(target, now);
     if (appearance.mode === "solid") {
       context.fillStyle = appearance.solidColor;
       context.fillRect(0, 0, width, height);
-      return;
+      continue;
     }
 
     // Fill the entire card even at the viewport edge; clipping a rotated
@@ -363,9 +421,9 @@ const drawWindows = (now: number) => {
     const sh = Math.min(field!.height, Math.max(1, rect.height * fieldScale));
     const sx = Math.max(0, Math.min(field!.width - sw, rect.left * fieldScale));
     const sy = Math.max(0, Math.min(field!.height - sh, rect.top * fieldScale));
-    context.drawImage(small ? cpuField(field!, now) : field!, sx, sy, sw, sh, 0, 0, width, height);
+    context.drawImage(small ? smallField! : field!, sx, sy, sw, sh, 0, 0, width, height);
 
-  });
+  }
 };
 
 const render = (now: number) => {
