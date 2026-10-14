@@ -1,6 +1,6 @@
 # Frankie Tarot
 
-The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table, visual layouts, reveal interactions and private recovery state. [Franklin Tarot API](https://github.com/SonghaiFan/franklin-tarot-api) owns card data, spread definitions and optional random draws for other API consumers and AI agents. Frankie does not use those server draws.
+The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table, visual layouts, reveal interactions and private recovery state. [Frankie Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) owns card data, spread definitions and optional random draws for other API consumers and AI agents. Frankie does not use those server draws.
 
 - App: https://tarot.songhai.site
 - Plugin MCP: https://tarot.songhai.site/mcp
@@ -37,7 +37,7 @@ npm run test:vercel
 Interaction tests mount the real App and REST client with visual/audio adapters stubbed; they do not replace a browser or real ChatGPT acceptance test.
 
 For browser acceptance, install Chromium with `npx playwright install chromium`,
-then build/start the local MCP Apps preview against Franklin (`CORE_MCP_URL` and
+then build/start the local MCP Apps preview against Frankie API (`CORE_MCP_URL` and
 `VITE_TAROT_API_URL` must point at the same API under test). With that preview
 running, run `npm run test:browser`. The test checks desktop and mobile iframe
 flows, duplicate tile events, exact private recovery, explicit interpretation
@@ -52,10 +52,10 @@ Vercel serves the Web app and `/mcp` from one project. Only the current content-
 
 ## Naming and migration
 
-`frankie-*` means a user-facing app; `franklin-*` means an API or developer tool. The original application repository and its Git history retain the Frankie name. The service and docs have their own repository and deployment. See [migration verification](docs/migration.md).
+Both the user-facing app and API use the Frankie name: `frankie-tarot` and `frankie-tarot-api`. The original application repository and its Git history retain the Frankie name. The service and docs have their own repository and deployment. See [migration verification](docs/migration.md).
 
-应用前缀使用 Frankie，API 与开发者工具使用 Franklin。两者通过公开接口连接；刷新、重试和追问保留同一次牌局，不重新抽牌。
+应用与 API 统一使用 Frankie 名称，分别为 frankie-tarot 和 frankie-tarot-api。两者通过公开接口连接；刷新、重试和追问保留同一次牌局，不重新抽牌。
 
 ## License
 
-MIT, as stated by the existing project. Card-data provenance is documented by the Franklin API.
+MIT, as stated by the existing project. Card-data provenance is documented by the Frankie API.

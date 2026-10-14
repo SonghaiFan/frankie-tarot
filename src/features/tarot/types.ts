@@ -1,3 +1,4 @@
+import type { CardSource, LocalizedMeanings, PktReference } from "@/host/interpretationMetadata";
 export enum GameState {
   INTRO = "INTRO",
   INPUT = "INPUT",
@@ -31,6 +32,9 @@ export interface TarotCard {
   keywordsEn?: string[];
   image: string; // Local asset filename
   imageUrls?: { redraw: string; dreamy: string; original: string };
+  source?: CardSource;
+  modernMeanings?: LocalizedMeanings;
+  pktSymbolism?: {en: string; reference: PktReference} | null;
   positive?: string;
   negative?: string;
   positiveEn?: string;

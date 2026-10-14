@@ -1,9 +1,12 @@
+import type { ApiSpread } from "@/features/tarot/constants/spreads";
 import type { PickedCard, SpreadType, Locale, CardFaceStyle, GameState } from '@/features/tarot/types';
 export interface ReadingImage { name: string; dataUrl: string; }
 export interface SavedReadingImage { destination: 'download' | 'library'; name: string; downloadUrl?: string; }
 /** UI-only recovery data; never attach this snapshot to model context. */
 export interface TarotAppSnapshot {
   version: 1;
+  /** API-owned spread semantics and prompt pinned to this table. */
+  spreadDefinition?: ApiSpread;
   readingText?: string;
   summaryRequested?: boolean;
   readingId?: string;
@@ -17,6 +20,7 @@ export interface TarotAppSnapshot {
   cardFaceStyle: CardFaceStyle;
 }
 export interface TarotReadingRequest {
+  spreadDefinition?: ApiSpread;
   readingId?: string;
   question: string;
   spread: SpreadType;
@@ -25,6 +29,7 @@ export interface TarotReadingRequest {
   locale: Locale;
 }
 export interface TarotCardContext {
+  spreadDefinition?: ApiSpread;
   question: string;
   spread: SpreadType;
   card: PickedCard;

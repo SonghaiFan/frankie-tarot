@@ -25,7 +25,7 @@ export async function callCoreTool(name: string, args: Record<string, unknown>) 
 }
 
 export async function listSpreads(locale: Locale, invokeCore = callCoreTool): Promise<TarotSpread[]> {
-  const result = await invokeCore('list_tarot_spreads', { locale });
+  const result = await invokeCore('list_tarot_spreads', { locale, revision:'pkt-1911-v1' });
   const spreads = result.spreads as unknown[];
   if (!Array.isArray(spreads) || spreads.length !== 11) throw new Error('Core MCP returned an invalid spread catalog.');
   return spreads.map((spread: any) => ({ id: spread.id, name: spread.name, description: spread.description,

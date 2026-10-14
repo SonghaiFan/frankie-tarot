@@ -6,7 +6,7 @@ const counts=[1,3,3,4,5,5,5,10,11,7,15];
 
 for (const locale of ['en','zh-CN'] as const) {
   test(`plugin adapter validates the independent core spread catalog in ${locale}`,async()=>{
-    const spreads=await listSpreads(locale,async()=>({spreads:SPREAD_IDS.map((id,index)=>({id,name:`${id} spread`,description:'fixture',cardCount:counts[index],labels:Array.from({length:counts[index]},(_,position)=>`Position ${position+1}`)}))}));
+    const spreads=await listSpreads(locale,async(name,args)=>{assert.equal(name,'list_tarot_spreads');assert.equal(args.revision,'pkt-1911-v1');return {spreads:SPREAD_IDS.map((id,index)=>({id,name:`${id} spread`,description:'fixture',cardCount:counts[index],labels:Array.from({length:counts[index]},(_,position)=>`Position ${position+1}`)}))};});
     assert.equal(spreads.length,11);
     assert.deepEqual(spreads.map(spread=>spread.id),SPREAD_IDS);
     assert.ok(!SPREAD_IDS.includes('AUTO'));

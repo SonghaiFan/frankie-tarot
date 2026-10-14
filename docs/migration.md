@@ -3,7 +3,7 @@
 | Project | Canonical public origin | Responsibility |
 | --- | --- | --- |
 | frankie-tarot | https://tarot.songhai.site | Web app and UI MCP at /mcp |
-| franklin-tarot-api | https://tarot-api.songhai.site | Docs at /, REST at /api/v1, Agent MCP at /mcp/agent |
+| frankie-tarot-api | https://tarot-api.songhai.site | Docs at /, REST at /api/v1, Agent MCP at /mcp/agent |
 
 `frankie-*` names apps; `franklin-*` names APIs and developer tools. Public URLs use product names under `songhai.site`. Cloudflare owns DNS; Vercel is the current deployment provider. Changing providers does not change public URLs.
 

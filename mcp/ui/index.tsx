@@ -9,6 +9,7 @@ import type { TarotAppSnapshot, TarotHost, TarotReadingRequest } from '@/host/ta
 import type { SpreadType } from '@/features/tarot/types';
 import type { TarotView } from '../shared';
 import { cardContext, completeReadingContext, restoreSnapshot, applyReadingSummary } from './readingContext';
+import { buildTarotReadingPrompt } from '@/host/readingPrompt';
 import { chatMessage } from './chatMessages';
 import { saveReadingImage } from './saveReadingImage';
 import '@/app/index.css';
@@ -66,12 +67,13 @@ const host:TarotHost={
       snapshot={...snapshot,revealedCardIds:reading.revealedCardIds,summaryRequested:true};
       persist();
     }
-    await attach({...context,locale:reading.locale,readingId:reading.readingId,requestedAction:'brief_summary',instruction:'All cards are revealed. Write 2–4 brief, poetic but concrete sentences without certain predictions. Call open_tarot with the current flowId, locale and summary containing this exact readingId and your text; omit question and spread. Do not redraw or repeat the summary in chat.'});
+    const briefContext = {...context, spread:{...context.spread, interpretationProfile:context.spread.interpretationProfile ? {id:context.spread.interpretationProfile.id} : undefined}};
+    await attach({...briefContext,locale:reading.locale,readingId:reading.readingId,requestedAction:'brief_summary',instruction:'All cards are revealed. Write 2–4 brief, poetic but concrete sentences without certain predictions. Call open_tarot with the current flowId, locale and summary containing this exact readingId and your text; omit question and spread. Do not redraw or repeat the summary in chat.'});
     await send(chatMessage('brief_summary',reading.locale));
   },
   async interpret(reading){
     const context = completeReadingContext(reading);
-    await attach({...context,locale:reading.locale,requestedAction:'interpret',previousInterpretation:snapshot?.readingText ?? '',instruction:'Interpret this exact spread in ordinary chat with practical reflection. Keep the current cards; do not reopen the app or draw again.'});
+    await attach({...context,locale:reading.locale,requestedAction:'interpret',interpretationPrompt:buildTarotReadingPrompt({...reading,readingText:snapshot?.readingText}),previousInterpretation:snapshot?.readingText ?? '',instruction:'Interpret this exact spread in ordinary chat with practical reflection. Keep the current cards; do not reopen the app or draw again.'});
     await send(chatMessage('interpret',reading.locale));
   },
   async saveResult(_locale,_text,image){ return saveReadingImage(bridge,image); },

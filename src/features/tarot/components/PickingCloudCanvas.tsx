@@ -68,6 +68,7 @@ export default function PickingCloudCanvas({
         }
         if (
           surfaces.length > 0 &&
+          stage.dataset.forceSettled !== "false" &&
           (moving ||
             (!reduced.matches && getCardBackAppearance().mode === "gradient"))
         )
@@ -85,6 +86,13 @@ export default function PickingCloudCanvas({
       if (!frameId && !disposed && renderer && !document.hidden)
         frameId = requestAnimationFrame(render);
     };
+    const forceFrame = () => {
+      if (!renderer || disposed || document.hidden) return;
+      cancelAnimationFrame(frameId);
+      movingUntil = performance.now() + 30;
+      render(performance.now());
+    };
+    stage.addEventListener("forceframe", forceFrame);
     const observer = new MutationObserver(invalidate);
     observer.observe(stage, { childList: true, subtree: true });
     const resize = new ResizeObserver(invalidate);
@@ -131,6 +139,7 @@ export default function PickingCloudCanvas({
       controller.abort();
       cancelAnimationFrame(frameId);
       observer.disconnect();
+      stage.removeEventListener("forceframe", forceFrame);
       resize.disconnect();
       unsubscribe();
       renderer?.dispose();

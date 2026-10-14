@@ -1,3 +1,4 @@
+import type { CardSource, LocalizedMeanings, PktReference } from "@/host/interpretationMetadata";
 import type { TarotCard, TarotSuit } from "@/features/tarot/types";
 import { registerRemoteCards } from "@/features/tarot/constants/cards";
 import { registerRemoteSpreads, type ApiSpread } from "@/features/tarot/constants/spreads";
@@ -16,6 +17,9 @@ export interface ApiCard {
   imageUrls: { redraw: string; dreamy: string; original: string };
   keywords: { en: string[]; "zh-CN": string[] };
   description: { en: string; "zh-CN": string };
+  source?: CardSource;
+  modernMeanings?: LocalizedMeanings;
+  pktSymbolism?: {en: string; reference: PktReference} | null;
   meanings: { upright: { en: string; "zh-CN": string }; reversed: { en: string; "zh-CN": string } };
 }
 
@@ -24,6 +28,7 @@ export function toTarotCard(card: ApiCard, deckIndex?: number): TarotCard {
   if (id === undefined) throw new Error(`Card ${card.id} is missing from the loaded API deck.`);
   return {
     id,
+    source: card.source, modernMeanings: card.modernMeanings, pktSymbolism: card.pktSymbolism,
     nameEn: card.names.en,
     nameCn: card.names["zh-CN"],
     descriptionEn: card.description.en,
@@ -65,7 +70,7 @@ export async function loadApiDeck(locale: ApiLocale) {
 }
 
 export async function loadApiSpreads(locale: ApiLocale) {
-  const response = await apiRequest<{ spreads: ApiSpread[]; locale: ApiLocale }>(`/api/v1/spreads?locale=${encodeURIComponent(locale)}`);
+  const response = await apiRequest<{ spreads: ApiSpread[]; locale: ApiLocale }>(`/api/v1/spreads?locale=${encodeURIComponent(locale)}&revision=pkt-1911-v1`);
   if (!response.spreads.length || new Set(response.spreads.map((spread) => spread.id)).size !== response.spreads.length) {
     throw new Error("The API returned an incomplete or invalid spread catalog.");
   }

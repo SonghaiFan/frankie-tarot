@@ -1,3 +1,4 @@
+import { cardPoses } from "./pickingForce";
 import {
   AURA_FIELD_SETTINGS,
   createAuraShaderSources,
@@ -267,36 +268,77 @@ void main() {
           measure = true;
         }
         if (measure) {
-          referenceHeight = surfaces[0]?.element.offsetHeight ?? 100;
+          referenceHeight =
+            cardPoses.get(surfaces[0]?.element)?.height ??
+            surfaces[0]?.element.offsetHeight ??
+            100;
           // Read all animated geometry before drawing; cache it once cards settle.
-          geometry = surfaces.map(({ element, rotation }) => {
-            const r = element.getBoundingClientRect();
-            const theta = (rotation * Math.PI) / 180;
-            const width =
-              r.width /
-              (Math.abs(Math.cos(theta)) +
-                (12 / 7) * Math.abs(Math.sin(theta)));
-            const height = (width * 12) / 7;
-            const sw = Math.min(innerWidth, r.width),
-              sh = Math.min(innerHeight, r.height);
-            const cloud = element.closest(".tarot-card-cloud")!;
-            return {
-              centerX: r.left + r.width / 2 - bounds.left,
-              centerY: r.top + r.height / 2 - bounds.top,
-              width,
-              height,
-              rotation: theta,
-              opacity:
-                Number(getComputedStyle(element.parentElement!).opacity) *
-                Number(getComputedStyle(cloud).opacity),
-              crop: [
-                Math.max(0, Math.min(innerWidth - sw, r.left)) / innerWidth,
-                Math.max(0, Math.min(innerHeight - sh, r.top)) / innerHeight,
-                sw / innerWidth,
-                sh / innerHeight,
-              ],
-            };
-          });
+          geometry = [...surfaces]
+            .sort(
+              (a, b) =>
+                (cardPoses.get(a.element)?.layer ?? 0) -
+                (cardPoses.get(b.element)?.layer ?? 0),
+            )
+            .map(({ element, rotation }) => {
+              const pose = cardPoses.get(element);
+              if (pose) {
+                const theta = (pose.rotation * Math.PI) / 180;
+                const sw =
+                  Math.abs(Math.cos(theta)) * pose.width +
+                  Math.abs(Math.sin(theta)) * pose.height;
+                const sh =
+                  Math.abs(Math.sin(theta)) * pose.width +
+                  Math.abs(Math.cos(theta)) * pose.height;
+                const centerX = bounds.width / 2 + pose.x,
+                  centerY = bounds.height / 2 + pose.y;
+                return {
+                  centerX,
+                  centerY,
+                  width: pose.width,
+                  height: pose.height,
+                  rotation: theta,
+                  opacity: 1,
+                  crop: [
+                    Math.max(
+                      0,
+                      Math.min(innerWidth - sw, bounds.left + centerX - sw / 2),
+                    ) / innerWidth,
+                    Math.max(
+                      0,
+                      Math.min(innerHeight - sh, bounds.top + centerY - sh / 2),
+                    ) / innerHeight,
+                    Math.min(innerWidth, sw) / innerWidth,
+                    Math.min(innerHeight, sh) / innerHeight,
+                  ],
+                };
+              }
+              const r = element.getBoundingClientRect();
+              const theta = (rotation * Math.PI) / 180;
+              const width =
+                r.width /
+                (Math.abs(Math.cos(theta)) +
+                  (12 / 7) * Math.abs(Math.sin(theta)));
+              const height = (width * 12) / 7;
+              const sw = Math.min(innerWidth, r.width),
+                sh = Math.min(innerHeight, r.height);
+              const cloud = element.closest(".tarot-card-cloud")!;
+              return {
+                centerX: r.left + r.width / 2 - bounds.left,
+                centerY: r.top + r.height / 2 - bounds.top,
+                width,
+                height,
+                rotation: theta,
+                opacity:
+                  Number(getComputedStyle(element.parentElement!).opacity) *
+                  Number(getComputedStyle(cloud).opacity),
+                crop: [
+                  Math.max(0, Math.min(innerWidth - sw, r.left)) / innerWidth,
+                  Math.max(0, Math.min(innerHeight - sh, r.top)) / innerHeight,
+                  sw / innerWidth,
+                  sh / innerHeight,
+                ],
+              };
+            });
         }
         const fw = Math.max(
           1,

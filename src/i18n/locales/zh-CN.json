@@ -42,7 +42,7 @@
     "divining": "感知中"
   },
   "picking": {
-    "instruction": "轻点任意卡牌，直到下方格子亮满（共 {{count}} 张）"
+    "instruction": "轻点抽牌，拖动可拨动牌群（共 {{count}} 张）"
   },
   "reading": {
     "revealPrompt": "翻开每一张卡牌以显示解读",

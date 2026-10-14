@@ -1,6 +1,6 @@
 import { CARD_CORNER_CLASS } from "@/features/tarot/constants/cardDimensions";
 import React from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { SpreadType, TarotCard as TarotCardType, PickedCard } from "@/features/tarot/types";
 import { camera, SHOTS } from "@/features/tarot/scene/camera";
 import { SILKY_EASE } from "@/shared/constants/ui";
@@ -9,6 +9,7 @@ import { CARD_ASPECT_CLASS } from "@/features/tarot/constants/cards";
 import { CardBackId } from "@/features/tarot/constants/cardBacks";
 import CardBackSurface from "./CardBackSurface";
 import PickingCloudCanvas from "./PickingCloudCanvas";
+import PickingForceGraph from "./PickingForceGraph";
 
 interface CloudCardRenderData {
   card: TarotCardType;
@@ -16,9 +17,6 @@ interface CloudCardRenderData {
   y: number;
   rotation: number;
   cardWidth: string;
-  arrivalX: number;
-  arrivalY: number;
-  arrivalDelay: number;
 }
 
 interface PickingCloudCardProps {
@@ -44,12 +42,13 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
         tabIndex={0}
         aria-label={`Select card ${card.id + 1}`}
         style={{
-          touchAction: "manipulation",
+          touchAction: "none",
           backfaceVisibility: "hidden",
           position: "absolute",
           left: 0,
           top: 0,
-          transform: "translate(-50%, -50%)",
+          x: "-50%",
+          y: "-50%",
           rotate: `${rotation}deg`,
         }}
         className={`relative cursor-pointer group ${width} ${height}`}
@@ -77,7 +76,6 @@ const PickingCloudCard: React.FC<PickingCloudCardProps> = React.memo(
         }}
         initial={false}
         animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.04 }}
         transition={{ scale: { duration: 0.22, ease: SILKY_EASE }, opacity: { duration: 0.4 } }}
       >
         <motion.div
@@ -120,7 +118,6 @@ const PickingSection: React.FC<PickingSectionProps> = ({
   onCardSelect,
   cardBackId,
 }) => {
-  const reducedMotion = useReducedMotion();
   const [gpuReady, setGpuReady] = React.useState(false);
   // Hover changes must not invalidate every memoized card via a new callback.
   const selectRef = React.useRef(onCardSelect);
@@ -192,9 +189,6 @@ const PickingSection: React.FC<PickingSectionProps> = ({
           x: Math.cos(angle) * radiusX * radius,
           y: Math.sin(angle) * radiusY * radius,
           rotation: r3 * 360,
-          arrivalX: Math.cos(r3 * Math.PI * 2) * (24 + r1 * 40),
-          arrivalY: Math.sin(r3 * Math.PI * 2) * (24 + r1 * 40),
-          arrivalDelay: r2 * 0.1,
           cardWidth,
         };
       });
@@ -229,13 +223,12 @@ const PickingSection: React.FC<PickingSectionProps> = ({
         }}
         className="absolute inset-x-0 top-[calc(var(--safe-top)+6rem)] bottom-[calc(var(--safe-bottom)+5rem)] overflow-visible md:top-[calc(var(--safe-top)+6.5rem)] md:bottom-[calc(var(--safe-bottom)+5rem)]"
       >
+        <PickingForceGraph stageRef={stageRef} />
         <PickingCloudCanvas stageRef={stageRef} cardBackId={cardBackId} onReady={setGpuReady} />
         {cameraReady && stageSize.width > 0 && stageSize.height > 0 && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25, ease: SILKY_EASE }} className="tarot-card-cloud absolute w-0 h-0 flex items-center justify-center top-1/2 left-1/2">
-          {cloudCards.map(({ card, x, y, rotation, cardWidth, arrivalX, arrivalY, arrivalDelay }) => (
-            <motion.div key={card.id} className="absolute" style={{ left: x, top: y }}
-              initial={reducedMotion ? false : { x: arrivalX, y: arrivalY, opacity: 0 }}
-              animate={{ x: 0, y: 0, opacity: 1 }}
-              transition={{ duration: reducedMotion ? 0 : 0.32, delay: reducedMotion ? 0 : arrivalDelay, ease: SILKY_EASE }}
+          {cloudCards.map(({ card, x, y, rotation, cardWidth }) => (
+            <div key={card.id} className="absolute" data-seed-x={x} data-seed-y={y}
+              style={{ transform: `translate3d(${x}px,${y}px,0)` }}
             >
               <PickingCloudCard
                 gpuReady={gpuReady}
@@ -247,7 +240,7 @@ const PickingSection: React.FC<PickingSectionProps> = ({
                 onSelect={selectCard}
                 cardBackId={cardBackId}
               />
-            </motion.div>
+            </div>
           ))}
         </motion.div>}
       </div>

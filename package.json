@@ -17,12 +17,14 @@
     "test:vercel": "node --import tsx --test tests/vercel-mcp.test.ts",
     "test:interaction": "node --import tsx --test tests/app-interaction.test.ts",
     "test:browser": "node tests/browser-acceptance.mjs",
-    "test:picking": "node tests/picking-touch.mjs"
+    "test:picking": "node tests/picking-touch.mjs",
+    "test:force": "node tests/picking-force.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@modelcontextprotocol/sdk": "^1.32.0",
     "@openai/mcp-extensions": "^0.1.0",
+    "d3-force": "^3.0.0",
     "gsap": "^3.13.0",
     "html-to-image": "^1.11.13",
     "i18next": "^25.8.20",
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "@types/d3-force": "^3.0.10",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.6",
     "@types/three": "^0.186.0",

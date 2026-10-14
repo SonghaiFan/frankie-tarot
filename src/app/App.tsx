@@ -8,6 +8,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
+  useLayoutEffect,
 } from "react";
 import { preload } from "react-dom";
 import { motion, AnimatePresence, LayoutGroup } from "motion/react";
@@ -22,10 +23,10 @@ import { DEFAULT_CARD_FACE_STYLE } from "@/features/tarot/constants/cardFaceStyl
 import {
   getCardImageUrl,
 } from "@/features/tarot/constants/cards";
-import { SPREADS } from "@/features/tarot/constants/spreads";
+import { SPREADS, captureReadingSpread, restoreReadingSpread, resetReadingSpreads, type ApiSpread } from "@/features/tarot/constants/spreads";
 import { loadApiDeck, loadApiSpreads } from "@/api/client";
 import { isInPool } from "@/features/tarot/utils/cardPools";
-import { completeReadingContext } from "@/host/readingContext";
+import { buildTarotReadingPrompt } from "@/host/readingPrompt";
 import type { TarotHost, TarotAppSnapshot } from "@/host/tarotHost";
 import SkyScene from "@/features/tarot/scene/SkyScene";
 import type { SceneStage } from "@/features/tarot/scene/camera";
@@ -82,6 +83,15 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   // Input State
   const [question, setQuestion] = useState(savedReading?.question ?? "");
   const [spread, setSpread] = useState<SpreadType | null>(savedReading?.spread ?? initialSetup?.spread ?? null);
+
+  const [readingSpreadDefinition, setReadingSpreadDefinition] = useState<ApiSpread | undefined>(savedReading?.spreadDefinition);
+  const readingSpreadRef = useRef(readingSpreadDefinition);
+  const activeSpreadRef = useRef(spread);
+  useLayoutEffect(() => { activeSpreadRef.current = spread; }, [spread]);
+  const updateReadingSpread = (definition: ApiSpread | undefined) => {
+    readingSpreadRef.current = definition;
+    setReadingSpreadDefinition(definition);
+  };
 
   // Game Data
   const [pickedCards, setPickedCards] = useState<PickedCard[]>(savedReading?.pickedCards ?? []);
@@ -166,6 +176,9 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setApiError("");
     try {
       const [response, remoteSpreads] = await Promise.all([loadApiDeck(locale), loadApiSpreads(locale)]);
+      if (readingIdRef.current && activeSpreadRef.current) {
+        updateReadingSpread(restoreReadingSpread(activeSpreadRef.current, readingSpreadRef.current));
+      }
       setApiDeck(response.cards);
       setSpread((current) => current ?? remoteSpreads[0]?.id ?? null);
     } catch (error) {
@@ -177,6 +190,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
 
   useEffect(() => {
     if (!initialSetup) return;
+    resetReadingSpreads(); updateReadingSpread(undefined);
     summaryRequestedRef.current = undefined;setBriefStatus('idle');
     readingIdRef.current = undefined;
     setTileCards(new Map());
@@ -191,6 +205,9 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     summaryRequestedRef.current = initialSnapshot.summaryRequested ? initialSnapshot.readingId : undefined;
     setBriefStatus(initialSnapshot.summaryRequested && !initialSnapshot.readingText ? 'pending' : 'idle');
     readingIdRef.current = initialSnapshot.readingId;
+    updateReadingSpread(initialSnapshot.readingId && initialSnapshot.spread
+      ? restoreReadingSpread(initialSnapshot.spread, initialSnapshot.spreadDefinition)
+      : undefined);
     setQuestion(initialSnapshot.question);
     setSpread(initialSnapshot.spread);
     updatePickedCards(initialSnapshot.pickedCards);
@@ -210,7 +227,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
   useEffect(() => {
     const state: TarotAppSnapshot = {version:1,readingId:readingIdRef.current,
       stage:gameState === GameState.LIBRARY ? previousGameState ?? GameState.INTRO : gameState,
-      question,spread,pickedCards,readingText,
+      question,spread,pickedCards,readingText,spreadDefinition:readingSpreadDefinition,
       ...(tileCards.size ? {dealtCards:[...tileCards.values()]} : {}),
       summaryRequested:!!readingIdRef.current && summaryRequestedRef.current===readingIdRef.current,
       revealedCardIds:[...revealedCardIds],cardFaceStyle};
@@ -219,12 +236,12 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     } else if (!host) {
       try { sessionStorage.setItem('f-tarot-reading',JSON.stringify(state)); } catch { /* Storage may be unavailable. */ }
     }
-  }, [host,gameState,previousGameState,question,spread,pickedCards,tileCards,[...revealedCardIds].join(','),cardFaceStyle,readingText,briefStatus]);
+  }, [host,gameState,previousGameState,question,spread,pickedCards,tileCards,[...revealedCardIds].join(','),cardFaceStyle,readingText,briefStatus,readingSpreadDefinition]);
 
   const attachCardContext = (id: number) => {
     const position = pickedCards.findIndex(card => card.id === id);
     if (!host?.attachCard || !spread || position < 0) return;
-    void host.attachCard({question,spread,card:pickedCards[position],position:position + 1,locale})
+    void host.attachCard({spreadDefinition:readingSpreadRef.current,question,spread,card:pickedCards[position],position:position + 1,locale})
       .then(()=>setHostError(''))
       .catch(()=>setHostError(locale === 'zh-CN' ? '卡牌上下文未发送，请再次点击卡牌重试。' : 'Could not attach this card. Click it again to retry.'));
   };
@@ -302,6 +319,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       return;
     }
     // Tags this reading so a summary the model writes back later lands only on this table.
+    updateReadingSpread(captureReadingSpread(selectedSpread));
     readingIdRef.current = crypto.randomUUID();
     setGameState(GameState.PICKING);
     updatePickedCards([]);
@@ -335,7 +353,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
       gameState !== GameState.READING || pickedCards.length !== SPREADS[spread]?.cardCount ||
       !pickedCards.every(card => revealedCardIds.has(card.id))) return;
     summaryRequestedRef.current = readingIdRef.current;setBriefStatus('pending');
-    try { await host.summarize({readingId:readingIdRef.current,question,spread,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale}); }
+    try { await host.summarize({spreadDefinition:readingSpreadRef.current,readingId:readingIdRef.current,question,spread,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale}); }
     catch { setBriefStatus('error'); }
   };
   useEffect(() => {
@@ -389,6 +407,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     setQuestion("");
     summaryRequestedRef.current = undefined;setBriefStatus('idle');
     readingIdRef.current = undefined;
+    resetReadingSpreads(); updateReadingSpread(undefined);
     setTileCards(new Map());
     setIsThinking(false);
     setPreviousGameState(null);
@@ -441,6 +460,13 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
     : sceneGameState === GameState.INPUT ? "input"
     : sceneGameState === GameState.PICKING ? "picking"
     : "reading";
+
+  const isDesktopReadingFit =
+    !isMobile &&
+    !isTablet &&
+    gameState === GameState.READING &&
+    pickedCards.length > 0 &&
+    pickedCards.every((card) => revealedCardIds.has(card.id));
 
   const renderPhase = () => {
     switch (gameState) {
@@ -498,6 +524,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
         if (!apiDeck.length || !spread || !SPREADS[spread]) return <p className="fixed inset-x-0 top-1/2 z-[100] text-center text-sm text-white/60">{locale === 'zh-CN' ? '正在恢复牌局…' : 'Restoring the reading…'}</p>;
         return (
           <ReadingSection
+            isDesktopFit={isDesktopReadingFit}
             spread={spread}
             pickedCards={pickedCards}
             revealedCardIds={revealedCardIds}
@@ -509,11 +536,11 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
             onSaveResult={saveResult}
             savesToChat={!!host}
             onReset={resetRitual}
-            onCopyContext={async () => {
-              const context = completeReadingContext({question,spread,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale});
-              return `${locale === 'zh-CN' ? '请解读以下同一次牌局，给出具体可行的反思建议。不要重新抽牌，不作确定性预测。' : 'Interpret this same reading with practical reflection. Do not redraw or make certain predictions.'}\n\n${JSON.stringify(context, null, 2)}`;
-            }}
-            onInterpret={host ? () => host.interpret({question,spread:spread!,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale}) : undefined}
+            onCopyContext={async () => buildTarotReadingPrompt({
+              spreadDefinition: readingSpreadDefinition, question, spread, cards: pickedCards,
+              revealedCardIds: [...revealedCardIds], locale, readingText,
+            })}
+            onInterpret={host ? () => host.interpret({spreadDefinition:readingSpreadDefinition,question,spread:spread!,cards:pickedCards,revealedCardIds:[...revealedCardIds],locale}) : undefined}
           />
         );
       default:
@@ -573,7 +600,9 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
           gameState === GameState.REVEAL ||
           gameState === GameState.INPUT ||
           gameState === GameState.LIBRARY
-            ? "overflow-y-auto"
+            ? isDesktopReadingFit
+              ? "overflow-hidden"
+              : "overflow-y-auto"
             : "overflow-hidden"
         }`}
       >
@@ -581,7 +610,9 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
             vertically forced into a viewport that may be shorter than content. */}
         <div
           className={`relative w-full flex flex-col items-center px-4 ${
-            gameState === GameState.READING ||
+            isDesktopReadingFit
+              ? "h-full min-h-0 pt-[calc(var(--safe-top)+4rem)] pb-[calc(var(--safe-bottom)+7rem)] justify-start"
+              : gameState === GameState.READING ||
             gameState === GameState.REVEAL
               ? "min-h-full pt-[calc(var(--safe-top)+1rem)] pb-[calc(var(--safe-bottom)+3rem)] justify-start"
               : gameState === GameState.INPUT ||
@@ -604,6 +635,7 @@ const App: React.FC<{ host?: TarotHost; initialSnapshot?: TarotAppSnapshot; brie
                   selectedCardId={selectedCardId}
                   isMobile={isMobile}
                   isTablet={isTablet}
+                  isDesktopReadingFit={isDesktopReadingFit}
                   isShortViewport={isShortViewport}
                   onCardReveal={(id) => {
                     setRevealedCardIds((prev) => new Set(prev).add(id));

@@ -107,6 +107,6 @@ test('opening, picking, restore and final reveal never auto-interpret or call a 
     assert.equal(saved.stage,'PICKING');
     assert.equal(saved.pickedCards.length,0);
     assert.notEqual(saved.readingId,completed.readingId);
-    assert.ok(urls.every(url=>/\/api\/v1\/(cards|spreads)\?locale=en$/.test(url)));
+    assert.ok(urls.every(url => { const request = new URL(url); return /^\/api\/v1\/(cards|spreads)$/.test(request.pathname) && request.searchParams.get('locale') === 'en' && (request.pathname.endsWith('/cards') || request.searchParams.get('revision') === 'pkt-1911-v1'); }));
   } finally {await act(async()=>app?.unmount());globalThis.fetch=originalFetch;}
 });

@@ -20,8 +20,9 @@ interface IntroSectionProps {
 // The card's slow drift: a 10s bob and sway around a 15° lean.
 const DRIFT_PERIOD_MS = 10_000;
 const LEAN = 15;
-const MAX_TILT = 8;
-const tiltSpring = { stiffness: 110, damping: 18, mass: 0.8 };
+const MAX_TILT_X = 15;
+const MAX_TILT_Y = 18;
+const tiltSpring = { stiffness: 220, damping: 24, mass: 0.7 };
 
 const fadeIn = (delay: number) => ({
   initial: { opacity: 0 },
@@ -60,24 +61,18 @@ const IntroSection: React.FC<IntroSectionProps> = ({
     return () => setReflectionSubject(null);
   }, [rotate]);
 
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    const handlePointer = (event: PointerEvent) => {
-      if (event.pointerType !== "mouse") return;
-      tiltY.set(((event.clientX / window.innerWidth) * 2 - 1) * MAX_TILT);
-      tiltX.set(-((event.clientY / window.innerHeight) * 2 - 1) * MAX_TILT);
-    };
-    const reset = () => {
-      tiltX.set(0);
-      tiltY.set(0);
-    };
-    window.addEventListener("pointermove", handlePointer, { passive: true });
-    document.documentElement.addEventListener("pointerleave", reset);
-    return () => {
-      window.removeEventListener("pointermove", handlePointer);
-      document.documentElement.removeEventListener("pointerleave", reset);
-    };
-  }, [prefersReducedMotion, tiltX, tiltY]);
+  const handleCardPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion || event.pointerType !== "mouse") return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const px = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const py = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+    tiltY.set((px - 0.5) * MAX_TILT_Y);
+    tiltX.set((0.5 - py) * MAX_TILT_X);
+  };
+  const resetCardTilt = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
 
   return (
     // The sky, planet and sea behind this page are the shared SkyScene; on
@@ -103,7 +98,11 @@ const IntroSection: React.FC<IntroSectionProps> = ({
           }}
         >
           <motion.div style={{ y: driftY, rotate }}>
-            <motion.div style={{ rotateX: tiltX, rotateY: tiltY }}>
+            <motion.div
+              onPointerMove={handleCardPointerMove}
+              onPointerLeave={resetCardTilt}
+              style={{ rotateX: tiltX, rotateY: tiltY }}
+            >
               <AuraHeroCard
                 faceCanvasRef={faceCanvasRef}
                 className="h-[min(25dvh,calc((58dvh-max(calc(var(--safe-top)+2.5rem),15dvh)-7rem)/1.15))] min-h-[120px] md:h-[min(32dvh,340px)] md:min-h-[170px]"

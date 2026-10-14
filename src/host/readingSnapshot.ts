@@ -20,6 +20,17 @@ export function restoreSnapshot(value: unknown): TarotAppSnapshot | undefined {
     return {...value,isReversed:value.isReversed,visualId:value.visualId};
   });
   try {
+    if (state.spreadDefinition) {
+      const def = state.spreadDefinition;
+      if (def.id !== state.spread || !Number.isInteger(def.cardCount) || def.cardCount < 1 ||
+        !def.names || typeof def.names.en !== 'string' || typeof def.names['zh-CN'] !== 'string' ||
+        !def.descriptions || typeof def.descriptions.en !== 'string' || typeof def.descriptions['zh-CN'] !== 'string' ||
+        !def.layout || !['flex','absolute'].includes(def.layout.type) ||
+        !def.labelsByLocale || !['en','zh-CN'].every(locale => Array.isArray(def.labelsByLocale[locale]) && def.labelsByLocale[locale].length === def.cardCount && def.labelsByLocale[locale].every(label => typeof label === 'string')) ||
+        (def.layout.type === 'absolute' && (!Array.isArray(def.layout.positions) || def.layout.positions.length !== def.cardCount || def.layout.positions.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y)))) ||
+        !def.interpretationInstructions || typeof def.interpretationInstructions.en !== 'string' || typeof def.interpretationInstructions['zh-CN'] !== 'string' ||
+        (def.interpretationProfile && (typeof def.interpretationProfile.id !== 'string' || !def.interpretationProfile.templates || typeof def.interpretationProfile.templates.en !== 'string' || typeof def.interpretationProfile.templates['zh-CN'] !== 'string'))) return;
+    }
     const pickedCards = normalize(state.pickedCards);
     if (new Set(pickedCards.map(c=>c.id)).size !== pickedCards.length ||
       !state.revealedCardIds.every(id=>pickedCards.some(c=>c.id===id))) return;

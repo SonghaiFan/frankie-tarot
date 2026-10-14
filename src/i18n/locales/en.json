@@ -42,7 +42,7 @@
     "divining": "DIVINING..."
   },
   "picking": {
-    "instruction": "Tap any floating card until all {{count}} slots below are lit."
+    "instruction": "Tap to pick {{count}} cards. Drag to move the connected cards."
   },
   "reading": {
     "revealPrompt": "Reveal every card to unlock the reading",
