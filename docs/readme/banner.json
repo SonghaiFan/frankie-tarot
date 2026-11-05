@@ -1,0 +1,51 @@
+{
+  "title": "Tarot",
+  "tagline": "A quieter space for brighter questions.",
+  "category": "Reflect / Clarify / Move forward",
+  "layout": "gallery",
+  "assets": [
+    {
+      "src": "assets/fool.webp",
+      "fit": "cover",
+      "radius": 8
+    },
+    {
+      "src": "assets/aura.png",
+      "fit": "cover",
+      "radius": 8
+    },
+    {
+      "src": "assets/star.webp",
+      "fit": "cover",
+      "radius": 8
+    }
+  ],
+  "signature": "assets/frankie.svg",
+  "aura_sparkle": true,
+  "description": "Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura.",
+  "provenance": [
+    {
+      "file": "assets/fool.webp",
+      "kind": "verified current app material",
+      "note": "Approved live-UI preview from this session; current app was re-opened and checked against it.",
+      "captured_on": "2026-11-05"
+    },
+    {
+      "file": "assets/aura.png",
+      "kind": "verified current app material",
+      "note": "Approved live-UI preview from this session; current app was re-opened and checked against it.",
+      "captured_on": "2026-11-05"
+    },
+    {
+      "file": "assets/star.webp",
+      "kind": "verified current app material",
+      "note": "Approved live-UI preview from this session; current app was re-opened and checked against it.",
+      "captured_on": "2026-11-05"
+    },
+    {
+      "kind": "current app implementation",
+      "path": "src/features/tarot/components/AuraHeroCard.tsx",
+      "note": "Actual Aura canvas plus original sparkle; Fool and Star are the current default Dreamy Aura images served by the API."
+    }
+  ]
+}

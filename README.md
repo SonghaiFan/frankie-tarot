@@ -1,3 +1,5 @@
+![Frankie Tarot — current product banner](docs/readme/banner.png)
+
 # Frankie Tarot
 
 The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table, visual layouts, reveal interactions and private recovery state. [Frankie Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) owns card data, spread definitions and optional random draws for other API consumers and AI agents. Frankie does not use those server draws.
@@ -9,7 +11,13 @@ The user-facing bilingual tarot app and ChatGPT UI. Frankie owns the card table,
 
 > This project is evolving quickly and will remain free and open source forever. If you’ve downloaded it or are using it, please **Star** the repository and [**Follow @SonghaiFan**](https://github.com/SonghaiFan) to keep up with my projects. Your Star is my biggest source of support and motivation to keep building.
 
-## Local development
+## Features
+
+- Choose a spread and manually pick cards in the current interactive table.
+- Explore card packs, artwork and card backs in the deck library.
+- Reveal and review a reading, with app-owned orientation and private recovery state.
+
+## Getting started
 
 ```sh
 npm ci
@@ -24,7 +32,15 @@ For the plugin adapter, configure `CORE_MCP_URL=https://tarot-api.songhai.site/m
 
 Use `.env.example` as a template for these public service URLs. Do not put secrets in `VITE_` variables.
 
-## Build and test
+## Project notes
+
+### Naming and migration
+
+Both the user-facing app and API use the Frankie name: `frankie-tarot` and `frankie-tarot-api`. The original application repository and its Git history retain the Frankie name. The service and docs have their own repository and deployment. See [migration verification](docs/migration.md).
+
+应用与 API 统一使用 Frankie 名称，分别为 frankie-tarot 和 frankie-tarot-api。两者通过公开接口连接；刷新、重试和追问保留同一次牌局，不重新抽牌。
+
+## Development
 
 ```sh
 npm run build:vercel
@@ -50,11 +66,7 @@ The last test imports the built Vercel handler, so build first. For a local MCP 
 
 Vercel serves the Web app and `/mcp` from one project. Only the current content-addressed widget resource is served. Refresh the ChatGPT connection after a UI release. GitHub Pages is not a deployment target.
 
-## Naming and migration
-
-Both the user-facing app and API use the Frankie name: `frankie-tarot` and `frankie-tarot-api`. The original application repository and its Git history retain the Frankie name. The service and docs have their own repository and deployment. See [migration verification](docs/migration.md).
-
-应用与 API 统一使用 Frankie 名称，分别为 frankie-tarot 和 frankie-tarot-api。两者通过公开接口连接；刷新、重试和追问保留同一次牌局，不重新抽牌。
+Banner sources and update instructions: [README artwork](docs/readme/README.md).
 
 ## License
 

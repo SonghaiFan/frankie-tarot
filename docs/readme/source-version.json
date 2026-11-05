@@ -1,0 +1,31 @@
+{
+  "repository": "frankie-tarot",
+  "source_commit": "9b2530b66a65f6e104a01cbf7ad9c29337af33bc",
+  "captured_on": "2026-11-05",
+  "source_state": "Current local working tree; existing uncommitted app edits were included where present.",
+  "materials": [
+    {
+      "file": "assets/fool.webp",
+      "kind": "verified current app material",
+      "note": "Approved live-UI preview from this session; current app was re-opened and checked against it.",
+      "captured_on": "2026-11-05"
+    },
+    {
+      "file": "assets/aura.png",
+      "kind": "verified current app material",
+      "note": "Approved live-UI preview from this session; current app was re-opened and checked against it.",
+      "captured_on": "2026-11-05"
+    },
+    {
+      "file": "assets/star.webp",
+      "kind": "verified current app material",
+      "note": "Approved live-UI preview from this session; current app was re-opened and checked against it.",
+      "captured_on": "2026-11-05"
+    },
+    {
+      "kind": "current app implementation",
+      "path": "src/features/tarot/components/AuraHeroCard.tsx",
+      "note": "Actual Aura canvas plus original sparkle; Fool and Star are the current default Dreamy Aura images served by the API."
+    }
+  ]
+}
