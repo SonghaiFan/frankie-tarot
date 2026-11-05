@@ -2,6 +2,8 @@
 
 # Frankie Tarot
 
+[English](README.md) · [简体中文](README.zh-CN.md)
+
 A quieter space to choose your cards, reveal a spread, and reflect on a question.
 
 [Open the app](https://tarot.songhai.site) · [Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) · [Guide](docs/guide.md) · [Run locally](#run-locally)
