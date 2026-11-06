@@ -6,7 +6,7 @@
 
 在安静的空间里选牌、揭开牌阵，围绕一个问题展开思考。
 
-[打开应用](https://tarot.songhai.site) · [Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) · [项目指南](docs/guide.md) · [本地运行](#本地运行)
+[介绍页](https://songhaifan.github.io/frankie-tarot/zh/) · [打开应用](https://tarot.songhai.site) · [Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) · [项目指南](docs/guide.md) · [本地运行](#本地运行)
 
 ## 可以做什么
 

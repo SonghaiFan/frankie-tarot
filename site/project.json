@@ -1,0 +1,92 @@
+{
+  "repository": "SonghaiFan/frankie-tarot",
+  "branch": "main",
+  "pages_url": "https://songhaifan.github.io/frankie-tarot/",
+  "kind": "online",
+  "app_url": "https://tarot.songhai.site",
+  "vercel_project": "frankie-tarot",
+  "accent": "#926642",
+  "tint": "#faf6ed",
+  "category": {
+    "en": "Cards / Reflection",
+    "zh": "卡牌 / 思考"
+  },
+  "steps": {
+    "en": [
+      "Choose a question and a spread.",
+      "Pick cards manually and reveal them.",
+      "Request interpretation only when you want it."
+    ],
+    "zh": [
+      "想好问题，选择牌阵。",
+      "手动选牌并揭开。",
+      "需要时再明确请求解读。"
+    ]
+  },
+  "media": [
+    {
+      "src": "site/assets/aura-home.png",
+      "caption": {
+        "en": "The current Aura homepage.",
+        "zh": "当前 Aura 首页。"
+      },
+      "captured_on": "2026-11-06"
+    },
+    {
+      "src": "site/assets/library.png",
+      "caption": {
+        "en": "The card library with Dreamy Aura, Modern Arcana and Historic packs.",
+        "zh": "牌库中的迷幻极光、现代重绘与百年馆藏卡包。"
+      },
+      "captured_on": "2026-11-06"
+    },
+    {
+      "src": "site/assets/spreads.png",
+      "caption": {
+        "en": "Question and spread selection before the manual draw.",
+        "zh": "手动抽牌前的问题与牌阵选择。"
+      },
+      "captured_on": "2026-11-06"
+    },
+    {
+      "src": "docs/readme/assets/fool.webp",
+      "caption": {
+        "en": "Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura.",
+        "zh": "项目真实界面或原始素材。"
+      },
+      "crop": null,
+      "source_size": null
+    },
+    {
+      "src": "docs/readme/assets/aura.png",
+      "caption": {
+        "en": "Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura.",
+        "zh": "项目真实界面或原始素材。"
+      },
+      "crop": null,
+      "source_size": null
+    },
+    {
+      "src": "docs/readme/assets/star.webp",
+      "caption": {
+        "en": "Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura.",
+        "zh": "项目真实界面或原始素材。"
+      },
+      "crop": null,
+      "source_size": null
+    },
+    {
+      "src": "site/assets/demo.gif",
+      "caption": {
+        "en": "Recorded Aura homepage animation.",
+        "zh": "实际录制的 Aura 首页动画。"
+      },
+      "captured_on": "2026-11-06",
+      "note": "Actual app frames; compressed and retimed for a short demonstration, not a performance measurement."
+    }
+  ],
+  "art_note": {
+    "en": "Captured from the current Aura interface.",
+    "zh": "采集自当前 Aura 界面。"
+  }
+}

@@ -6,7 +6,7 @@
 
 A quieter space to choose your cards, reveal a spread, and reflect on a question.
 
-[Open the app](https://tarot.songhai.site) · [Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) · [Guide](docs/guide.md) · [Run locally](#run-locally)
+[Introduction](https://songhaifan.github.io/frankie-tarot/) · [Open the app](https://tarot.songhai.site) · [Tarot API](https://github.com/SonghaiFan/frankie-tarot-api) · [Guide](docs/guide.md) · [Run locally](#run-locally)
 
 ## What it does
 

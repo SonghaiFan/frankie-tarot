@@ -88,3 +88,6 @@ api/_bundles/
 !.env.example
 output/
 .playwright-cli/
+
+# Standalone introduction build
+/_site/
