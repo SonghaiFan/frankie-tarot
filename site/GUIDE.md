@@ -1,52 +1,67 @@
-# Introduction page maintenance / 介绍页维护
+# Tarot introduction maintenance / Tarot 介绍页维护
 
-[English README](../README.md) · [中文 README](../README.zh-CN.md)
+The English root and Chinese `zh/` are independent explanatory pages for the current Aura app. They share the real dark sky palette, quiet light display type and rounded controls. The intro does not run Three.js or call a model. / 英文首页与中文页独立构建，沿用当前 Aura 的深色星空与轻盈字体；介绍页不启动 Three.js，也不调用模型。
 
-## Two destinations / 两个入口
+## Content and implemented behavior / 内容与实际行为
 
-- Introduction / 介绍页: https://songhaifan.github.io/frankie-tarot/
-- App / 应用: https://tarot.songhai.site
-- The introduction is a standalone static site. It never builds the app or reads environment files. / 介绍页独立构建，不构建应用，也不读取环境变量文件。
-- English is the default; `zh/` is the Chinese version. / 英文默认，中文位于 `zh/`。
+Edit `site/content.json` in both languages, then build. Verify behavior in these sources before changing claims:
 
-## Files to update / 更新哪些文件
+- `src/app/App.tsx`: input → picking → reading, local table, reveal, session recovery, host-only actions.
+- `src/features/tarot/utils/localDraw.ts` and `cardPools.ts`: shuffled hidden table, uniqueness, pool constraints and orientation. Picking is manual; do not describe it as an automatic AI draw.
+- `src/features/tarot/components/ReadingSection.tsx`: standalone Open in AI provider menu, image export, and host-only interpretation. `src/app/main.tsx` mounts ordinary `<App />` without a host. `mcp/ui` supplies the conversation integration.
+- `src/api/client.ts`, `constants/spreads.ts`: API-owned card and spread definitions. Avoid duplicating catalog rules in the intro.
+- `constants/cardPacks.ts`, `cardFaceStyles.ts`, `cardBacks.ts`, `DeckLibrary.tsx`: faces, backs, pack pairings and library filters.
+- `src/host/readingSnapshot.ts`, `src/shared/storage.ts`: recovery validation versus appearance preferences. Session storage is not permanent history or account synchronization.
 
-| Source / 来源 | What it shows / 内容 |
+修改描述前，核对以上源码。尤其要区分普通网页版的“打开 AI”与 MCP 宿主中的当前对话解读，不要把当前局恢复写成云端档案。
+
+## Replace these assets / 哪些素材需要替换
+
+| Asset | Replace when |
 | --- | --- |
-| `site/assets/aura-home.png` | The current Aura homepage. |
-| `site/assets/library.png` | The card library with Dreamy Aura, Modern Arcana and Historic packs. |
-| `site/assets/spreads.png` | Question and spread selection before the manual draw. |
-| `docs/readme/assets/fool.webp` | Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura. |
-| `docs/readme/assets/aura.png` | Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura. |
-| `docs/readme/assets/star.webp` | Current Dreamy Aura Fool and Star artwork alongside a live capture of the updated app aura. |
-| `site/assets/demo.gif` | Recorded Aura homepage animation. |
+| `site/assets/home-current.png` | Aura homepage, scene, title or start control changes |
+| `site/assets/spreads-current.png` | Catalog layout, spread labels or count changes |
+| `site/assets/picking-current.png` | Face-down table layout, selection or card-back rendering changes |
+| `site/assets/library-current.png` | Pack names, library filters or face/back customization changes |
+| `docs/readme/assets/fool.webp`, `star.webp` | Approved Dreamy Aura artwork changes; these are original app assets |
+| `site/assets/demo.gif` | Homepage motion changes; retained old recording is explicitly labelled as earlier |
+| `docs/readme/banner.png` | Approved banner changes; copied to Open Graph image |
+| `docs/readme/assets/frankie.svg` | Approved Frankie signature changes |
 
-- `../README.md` and `../README.zh-CN.md`: product introduction, features, setup, limitations and developer commands. Update both languages together. / 同步维护双语介绍、功能、运行步骤与限制。
-- `project.json`: app URL, repository, category, colors, three user steps and the ordered media list. / 应用链接、仓库、分类、颜色、使用步骤与有序素材列表。
-- `style.css`: this app's visual treatment within the shared layout. / 统一结构下的项目视觉风格。
-- `build.py`: portable standard-library renderer. / 可独立使用的 Python 标准库构建器。
+Open the real app, switch to the desired interface language and wait for transitions/assets to settle. Use a clearly labelled sample question, never someone’s private question or stored reading. Capture the ordinary live UI; do not fabricate a generated interpretation. Do not click external AI providers, request a summary, or send a host interpretation while gathering screenshots. The hero is the current real home screenshot; adjust CSS cropping/shape only if needed.
 
-## Replacing screenshots and GIFs / 替换截图和动图
+截图来自稳定后的真实界面。使用明确标注的示例问题，不能包含私人问题或已有牌局；不要为了采集素材触发 AI 请求。新文件要同步 `build.py` 的复制列表、`content.json` 的双语说明与本指南。
 
-1. Run the current app and capture real, settled UI. Use synthetic or guest data; hide credentials and private content. For GIFs, record a real interaction from start to finish, rather than animating a static screenshot. / 运行当前版本，使用访客或示例数据采集稳定画面；GIF 应录制真实操作，不把静态图伪装成操作录像。
-2. Replace the corresponding source file above when its screen changes. These banner assets are shared with the README; replacing them may update both the banner and this page. Keep `docs/readme/source-version.json` and banner provenance accurate. / 界面变化后替换对应文件；共享素材会同时影响 banner，需同步更新来源记录。
-3. For a new screen or GIF, add it under `site/assets/` and add an entry to `project.json` → `media` with `src`, bilingual `caption`, and optionally `captured_on` / `source_revision`. The first item is the hero; the full list is the gallery. Use a GIF's first frame as an informative resting frame, keep files small, and provide a still alternative. / 新素材放到 `site/assets/`，登记双语说明、采集时间和版本；第一项为主图，其余进入画廊。GIF 应有可读首帧并保留静态替代图。
-4. If app behavior changes, update both READMEs and both `steps` arrays. Native screenshots and shared family artwork must be labelled honestly. / 行为变化时同步更新双语 README 和使用步骤；区分原生截图与系列共享素材。
-5. Build and inspect desktop and mobile, in both languages. Check the app link and every image. / 构建后检查桌面、手机和两种语言，验证链接与所有图片。
+## Catalog sample / 目录示例
+
+`site/catalog-sample.json` is a captured response subset from the app’s actual public API. The interactive explainer uses only names and labels from `SINGLE` and `THREE`; it is not a second tarot engine. Refresh it when those definitions change:
+
+```sh
+python3 - <<'PY'
+import json, urllib.request
+url='https://tarot-api.songhai.site/api/v1/spreads?locale=en&revision=pkt-1911-v1'
+payload=json.load(urllib.request.urlopen(url))
+spreads=[s for s in payload['spreads'] if s['id'] in ('SINGLE','THREE')]
+assert len(spreads)==2
+from datetime import date
+json.dump({'source':url,'captured_on':str(date.today()),'spreads':spreads},open('site/catalog-sample.json','w'),ensure_ascii=False,indent=2)
+PY
+```
+
+Review the labels and descriptions in both languages. A position called Future is an interpretive label, not a factual prediction. The API source is primary evidence for this implementation; broader historical or efficacy claims need their own appropriate sources.
+
+目录示例直接来自当前 API，构建时无需联网。更新后核对中英文位置含义；不能把“未来”标签写成预测保证。
+
+## Build, check, publish / 构建、检查、发布
 
 ```sh
 python3 site/build.py
-python3 -m http.server 8080 --directory _site --bind 127.0.0.1
+python3 -m http.server 8080 --bind 127.0.0.1 --directory _site
+node --check site/spreads.js
 ```
 
-Open http://127.0.0.1:8080/ and http://127.0.0.1:8080/zh/.
+Open `/` and `/zh/` at desktop and 390px width. Toggle both spread controls and confirm one/three labels, selected button states, keyboard focus, image loading, no horizontal overflow and all links. Check every gallery image after scrolling. Keep `#use` and `#start` stable.
 
-## Publishing / 发布
+Commit reviewed `site/` changes and relevant Pages workflow paths, then push `main`. The existing Pages workflow builds only this static introduction. App deployment is independent. Do not publish environment files, private recovery snapshots or unrelated code.
 
-Push the reviewed page changes to `main`. `.github/workflows/pages.yml` publishes only `_site/` to GitHub Pages. App deployment remains separate on Vercel for browser apps; API services and native/local apps retain their own runtime. Never include `.env` files or unrelated work in a page commit. / 推送审核后的页面改动到 `main`，工作流只发布 `_site/`；应用与 API 的部署分别管理，勿提交环境变量文件或其他未完成代码。
-
-If the branch or repository owner changes, update `project.json`, the workflow branch and README introduction links. / 分支或仓库所有者变化时，同步修改配置、工作流与介绍页链接。
-
-## App signature / 应用签名
-
-The app already has its own Frankie signature; preserve its existing component and placement. / 应用已有 Frankie 签名，保留现有组件与位置。
+检查双语、桌面与手机、位置切换、焦点、图片及链接。只提交本次审核的介绍页文件；不包含环境文件、私人恢复状态或其他未完成代码。
