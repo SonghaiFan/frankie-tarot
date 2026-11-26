@@ -1,0 +1,52 @@
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><ns0:svg viewBox="0 0 256 256" role="img" aria-label="Frankie Tarot &#36731;&#34180;&#29260;&#36793;" x="0" y="0" width="256" height="256"><ns0:title>Frankie Tarot &#36731;&#34180;&#29260;&#36793;</ns0:title><ns0:svg viewBox="28 34 300 477" width="256" height="256" x="0" y="0">
+  <ns0:title>Aura card logo</ns0:title>
+  <ns0:defs>
+    <ns0:clipPath id="face">
+      <ns0:rect x="40" y="70" width="250" height="428.6" rx="31" ry="31" />
+    </ns0:clipPath>
+
+    
+    <ns0:radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="230" cy="259.8" r="150">
+      <ns0:stop offset="0" stop-color="#efe4c6" stop-opacity="1" />
+      <ns0:stop offset="0.45" stop-color="#f3d9b4" stop-opacity="0.85" />
+      <ns0:stop offset="1" stop-color="#ffae78" stop-opacity="0" />
+    </ns0:radialGradient>
+
+    <ns0:radialGradient id="sky" gradientUnits="userSpaceOnUse" cx="70" cy="60" r="250">
+      <ns0:stop offset="0" stop-color="#1a63d4" stop-opacity="1" />
+      <ns0:stop offset="0.55" stop-color="#1a63d4" stop-opacity="1" />
+      <ns0:stop offset="0.78" stop-color="#4f78d6" stop-opacity="0.55" />
+      <ns0:stop offset="1" stop-color="#b8b2d6" stop-opacity="0" />
+    </ns0:radialGradient>
+
+    <ns0:radialGradient id="rim" gradientUnits="userSpaceOnUse" cx="285" cy="523.1" r="165">
+      <ns0:stop offset="0" stop-color="#ffa03a" stop-opacity="1" />
+      <ns0:stop offset="0.6" stop-color="#ff8a30" stop-opacity="0.6" />
+      <ns0:stop offset="1" stop-color="#ff8a30" stop-opacity="0" />
+    </ns0:radialGradient>
+
+    <ns0:radialGradient id="pool" gradientUnits="userSpaceOnUse" cx="290" cy="529.2" r="125">
+      <ns0:stop offset="0" stop-color="#0e9b8c" stop-opacity="1" />
+      <ns0:stop offset="0.45" stop-color="#22a862" stop-opacity="1" />
+      <ns0:stop offset="1" stop-color="#22a862" stop-opacity="0" />
+    </ns0:radialGradient>
+
+    <ns0:radialGradient id="rose" gradientUnits="userSpaceOnUse" cx="30" cy="510.8" r="130">
+      <ns0:stop offset="0" stop-color="#ef5577" stop-opacity="0.85" />
+      <ns0:stop offset="1" stop-color="#ef5577" stop-opacity="0" />
+    </ns0:radialGradient>
+  </ns0:defs>
+
+  
+  <ns0:path d="M49.08 79.08 61.08 67.08Q65.44 62.719 71.137 60.36Q76.834 58 83 58H271Q274.053 58 277.048 58.596Q280.042 59.191 282.863 60.36Q285.684 61.528 288.223 63.224Q290.761 64.921 292.92 67.08Q295.079 69.239 296.776 71.777Q298.472 74.316 299.64 77.137Q300.809 79.958 301.404 82.952Q302 85.947 302 89V455.6Q302 461.766 299.64 467.463Q297.281 473.16 292.92 477.52L280.92 489.52Q276.56 493.88 270.863 496.24Q265.166 498.6 259 498.6H71Q67.947 498.6 64.952 498.004Q61.958 497.409 59.137 496.24Q56.316 495.072 53.777 493.375Q51.239 491.679 49.08 489.52Q46.921 487.361 45.224 484.823Q43.528 482.284 42.36 479.463Q41.191 476.642 40.596 473.648Q40 470.653 40 467.6V101Q40 94.834 42.36 89.137Q44.719 83.44 49.08 79.08Z" fill="#1c1b1a" /><ns0:g clip-path="url(#face)">
+    <ns0:rect x="40" y="70" width="250" height="428.6" fill="#ff6424" />
+    <ns0:rect x="40" y="70" width="250" height="428.6" fill="url(#rose)" />
+    <ns0:rect x="40" y="70" width="250" height="428.6" fill="url(#rim)" />
+    <ns0:rect x="40" y="70" width="250" height="428.6" fill="url(#pool)" />
+    <ns0:rect x="40" y="70" width="250" height="428.6" fill="url(#halo)" />
+    <ns0:rect x="40" y="70" width="250" height="428.6" fill="url(#sky)" />
+  </ns0:g>
+
+  
+  <ns0:path d="M71 70H259Q290 70 290 101V467.6Q290 498.6 259 498.6H71Q40 498.6 40 467.6V101Q40 70 71 70ZM71 76Q46 76 46 101V467.6Q46 492.6 71 492.6H259Q284 492.6 284 467.6V101Q284 76 259 76Z" fill="#1c1b1a" /><ns0:path transform="translate(135.25 254.55) scale(0.595)" fill="#FFFFFF" d="M50 0C54 34 66 46 100 50 66 54 54 66 50 100 46 66 34 54 0 50 34 46 46 34 50 0Z" fill-opacity="0.8" />
+</ns0:svg></ns0:svg></ns0:svg>

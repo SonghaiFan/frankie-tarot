@@ -47,5 +47,6 @@
       "path": "src/features/tarot/components/AuraHeroCard.tsx",
       "note": "Actual Aura canvas plus original sparkle; Fool and Star are the current default Dreamy Aura images served by the API."
     }
-  ]
+  ],
+  "icon": "assets/icon.svg"
 }

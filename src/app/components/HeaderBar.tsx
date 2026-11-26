@@ -65,7 +65,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       <div className="flex items-center gap-3 md:gap-6 pointer-events-auto">
         <button onClick={onHomeClick} className="flex flex-col gap-1 group">
           <div className="flex items-center gap-3 text-white/85 group-hover:text-white transition-colors md:gap-4">
-            <FrankSignature className="h-6 w-auto md:h-8" />    
+            <FrankSignature className="h-6 w-auto md:h-8" />
           </div>
         </button>
 

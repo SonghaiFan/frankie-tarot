@@ -31,5 +31,43 @@ def build(repo,out):
 <section class="section runtime" id="start"><div><h2>{H(c['run_title'])}</h2><p>{H(c['run_note'])}</p><pre><code>npm ci\nnpm run dev</code></pre></div><div class="links"><a href="https://github.com/{cfg['repository']}/blob/main/site/GUIDE.md">{H(c['guide'])} ↗</a><a href="https://github.com/{cfg['repository']}/blob/main/site/AUDIT.md">{H(c['audit'])} ↗</a><a href="https://songhaifan.github.io/frankie-tarot-api/">Tarot API ↗</a></div></section></main><footer class="shell"><span>{H(c['footer'])}</span><a href="https://github.com/{cfg['repository']}">{H(c['source'])} ↗</a></footer><script id="spread-data" type="application/json">{data}</script><script src="{pre}spreads.js" defer></script></body></html>'''
   (dest/'index.html').write_text(body)
  print(out)
+
+def _sync_brand_assets(repo, out):
+    import shutil, re
+    public = repo / "public"
+    for filename in ["favicon.svg", "apple-touch-icon.png", "frankie-tarot-lockup.svg", "frankie-tarot-lockup-dark.svg"]:
+        shutil.copyfile(public / filename, out / filename)
+    for page in out.rglob("*.html"):
+        prefix = "../" * (len(page.relative_to(out).parts) - 1)
+        content = page.read_text()
+        content = re.sub(r'<link[^>]+rel=["\'](?:icon|apple-touch-icon)["\'][^>]*>', '', content)
+        links = f'<link rel="icon" type="image/svg+xml" href="{prefix}favicon.svg"><link rel="apple-touch-icon" href="{prefix}apple-touch-icon.png">'
+        content = content.replace("</head>", links + "</head>")
+        page.write_text(content)
+
+_build_content = build
+def build(repo, out):
+    _build_content(repo, out)
+    _sync_brand_assets(repo, out)
+
+
+def _add_family_navigation(repo, out):
+    import shutil
+    series = out / "series"
+    series.mkdir(exist_ok=True)
+    for icon in (repo / ".github/brand/series").glob("*.svg"):
+        shutil.copyfile(icon, series / icon.name)
+    for page in out.rglob("*.html"):
+        prefix = "../" * (len(page.relative_to(out).parts) - 1)
+        nav = '<nav aria-label="Frankie projects" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:28px 20px;max-width:100%;border-top:1px solid #8883"><a href="https://songhaifan.github.io/frankie-brain/" title="Frankie Brain" style="display:inline-flex;padding:6px"><img src="{prefix}series/brain.svg" width="28" height="28" alt="Frankie Brain" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-brain-ios/" title="Frankie Brain · iOS" style="display:inline-flex;padding:6px"><img src="{prefix}series/brain-ios.svg" width="28" height="28" alt="Frankie Brain · iOS" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-cards/" title="Frankie Cards" style="display:inline-flex;padding:6px"><img src="{prefix}series/cards.svg" width="28" height="28" alt="Frankie Cards" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-dictionary/" title="Blue Dictionary" style="display:inline-flex;padding:6px"><img src="{prefix}series/dictionary.svg" width="28" height="28" alt="Blue Dictionary" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-generative-art/" title="Frankie Generative Art Gallery" style="display:inline-flex;padding:6px"><img src="{prefix}series/generative-art.svg" width="28" height="28" alt="Frankie Generative Art Gallery" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-goal/" title="Frankie Goal" style="display:inline-flex;padding:6px"><img src="{prefix}series/goal.svg" width="28" height="28" alt="Frankie Goal" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-guitar/" title="Frankie Guitar" style="display:inline-flex;padding:6px"><img src="{prefix}series/guitar.svg" width="28" height="28" alt="Frankie Guitar" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-list/" title="Frank’s Life List" style="display:inline-flex;padding:6px"><img src="{prefix}series/list.svg" width="28" height="28" alt="Frank’s Life List" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-mbti/" title="Frankie MBTI" style="display:inline-flex;padding:6px"><img src="{prefix}series/mbti.svg" width="28" height="28" alt="Frankie MBTI" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-onitama/" title="Frankie Onitama" style="display:inline-flex;padding:6px"><img src="{prefix}series/onitama.svg" width="28" height="28" alt="Frankie Onitama" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-poker/" title="Frankie Poker" style="display:inline-flex;padding:6px"><img src="{prefix}series/poker.svg" width="28" height="28" alt="Frankie Poker" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-stocks/" title="Frankie Stocks" style="display:inline-flex;padding:6px"><img src="{prefix}series/stocks.svg" width="28" height="28" alt="Frankie Stocks" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-tarot-api/" title="Frankie Tarot API" style="display:inline-flex;padding:6px"><img src="{prefix}series/tarot-api.svg" width="28" height="28" alt="Frankie Tarot API" style="object-fit:contain;border:0;max-width:none"></a><a href="https://songhaifan.github.io/frankie-werewolf/" title="Werewolf Local" style="display:inline-flex;padding:6px"><img src="{prefix}series/werewolf.svg" width="28" height="28" alt="Werewolf Local" style="object-fit:contain;border:0;max-width:none"></a></nav>'
+        nav = nav.replace("{prefix}", prefix)
+        content = page.read_text().replace("</body>", nav + "</body>")
+        page.write_text(content)
+
+_build_native_intro = build
+def build(repo, out):
+    _build_native_intro(repo, out)
+    _add_family_navigation(repo, out)
+
 if __name__=='__main__':
  ap=argparse.ArgumentParser();ap.add_argument('--out',default='_site');a=ap.parse_args();build(Path(__file__).resolve().parents[1],Path(a.out).resolve())

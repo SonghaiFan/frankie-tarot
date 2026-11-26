@@ -7,8 +7,8 @@ import {
   useTime,
   useTransform,
 } from "motion/react";
-import FrankSignature from "@/app/components/FrankSignature";
 import { useTranslation } from "react-i18next";
+import FrankSignature from "@/app/components/FrankSignature";
 import { SILKY_EASE } from "@/shared/constants/ui";
 import AuraHeroCard from "./AuraHeroCard";
 import { setReflectionSubject } from "../scene/reflection";
