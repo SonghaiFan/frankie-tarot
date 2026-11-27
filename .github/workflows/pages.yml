@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 concurrency:
@@ -35,6 +36,20 @@ jobs:
           site-root: _site
       - uses: actions/upload-pages-artifact@v3
         with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: _site
+      - name: Wait for Pages artifact index
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 20); do
+            count=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" --jq '[.artifacts[] | select(.name == "github-pages-${{ github.run_id }}-${{ github.run_attempt }}")] | length')
+            if [ "$count" = "1" ]; then exit 0; fi
+            sleep 2
+          done
+          echo "Pages artifact index did not become ready"
+          exit 1
       - id: deployment
         uses: actions/deploy-pages@f33f41b675f0ab2dc5a6863c9a170fe83af3571e # v4.0.0: REST artifact lookup
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
